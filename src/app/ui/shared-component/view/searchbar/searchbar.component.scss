@@ -1,0 +1,31 @@
+.search-container {
+  width: 100%;
+  position: relative;
+
+  input {
+    width: 100%;
+    background-color: #e9edea;
+    padding: 0.5rem 1rem;
+    outline: none;
+    border: none;
+    border-radius: 10px;
+    font-size: 1em;
+  }
+
+  .fa-search {
+    position: absolute;
+    padding: 0.5rem 2rem;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+  }
+  .fa-x {
+    position: absolute;
+    padding: 0.5rem 2rem;
+    top: 50%;
+    right: -7px;
+    transform: translateY(-50%);
+    cursor: pointer;
+  }
+}

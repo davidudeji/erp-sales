@@ -1,0 +1,294 @@
+<!-- branch-form.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>{{ mode === 'create' ? 'New Branch' : 'Edit Branch' }}</span>
+            <button class="ql-reset-link" (click)="cancel()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Branch Info Summary (Edit Mode) -->
+        <div class="ql-filter-section" *ngIf="mode === 'edit' && !isLoading && branchForm.controls['name'].value">
+            <div class="ql-filter-heading">Branch</div>
+            <div class="ql-sidebar-branch">
+                <div class="ql-sidebar-branch-avatar">
+                    <span>{{ getInitials(branchForm.controls['name'].value) }}</span>
+                </div>
+                <div class="ql-sidebar-branch-info">
+                    <span class="ql-sidebar-branch-name">{{ branchForm.controls['name'].value }}</span>
+                    <span class="ql-sidebar-branch-code">{{ branchForm.controls['code'].value }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="ql-filter-section" *ngIf="mode === 'edit' && !isLoading">
+            <div class="ql-filter-heading">Details</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Type</span>
+                <span class="ql-sidebar-stat-value">{{ branchForm.controls['type'].value }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Status</span>
+                <span class="ql-sidebar-stat-value" 
+                      [style.color]="branchForm.controls['status'].value === 'ACTIVE' ? '#2EB270' : 
+                                    branchForm.controls['status'].value === 'INACTIVE' ? '#6B7280' : '#F5A623'">
+                    {{ branchForm.controls['status'].value }}
+                </span>
+            </div>
+            <div class="ql-sidebar-stat" *ngIf="branchForm.get('location.city')?.value">
+                <span class="ql-sidebar-stat-label">Location</span>
+                <span class="ql-sidebar-stat-value">{{ branchForm.get('location.city')?.value }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" type="button" (click)="save()" [disabled]="isSaving">
+                <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving"
+                   [class.ql-spinning]="isSaving"></i>
+                {{ isSaving ? 'Saving...' : 'Save Branch' }}
+            </button>
+            <button class="ql-sidebar-action" type="button" (click)="cancel()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading branch details...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">
+                        {{ mode === 'create' ? 'Create New Branch' : 'Edit Branch' }}
+                    </h1>
+                    <span class="ql-total-badge" *ngIf="mode === 'create'">New</span>
+                    <span class="ql-status-badge" 
+                          [class.ql-status-badge--active]="branchForm.controls['status'].value === 'ACTIVE'"
+                          [class.ql-status-badge--inactive]="branchForm.controls['status'].value === 'INACTIVE'"
+                          [class.ql-status-badge--construction]="branchForm.controls['status'].value === 'UNDER_CONSTRUCTION'"
+                          *ngIf="mode === 'edit'">
+                        <span class="ql-status-dot"></span>
+                        {{ branchForm.controls['status'].value }}
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="save()" [disabled]="isSaving">
+                        <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving"
+                           [class.ql-spinning]="isSaving"></i>
+                        {{ isSaving ? 'Saving...' : 'Save Branch' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form [formGroup]="branchForm" class="ql-form-container">
+
+                <!-- Section 1: General Details -->
+                <div class="ql-info-card">
+                    <h3 class="ql-info-title"><i class="fas fa-store"></i> General Details</h3>
+                    <div class="ql-form-grid">
+                        <!-- Branch Name -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Branch Name <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="name" class="ql-input" 
+                                   placeholder="e.g. Lagos Main Warehouse"
+                                   [class.ql-input--error]="isFieldInvalid('name')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('name')">
+                                {{ getFieldError('name') }}
+                            </span>
+                        </div>
+
+                        <!-- Branch Code -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Branch Code <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="code" class="ql-input" 
+                                   placeholder="e.g. LGS-MW"
+                                   [class.ql-input--error]="isFieldInvalid('code')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('code')">
+                                {{ getFieldError('code') }}
+                            </span>
+                        </div>
+
+                        <!-- Branch Type -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Branch Type <span class="ql-required">*</span></label>
+                            <select formControlName="type" class="ql-input" (change)="onBranchTypeChange($event)">
+                                <option *ngFor="let type of branchTypes" [value]="type">{{ type }}</option>
+                                <option value="__add_branch_type__">+ Add Branch Type</option>
+                            </select>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Status <span class="ql-required">*</span></label>
+                            <select formControlName="status" class="ql-input">
+                                <option value="ACTIVE">Active</option>
+                                <option value="INACTIVE">Inactive</option>
+                                <option value="UNDER_CONSTRUCTION">Under Construction</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Contact Details -->
+                <div class="ql-info-card" formGroupName="contact">
+                    <h3 class="ql-info-title"><i class="fas fa-address-book"></i> Contact Details</h3>
+                    <div class="ql-form-grid">
+                        <!-- Manager -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Branch Manager <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="manager" class="ql-input" 
+                                   placeholder="e.g. John Doe"
+                                   [class.ql-input--error]="isFieldInvalid('contact.manager')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('contact.manager')">
+                                {{ getFieldError('contact.manager') }}
+                            </span>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Phone Number <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="phone" class="ql-input" 
+                                   placeholder="e.g. +234 803 000 0000"
+                                   [class.ql-input--error]="isFieldInvalid('contact.phone')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('contact.phone')">
+                                {{ getFieldError('contact.phone') }}
+                            </span>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Email Address</label>
+                            <input type="email" formControlName="email" class="ql-input" 
+                                   placeholder="e.g. lagos@company.com"
+                                   [class.ql-input--error]="isFieldInvalid('contact.email')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('contact.email')">
+                                {{ getFieldError('contact.email') }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Location Details -->
+                <div class="ql-info-card" formGroupName="location">
+                    <h3 class="ql-info-title"><i class="fas fa-map-marker-alt"></i> Location Address</h3>
+                    <div class="ql-form-grid">
+                        <!-- Street Address -->
+                        <div class="ql-field ql-field--full">
+                            <label class="ql-flabel">Street Address <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="address" class="ql-input" 
+                                   placeholder="e.g. 14 Apapa Wharf Road"
+                                   [class.ql-input--error]="isFieldInvalid('location.address')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('location.address')">
+                                {{ getFieldError('location.address') }}
+                            </span>
+                        </div>
+
+                        <!-- City -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">City <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="city" class="ql-input" 
+                                   placeholder="e.g. Lagos"
+                                   [class.ql-input--error]="isFieldInvalid('location.city')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('location.city')">
+                                {{ getFieldError('location.city') }}
+                            </span>
+                        </div>
+
+                        <!-- State -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">State <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="state" class="ql-input" 
+                                   placeholder="e.g. Lagos"
+                                   [class.ql-input--error]="isFieldInvalid('location.state')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('location.state')">
+                                {{ getFieldError('location.state') }}
+                            </span>
+                        </div>
+
+                        <!-- Country -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Country <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="country" class="ql-input" 
+                                   placeholder="e.g. Nigeria"
+                                   [class.ql-input--error]="isFieldInvalid('location.country')" />
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('location.country')">
+                                {{ getFieldError('location.country') }}
+                            </span>
+                        </div>
+
+                        <!-- Postal Code -->
+                        <div class="ql-field">
+                            <label class="ql-flabel">Postal Code</label>
+                            <input type="text" formControlName="postalCode" class="ql-input" 
+                                   placeholder="e.g. 100001" />
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
+        </ng-container>
+
+        <!-- ============================================================
+        ADD BRANCH TYPE MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddTypeModal"
+             (click)="$event.target === $event.currentTarget && closeAddTypeModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-store" style="color: var(--p);"></i> Add Branch Type</h3>
+                    <button class="ql-modal-close" (click)="closeAddTypeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Branch Type Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newBranchTypeName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Distribution Center" autofocus>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddTypeModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newBranchTypeName.trim()"
+                            (click)="saveCustomBranchType()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

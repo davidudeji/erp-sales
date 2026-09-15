@@ -1,0 +1,414 @@
+<!-- src/app/ui/view/documentation-history/documentation-history.component.html -->
+
+<div class="procurement-requests-container">
+  <div class="requests-wrapper">
+
+    <!-- Header - Premium #184440 Card (Matches RFQ List) -->
+    <div class="dashboard-header">
+      <div class="header-left">
+        <div class="header-badge">
+          <span class="pulse-dot"></span>
+          Archive Center
+        </div>
+        <h1 class="page-title">Documentation History</h1>
+        <p class="page-subtitle">Track the complete document lifecycle (RFQs, Quotations, LPOs, Invoices) for each order
+        </p>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner-container">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading documentation history...</p>
+      </div>
+    </div>
+
+    <!-- Table Container (Matches RFQ List) -->
+    <div class="table-container" *ngIf="!isLoading && requests.length > 0">
+      <div class="table-wrapper">
+        <table class="advance-loans-table">
+          <thead>
+            <tr>
+              <th style="width: 4rem;" class="text-center">S/N</th>
+              <th class="sortable">Product / Order Name</th>
+              <th style="width: 12rem;" class="text-center">Current Lifecycle Status</th>
+              <th style="width: 12rem;" class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let request of requests; let i = index">
+              <td class="sn-cell text-center">{{ i + 1 }}</td>
+              <td class="employee-name-cell">
+                <div class="order-title">{{ request.title }}</div>
+                <div class="order-subtitle">ID: {{ request.id }} | Budget: {{ formatCurrency(request.totalBudget,
+                  request.currency) }}</div>
+              </td>
+              <td class="text-center">
+                <span class="status-badge" [ngClass]="getStatusBadgeClass(request.status)">
+                  {{ getStatusLabel(request.status) }}
+                </span>
+              </td>
+              <td class="text-center">
+                <button class="action-btn view-btn" (click)="openArchiveModal(request)" title="View Documents">
+                  <i class="fas fa-folder-open"></i> View Documents
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!isLoading && requests.length === 0">
+        <i class="fas fa-archive"></i>
+        <p>No archive records found. Documents will appear here as procurement requests progress through the lifecycle.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dynamic Side Modal (Same as Before - Kept the View Documents functionality) -->
+<app-side-modal *ngIf="showModal && selectedRequest" (close)="closeArchiveModal()">
+  <div class="modal-inner">
+
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="modal-subtitle">DOCUMENT HISTORY</span>
+        <h2 class="modal-title">{{ selectedRequest.title }}</h2>
+        <span class="modal-ref-id">Ref ID: {{ selectedRequest.id }}</span>
+      </div>
+      <button class="modal-close-btn" (click)="closeArchiveModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Square Widget Buttons Grid (2x2) -->
+    <div class="widgets-grid">
+
+      <!-- RFQ Widget -->
+      <button class="widget-btn" [class.active]="selectedDocType === 'rfq'" [class.unlocked]="isUnlocked('rfq')"
+        [disabled]="!isUnlocked('rfq')" (click)="selectDocType('rfq')">
+        <div class="widget-icon-wrapper">
+          <i class="fas fa-file-signature"></i>
+        </div>
+        <div class="widget-info">
+          <span class="widget-name">1. RFQ Document</span>
+          <span class="widget-status unlocked">Available</span>
+        </div>
+      </button>
+
+      <!-- Quotation Widget -->
+      <button class="widget-btn" [class.active]="selectedDocType === 'quotation'"
+        [class.unlocked]="isUnlocked('quotation')" [class.locked]="!isUnlocked('quotation')"
+        [disabled]="!isUnlocked('quotation')" (click)="selectDocType('quotation')">
+        <div class="widget-icon-wrapper">
+          <i class="fas fa-comment-dollar"></i>
+          <span class="lock-indicator" *ngIf="!isUnlocked('quotation')"><i class="fas fa-lock"></i></span>
+        </div>
+        <div class="widget-info">
+          <span class="widget-name">2. Quotation Received</span>
+          <span class="widget-status" [class.unlocked]="isUnlocked('quotation')"
+            [class.locked]="!isUnlocked('quotation')">
+            {{ isUnlocked('quotation') ? 'Available' : 'Pending Receipt' }}
+          </span>
+        </div>
+      </button>
+
+      <!-- LPO Widget -->
+      <button class="widget-btn" [class.active]="selectedDocType === 'lpo'" [class.unlocked]="isUnlocked('lpo')"
+        [class.locked]="!isUnlocked('lpo')" [disabled]="!isUnlocked('lpo')" (click)="selectDocType('lpo')">
+        <div class="widget-icon-wrapper">
+          <i class="fas fa-file-invoice"></i>
+          <span class="lock-indicator" *ngIf="!isUnlocked('lpo')"><i class="fas fa-lock"></i></span>
+        </div>
+        <div class="widget-info">
+          <span class="widget-name">3. LPO Issued</span>
+          <span class="widget-status" [class.unlocked]="isUnlocked('lpo')" [class.locked]="!isUnlocked('lpo')">
+            {{ isUnlocked('lpo') ? 'Available' : 'Pending Order' }}
+          </span>
+        </div>
+      </button>
+
+      <!-- Invoice Widget -->
+      <button class="widget-btn" [class.active]="selectedDocType === 'invoice'" [class.unlocked]="isUnlocked('invoice')"
+        [class.locked]="!isUnlocked('invoice')" [disabled]="!isUnlocked('invoice')" (click)="selectDocType('invoice')">
+        <div class="widget-icon-wrapper">
+          <i class="fas fa-receipt"></i>
+          <span class="lock-indicator" *ngIf="!isUnlocked('invoice')"><i class="fas fa-lock"></i></span>
+        </div>
+        <div class="widget-info">
+          <span class="widget-name">4. Invoice Received</span>
+          <span class="widget-status" [class.unlocked]="isUnlocked('invoice')" [class.locked]="!isUnlocked('invoice')">
+            {{ isUnlocked('invoice') ? 'Available' : 'Pending Delivery' }}
+          </span>
+        </div>
+      </button>
+
+    </div>
+
+    <!-- Document Detail Preview Section -->
+    <div class="preview-section">
+      <div class="preview-toolbar">
+        <h3 class="preview-doc-title">
+          <i class="fas" [class.fa-file-signature]="selectedDocType === 'rfq'"
+            [class.fa-comment-dollar]="selectedDocType === 'quotation'"
+            [class.fa-file-invoice]="selectedDocType === 'lpo'" [class.fa-receipt]="selectedDocType === 'invoice'"></i>
+          {{ selectedDocType | uppercase }} Document Preview
+        </h3>
+        <button class="btn-download-pdf" (click)="downloadCurrentDocPDF()" [disabled]="isDownloading">
+          <i class="fas" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"
+            [class.fa-file-pdf]="!isDownloading"></i>
+          {{ isDownloading ? 'Generating...' : 'Download PDF' }}
+        </button>
+      </div>
+
+      <!-- Preview Sheet Area -->
+      <div class="preview-container-box shadow-sm" id="preview-document-container">
+
+        <!-- ================== RFQ DETAILS PREVIEW ================== -->
+        <div class="doc-sheet rfq-sheet" *ngIf="selectedDocType === 'rfq'">
+          <div class="doc-header">
+            <div class="doc-logo-section">
+              <div class="app-logo-mark"><i class="fas fa-file-contract"></i></div>
+              <div>
+                <h2>REQUEST FOR QUOTATION</h2>
+                <p class="ref-num">Reference: #{{ selectedRequest.id }}</p>
+              </div>
+            </div>
+            <div class="doc-meta-section">
+              <p><strong>Date Created:</strong> {{ formatDate(selectedRequest.createdAt) }}</p>
+              <p><strong>Expiry Deadline:</strong> {{ formatDate(selectedRequest.deliveryDeadline) }}</p>
+              <p><strong>Currency:</strong> {{ selectedRequest.currency }}</p>
+            </div>
+          </div>
+
+          <hr class="doc-hr">
+
+          <div class="info-block">
+            <h3>1. General Overview</h3>
+            <table class="flat-info-table">
+              <tr>
+                <td><strong>Request Title:</strong></td>
+                <td>{{ selectedRequest.title }}</td>
+              </tr>
+              <tr>
+                <td><strong>Procurement Type:</strong></td>
+                <td><span class="badge type">{{ selectedRequest.procurementType | titlecase }}</span></td>
+              </tr>
+              <tr>
+                <td><strong>Delivery Destination:</strong></td>
+                <td>{{ selectedRequest.deliveryLocation }}</td>
+              </tr>
+              <tr>
+                <td><strong>Total Budget:</strong></td>
+                <td><strong>{{ formatCurrency(selectedRequest.totalBudget, selectedRequest.currency) }}</strong></td>
+              </tr>
+            </table>
+
+            <h4 class="section-subheading">Scope & Requirements Description</h4>
+            <p class="desc-text">{{ selectedRequest.description }}</p>
+          </div>
+
+          <div class="info-block">
+            <h3>2. Requested Items List</h3>
+            <table class="doc-data-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Specifications</th>
+                  <th class="text-right">Qty</th>
+                  <th class="text-right">Unit</th>
+                  <th class="text-right">Estimated Budget</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of selectedRequest.items">
+                  <td><strong>{{ item.name }}</strong></td>
+                  <td>{{ item.description }}</td>
+                  <td class="text-right">{{ item.quantity }}</td>
+                  <td class="text-right">{{ item.unit || 'Pieces' }}</td>
+                  <td class="text-right">{{ formatCurrency(item.estimatedBudget, selectedRequest.currency) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ================== QUOTATION DETAILS PREVIEW ================== -->
+        <div class="doc-sheet quotation-sheet" *ngIf="selectedDocType === 'quotation' && quotationDoc">
+          <div class="doc-header">
+            <div class="doc-logo-section">
+              <div class="app-logo-mark vendor"><i class="fas fa-comment-dollar"></i></div>
+              <div>
+                <h2>VENDOR QUOTATION</h2>
+                <p class="ref-num">Quote Reference: #{{ quotationDoc.id }}</p>
+              </div>
+            </div>
+            <div class="doc-meta-section">
+              <p><strong>Vendor Name:</strong> {{ quotationDoc.vendorName }}</p>
+              <p><strong>Code:</strong> {{ quotationDoc.vendorCode }}</p>
+              <p><strong>Rating:</strong> ★ {{ quotationDoc.vendorRating }} / 5.0</p>
+            </div>
+          </div>
+
+          <hr class="doc-hr">
+
+          <div class="info-block">
+            <h3>1. Contact & Terms</h3>
+            <table class="flat-info-table">
+              <tr>
+                <td><strong>Email Address:</strong></td>
+                <td>{{ quotationDoc.vendorEmail }}</td>
+              </tr>
+              <tr>
+                <td><strong>Phone Number:</strong></td>
+                <td>{{ quotationDoc.vendorPhone }}</td>
+              </tr>
+              <tr>
+                <td><strong>Validity Period:</strong></td>
+                <td>{{ quotationDoc.validityDays }} Days</td>
+              </tr>
+              <tr>
+                <td><strong>Estimated Delivery:</strong></td>
+                <td>{{ quotationDoc.deliveryTimeline }}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="info-block">
+            <h3>2. Priced Quotation Breakdown</h3>
+            <table class="doc-data-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Description</th>
+                  <th class="text-right">Qty</th>
+                  <th class="text-right">Unit Price</th>
+                  <th class="text-right">Total Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of quotationDoc.items">
+                  <td><strong>{{ item.name }}</strong></td>
+                  <td>{{ item.description }}</td>
+                  <td class="text-right">{{ item.quantity }}</td>
+                  <td class="text-right">{{ formatCurrency(item.unitPrice, quotationDoc.currency) }}</td>
+                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, quotationDoc.currency) }}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="grand-total-row">
+                  <td colspan="4" class="text-right font-bold">GRAND TOTAL AMOUNT:</td>
+                  <td class="text-right font-bold text-lg text-teal-700">{{ formatCurrency(quotationDoc.totalAmount,
+                    quotationDoc.currency) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+            <div class="notes-footer">
+              <strong>Notes:</strong> {{ quotationDoc.notes }}
+            </div>
+          </div>
+        </div>
+
+        <!-- ================== LPO DETAILS PREVIEW ================== -->
+        <div class="doc-sheet lpo-sheet" *ngIf="selectedDocType === 'lpo' && lpoDoc">
+          <div class="doc-header">
+            <div class="doc-logo-section">
+              <div class="app-logo-mark lpo"><i class="fas fa-file-invoice"></i></div>
+              <div>
+                <h2>LOCAL PURCHASE ORDER</h2>
+                <p class="ref-num">LPO Number: {{ lpoDoc.lpoNumber }}</p>
+              </div>
+            </div>
+            <div class="doc-meta-section">
+              <p><strong>Date Issued:</strong> {{ formatDate(lpoDoc.orderDate) }}</p>
+              <p><strong>RFQ Reference:</strong> #{{ selectedRequest.id }}</p>
+            </div>
+          </div>
+
+          <hr class="doc-hr">
+
+          <div class="parties-grid">
+            <div class="party-card">
+              <h4>BUYER DETAILS</h4>
+              <strong class="party-name">Queendom Procurement Corp.</strong>
+              <p>Plot 12, Corporate Avenue,<br>Victoria Island, Lagos,<br>Nigeria</p>
+              <p class="contact-line"><i class="fas fa-envelope"></i> orders&#64;queensheba.example</p>
+            </div>
+            <div class="party-card">
+              <h4>VENDOR DETAILS</h4>
+              <strong class="party-name">{{ lpoDoc.vendorName }}</strong>
+              <p>Vendor Code: {{ lpoDoc.vendorCode }}</p>
+              <p class="contact-line"><i class="fas fa-envelope"></i> {{ lpoDoc.vendorEmail }}</p>
+              <p class="contact-line"><i class="fas fa-phone"></i> {{ lpoDoc.vendorPhone }}</p>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <h3>Ordered Items Breakdown</h3>
+            <table class="doc-data-table">
+              <thead>
+                <tr>
+                  <th>Item Name / Description</th>
+                  <th class="text-right" style="width: 5rem;">Qty</th>
+                  <th class="text-right" style="width: 8rem;">Unit Price</th>
+                  <th class="text-right" style="width: 10rem;">Total Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of lpoDoc.items">
+                  <td>
+                    <strong>{{ item.name }}</strong>
+                    <div class="item-desc">{{ item.description }}</div>
+                  </td>
+                  <td class="text-right">{{ item.quantity }}</td>
+                  <td class="text-right">{{ formatCurrency(item.unitPrice, lpoDoc.currency) }}</td>
+                  <td class="text-right font-semibold">{{ formatCurrency(item.totalPrice, lpoDoc.currency) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="grand-total-row">
+                  <td colspan="3" class="text-right font-bold">GRAND TOTAL VALUE:</td>
+                  <td class="text-right font-bold text-teal-800">{{ formatCurrency(lpoDoc.totalAmount,
+                    lpoDoc.currency) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="lpo-terms-section">
+            <h4>LPO Terms & Conditions</h4>
+            <ol>
+              <li>Delivery timeline must be within {{ lpoDoc.deliveryTimeline }} of LPO issue date.</li>
+              <li>All items must match specifications. Faulty items will be returned at vendor cost.</li>
+              <li>Invoice must be submitted immediately upon full delivery and fulfillment of items.</li>
+              <li>This Purchase Order is valid for {{ lpoDoc.validityDays }} days.</li>
+            </ol>
+          </div>
+
+          <div class="signatures-grid">
+            <div class="sig-line">
+              <div class="line"></div>
+              <strong>Authorized Signatory</strong>
+              <p>Queendom Procurement Corp</p>
+            </div>
+            <div class="sig-line">
+              <div class="line"></div>
+              <strong>Authorized Vendor Signatory</strong>
+              <p>{{ lpoDoc.vendorName }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================== INVOICE DETAILS PREVIEW ================== -->
+        <app-invoices *ngIf="selectedDocType === 'invoice'" [request]="selectedRequest" [invoice]="invoiceDoc"></app-invoices>
+
+      </div>
+    </div>
+
+  </div>
+</app-side-modal>

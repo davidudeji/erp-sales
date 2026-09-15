@@ -1,0 +1,297 @@
+<!-- rfq-template-selector.component.html -->
+<!-- Damilola: Full redesign — 2-col grid, white document paper on teal-bg preview, gradient fade, info below -->
+
+<div class="rfq-template-selector">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-main-row">
+      <div class="page-icon"><i class="fas fa-file-alt"></i></div>
+      <div class="page-title">
+        <h2>Choose RFQ Template</h2>
+        <p>Select how your Request for Quotation will appear to vendors</p>
+      </div>
+    </div>
+    <div class="step-bar">
+      <div class="step-list">
+        <div class="step-item completed"><span class="step-circle"><i class="fas fa-check"></i></span><span class="step-name">Type</span></div>
+        <div class="step-connector done"></div>
+        <div class="step-item completed"><span class="step-circle"><i class="fas fa-check"></i></span><span class="step-name">Details</span></div>
+        <div class="step-connector done"></div>
+        <div class="step-item active"><span class="step-circle">3</span><span class="step-name">Template</span></div>
+        <div class="step-connector"></div>
+        <div class="step-item"><span class="step-circle">4</span><span class="step-name">Vendors</span></div>
+        <div class="step-connector"></div>
+        <div class="step-item"><span class="step-circle">5</span><span class="step-name">Submit</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="selector-body">
+
+    <div *ngIf="isLoading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>&nbsp; Loading templates…
+    </div>
+
+    <!-- 2-column template card grid -->
+    <div class="template-grid" *ngIf="!isLoading">
+
+      <div *ngFor="let template of templates"
+           class="tpl-card"
+           [class.tpl-card--selected]="selectedTemplateId === template.id"
+           (click)="selectTemplate(template.id)">
+
+        <!-- ── TOP: document preview area ── -->
+        <!-- Damilola: white "paper" floats on teal-gray bg; fade gradient hides overflow cleanly -->
+        <div class="tpl-preview" [ngClass]="'tpl-preview--' + getLayoutKey(template.layout)">
+
+          <!-- selected checkmark badge -->
+          <div class="tpl-check" *ngIf="selectedTemplateId === template.id">
+            <i class="fas fa-check"></i>
+          </div>
+
+          <!-- white paper document -->
+          <div class="doc-paper">
+
+            <!-- STANDARD -->
+            <ng-container *ngIf="getLayoutKey(template.layout) === 'standard'">
+              <div class="dp-header">
+                <div class="dp-logo"></div>
+                <div class="dp-org">
+                  <div class="dp-org-name">Company Name</div>
+                  <div class="dp-org-sub">Request for Quotation</div>
+                </div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">RFQ NO.</div>
+                  <div class="dp-mc-val">RFQ-2026-001</div>
+                </div>
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DATE</div>
+                  <div class="dp-mc-val">31 Jul 2026</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦ —</div>
+                </div>
+              </div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span class="num">Qty</span><span class="num">Rate</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>Item description here</span><span class="num">1</span><span class="num">—</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span class="sn">2</span><span>Another product item</span><span class="num">2</span><span class="num">—</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">3</span><span>Third line item</span><span class="num">5</span><span class="num">—</span>
+                </div>
+              </div>
+              <div class="dp-total">
+                <span>TOTAL</span><span class="amt">₦ 0.00</span>
+              </div>
+            </ng-container>
+
+            <!-- CORPORATE -->
+            <ng-container *ngIf="getLayoutKey(template.layout) === 'centrifuge'">
+              <div class="dp-corp-top">
+                <div class="dp-corp-word">Quotation</div>
+                <div class="dp-corp-brand"><strong>OPTIMAX</strong><br>SUITES</div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">QUOTATION NO.</div>
+                  <div class="dp-mc-val">495314</div>
+                </div>
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DATE</div>
+                  <div class="dp-mc-val">31 Jul 2026</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL (NGN)</div>
+                  <div class="dp-mc-val">₦8.2M</div>
+                </div>
+              </div>
+              <div class="dp-two-col">
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">PREPARED FOR</div>
+                  <div class="dp-col-val">Client Ltd</div>
+                </div>
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">PREPARED BY</div>
+                  <div class="dp-col-val">OptimaX Suites</div>
+                </div>
+              </div>
+              <div class="dp-banner">Request for Equipment &amp; Services</div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span class="num">Qty</span><span class="num">Amount</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>HP ProBook 440 G9</span><span class="num">1</span><span class="num">₦1.4M</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span class="sn">2</span><span>Air Conditioner 1.5HP</span><span class="num">2</span><span class="num">₦1.2M</span>
+                </div>
+              </div>
+              <div class="dp-words">
+                <div class="dp-words-lbl">AMOUNT IN WORDS</div>
+                <div class="dp-words-val">Eight million, two hundred and nine thousand…</div>
+              </div>
+            </ng-container>
+
+            <!-- MINIMAL -->
+            <ng-container *ngIf="getLayoutKey(template.layout) === 'minimal'">
+              <div class="dp-min-head">Request for Quotation</div>
+              <div class="dp-thin-rule"></div>
+              <div class="dp-field"><span class="dp-field-lbl">To:</span><span class="dp-field-val">Vendor Name</span></div>
+              <div class="dp-field"><span class="dp-field-lbl">Date:</span><span class="dp-field-val">31 July 2026</span></div>
+              <div class="dp-field"><span class="dp-field-lbl">Valid Until:</span><span class="dp-field-val">30 Aug 2026</span></div>
+              <div class="dp-thin-rule"></div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span>Item</span><span class="num">Qty</span><span>Notes</span>
+                </div>
+                <div class="dp-trow">
+                  <span>Item One — Product A</span><span class="num">1</span><span>—</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span>Item Two — Product B</span><span class="num">3</span><span>—</span>
+                </div>
+                <div class="dp-trow">
+                  <span>Item Three — Product C</span><span class="num">2</span><span>—</span>
+                </div>
+              </div>
+              <div class="dp-footnote">Please respond with your best quotation within 7 days.</div>
+            </ng-container>
+
+            <!-- DETAILED -->
+            <ng-container *ngIf="getLayoutKey(template.layout) === 'detailed'">
+              <div class="dp-header">
+                <div class="dp-logo"></div>
+                <div class="dp-org">
+                  <div class="dp-org-name">Company Name</div>
+                  <div class="dp-org-sub">Technical RFQ — Detailed</div>
+                </div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">RFQ NO.</div>
+                  <div class="dp-mc-val">RFQ-2026-001</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦ —</div>
+                </div>
+              </div>
+              <div class="dp-two-col">
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">VENDOR</div>
+                  <div class="dp-col-val">Vendor Name</div>
+                </div>
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">CATEGORY</div>
+                  <div class="dp-col-val">IT &amp; Electronics</div>
+                </div>
+              </div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span>Specs</span><span class="num">Qty</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>Item with specifications</span><span>Brand/Model</span><span class="num">1</span>
+                </div>
+              </div>
+              <div class="dp-qual">
+                <div class="dp-qual-lbl">QUALIFICATIONS REQUIRED</div>
+                <div class="dp-qual-val">• ISO Certified &nbsp;&nbsp;• 5+ Years Experience &nbsp;&nbsp;• Local Content</div>
+              </div>
+            </ng-container>
+
+          </div><!-- /doc-paper -->
+
+          <!-- Damilola: gradient fade so document blends into the info section below -->
+          <div class="preview-fade"></div>
+
+        </div><!-- /tpl-preview -->
+
+        <!-- ── BOTTOM: template info section ── -->
+        <div class="tpl-info">
+          <div class="tpl-info-main">
+            <div class="tpl-name-row">
+              <h3 class="tpl-name">{{ template.name }}</h3>
+              <span class="tpl-default" *ngIf="template.isDefault">
+                <i class="fas fa-star"></i> Default
+              </span>
+            </div>
+            <p class="tpl-desc">{{ template.description }}</p>
+            <div class="tpl-tags" *ngIf="(template.sections || []).length > 0">
+              <span class="tpl-tag" *ngFor="let s of (template.sections || []).slice(0, 4)">
+                {{ s?.title || s?.type || s }}
+              </span>
+            </div>
+          </div>
+          <div class="tpl-select-row">
+            <div class="tpl-select-btn" [class.active]="selectedTemplateId === template.id">
+              <i class="fas fa-check" *ngIf="selectedTemplateId === template.id"></i>
+              <i class="fas fa-arrow-right" *ngIf="selectedTemplateId !== template.id"></i>
+              {{ selectedTemplateId === template.id ? 'Selected' : 'Use this template' }}
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tpl-card -->
+    </div><!-- /template-grid -->
+
+    <!-- Customisation Panel -->
+    <div class="config-panel" *ngIf="selectedTemplateId">
+      <div class="panel-title-row">
+        <span class="panel-icon"><i class="fas fa-sliders-h"></i></span>
+        <h3 class="panel-title">Customise Your RFQ</h3>
+      </div>
+      <form [formGroup]="templateForm" class="config-form">
+        <div class="toggle-grid">
+          <label class="toggle-item">
+            <span class="toggle-label">Include Header</span>
+            <label class="switch"><input type="checkbox" formControlName="includeHeader"><span class="slider"></span></label>
+          </label>
+          <label class="toggle-item">
+            <span class="toggle-label">Include Items Table</span>
+            <label class="switch"><input type="checkbox" formControlName="includeItems"><span class="slider"></span></label>
+          </label>
+          <label class="toggle-item">
+            <span class="toggle-label">Include Terms &amp; Conditions</span>
+            <label class="switch"><input type="checkbox" formControlName="includeTerms"><span class="slider"></span></label>
+          </label>
+          <label class="toggle-item">
+            <span class="toggle-label">Include Footer</span>
+            <label class="switch"><input type="checkbox" formControlName="includeFooter"><span class="slider"></span></label>
+          </label>
+        </div>
+        <div class="field-group">
+          <label>Custom Message to Vendors <span class="optional">(optional)</span></label>
+          <textarea formControlName="customMessage" rows="3"
+            placeholder="Add a personal message or special instructions for vendors…"
+            class="field-input"></textarea>
+        </div>
+      </form>
+    </div>
+
+    <!-- Page actions -->
+    <div class="template-actions">
+      <button type="button" class="btn-ghost" (click)="onBack()">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <button type="button" class="btn-primary" [disabled]="!selectedTemplateId" (click)="onNext()">
+        Next: Select Vendors <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+
+  </div>
+</div>

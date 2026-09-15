@@ -1,0 +1,141 @@
+<!-- branch-stock-summary.component.html -->
+<div class="ql-stock-summary" [class.ql-stock-summary--compact]="compact">
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="ql-stock-summary-loading">
+        <div class="ql-spinner"></div>
+        <span>Loading summary...</span>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !isLoading" class="ql-stock-summary-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+        <button (click)="refresh()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
+    <!-- Content -->
+    <ng-container *ngIf="!isLoading && summary as s">
+
+        <!-- Header -->
+        <div class="ql-stock-summary-header">
+            <div class="ql-stock-summary-title">
+                <i class="fas fa-store"></i>
+                <span>{{ s.branchName }}</span>
+            </div>
+            <div class="ql-stock-summary-actions" *ngIf="showActions">
+                <button class="ql-btn ql-btn--ghost-sm" (click)="refresh()" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <span class="ql-stock-summary-time" *ngIf="lastUpdated">
+                    Updated {{ formatTime(lastUpdated) }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Stock Health -->
+        <div class="ql-stock-summary-health"
+             [class.ql-stock-summary-health--healthy]="getStockHealthStatus() === 'healthy'"
+             [class.ql-stock-summary-health--warning]="getStockHealthStatus() === 'warning'"
+             [class.ql-stock-summary-health--danger]="getStockHealthStatus() === 'danger'">
+            <i class="fas" [class]="getStockHealthIcon()"></i>
+            <span>{{ getStockHealthLabel() }}</span>
+            <span class="ql-stock-summary-health-detail">
+                {{ s.lowStockCount }} low · {{ s.outOfStockCount }} out of stock
+            </span>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="ql-stock-summary-grid">
+            <!-- Total Products -->
+            <div class="ql-stock-summary-item">
+                <span class="ql-stock-summary-item-value">{{ s.totalProducts }}</span>
+                <span class="ql-stock-summary-item-label">Products</span>
+                <div class="ql-stock-summary-item-bar">
+                    <div class="ql-stock-summary-item-fill"
+                         [style.width.%]="getProgressPercentage(s.totalProducts, 1000)"></div>
+                </div>
+            </div>
+
+            <!-- Total Stock Units -->
+            <div class="ql-stock-summary-item">
+                <span class="ql-stock-summary-item-value">{{ formatNumber(s.totalStockUnits) }}</span>
+                <span class="ql-stock-summary-item-label">Stock Units</span>
+                <div class="ql-stock-summary-item-bar">
+                    <div class="ql-stock-summary-item-fill"
+                         [style.width.%]="getProgressPercentage(s.totalStockUnits, 10000)"
+                         style="background: #3B82F6;"></div>
+                </div>
+            </div>
+
+            <!-- Total Stock Value -->
+            <div class="ql-stock-summary-item">
+                <span class="ql-stock-summary-item-value">{{ formatCurrency(s.totalStockValue) }}</span>
+                <span class="ql-stock-summary-item-label">Stock Value</span>
+                <div class="ql-stock-summary-item-bar">
+                    <div class="ql-stock-summary-item-fill"
+                         [style.width.%]="getProgressPercentage(s.totalStockValue, 100000000)"
+                         style="background: #184440;"></div>
+                </div>
+            </div>
+
+            <!-- Low Stock -->
+            <div class="ql-stock-summary-item">
+                <span class="ql-stock-summary-item-value"
+                      [class.ql-stock-summary-item-value--warning]="s.lowStockCount > 0">
+                    {{ s.lowStockCount }}
+                </span>
+                <span class="ql-stock-summary-item-label">Low Stock</span>
+                <div class="ql-stock-summary-item-bar">
+                    <div class="ql-stock-summary-item-fill"
+                         [style.width.%]="getProgressPercentage(s.lowStockCount, s.totalProducts)"
+                         style="background: #F5A623;"></div>
+                </div>
+            </div>
+
+            <!-- Out of Stock -->
+            <div class="ql-stock-summary-item">
+                <span class="ql-stock-summary-item-value"
+                      [class.ql-stock-summary-item-value--danger]="s.outOfStockCount > 0">
+                    {{ s.outOfStockCount }}
+                </span>
+                <span class="ql-stock-summary-item-label">Out of Stock</span>
+                <div class="ql-stock-summary-item-bar">
+                    <div class="ql-stock-summary-item-fill"
+                         [style.width.%]="getProgressPercentage(s.outOfStockCount, s.totalProducts)"
+                         style="background: #DC2626;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Metrics -->
+        <div class="ql-stock-summary-metrics" *ngIf="!compact">
+            <div class="ql-stock-summary-metric">
+                <span class="ql-stock-summary-metric-label">Turnover</span>
+                <span class="ql-stock-summary-metric-value">{{ s.stockTurnover?.toFixed(1) || '—' }}x</span>
+            </div>
+            <div class="ql-stock-summary-metric">
+                <span class="ql-stock-summary-metric-label">Days of Inventory</span>
+                <span class="ql-stock-summary-metric-value">{{ s.daysOfInventory?.toFixed(0) || '—' }}</span>
+            </div>
+            <div class="ql-stock-summary-metric">
+                <span class="ql-stock-summary-metric-label">Last Updated</span>
+                <span class="ql-stock-summary-metric-value">{{ lastUpdated ? formatDate(lastUpdated) : '—' }}</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="ql-stock-summary-footer" *ngIf="showActions && !compact">
+            <button class="ql-btn ql-btn--primary-sm" (click)="navigateToBranch()">
+                <i class="fas fa-eye"></i> View Branch
+            </button>
+            <button class="ql-btn ql-btn--ghost-sm" (click)="navigateToInventory()">
+                <i class="fas fa-boxes"></i> View Inventory
+            </button>
+            <button class="ql-btn ql-btn--ghost-sm" (click)="refresh()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+    </ng-container>
+</div>

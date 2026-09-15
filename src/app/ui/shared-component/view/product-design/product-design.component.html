@@ -1,0 +1,10 @@
+<div class="product-design">
+    <div class="product-design-heading">
+      <p class="product-design-title">Product Design</p>
+    </div>
+    <div class="product-design-content">
+        <div class="profile-card-container">
+          <app-profile-card *ngFor="let profile of profiles" [profiles]="[profile]" class="profile-card"></app-profile-card>
+        </div>
+    </div>
+  </div>

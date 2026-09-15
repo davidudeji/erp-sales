@@ -1,0 +1,375 @@
+<!-- bulk-transfer.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <button type="button" class="ql-back-btn" (click)="cancel()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h1 class="ql-title">Bulk Transfer</h1>
+                    <span class="ql-subtitle">Transfer multiple products between branches</span>
+                </div>
+                <span class="ql-badge ql-badge--primary">Step {{ currentStep }} of {{ totalSteps }}</span>
+            </div>
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="ql-btn ql-btn--success" (click)="submitTransfer()"
+                    [disabled]="isSubmitting || currentStep !== totalSteps || items.length === 0">
+                    <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-paper-plane]="!isSubmitting"
+                        [class.ql-spinning]="isSubmitting"></i>
+                    {{ isSubmitting ? 'Processing...' : 'Transfer All (' + items.length + ')' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Error banner -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading...</span>
+        </div>
+
+        <!-- ============================================================
+        WIZARD CONTENT
+        ============================================================ -->
+        <form [formGroup]="bulkForm" *ngIf="!isLoading" style="display: contents;">
+
+            <!-- Step Indicator -->
+            <div class="ql-stepper">
+                <div *ngFor="let title of ['Select Branches', 'Add Products', 'Review', 'Confirm']; let i = index"
+                    class="ql-step-wrapper">
+                    <div class="ql-step" [class.ql-step--complete]="getStepStatus(i + 1) === 'complete'"
+                        [class.ql-step--active]="getStepStatus(i + 1) === 'current'" (click)="goToStep(i + 1)">
+                        <span class="ql-step-number">{{ i + 1 }}</span>
+                        <span class="ql-step-label">{{ title }}</span>
+                    </div>
+                    <div class="ql-step-line" *ngIf="i < 3"
+                        [class.ql-step-line--complete]="getStepStatus(i + 1) === 'complete'"></div>
+                </div>
+            </div>
+
+            <!-- Step 1: Select Branches -->
+            <div *ngIf="currentStep === 1" class="ql-step-content">
+                <div class="ql-form-container">
+                    <div class="ql-form-section">
+                        <h3 class="ql-section-title"><i class="fas fa-arrow-right"></i> Select Branches</h3>
+                        <p class="ql-section-desc">Choose the source and destination branches for the bulk transfer</p>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Source Branch <span class="ql-required">*</span></label>
+                                <select class="ql-input" formControlName="sourceBranchId"
+                                    (change)="onSourceBranchChange()">
+                                    <option value="">Select Source Branch</option>
+                                    <option *ngFor="let branch of branches" [value]="branch.id">
+                                        {{ branch.name }} ({{ branch.location.city }})
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel">Destination Branch <span class="ql-required">*</span></label>
+                                <select class="ql-input" formControlName="destinationBranchId"
+                                    (change)="onDestinationBranchChange()">
+                                    <option value="">Select Destination Branch</option>
+                                    <option *ngFor="let branch of branches" [value]="branch.id">
+                                        {{ branch.name }} ({{ branch.location.city }})
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Branch Preview -->
+                        <div class="ql-branch-preview" *ngIf="sourceBranchId && destinationBranchId">
+                            <div class="ql-branch-preview-item">
+                                <span class="ql-branch-preview-label">From</span>
+                                <span class="ql-branch-preview-value">
+                                    <i class="fas fa-store"></i>
+                                    {{ getBranchName(sourceBranchId) }}
+                                </span>
+                                <span class="ql-branch-preview-stock">{{ sourceInventory.length }} products
+                                    available</span>
+                            </div>
+                            <div class="ql-branch-preview-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                            <div class="ql-branch-preview-item">
+                                <span class="ql-branch-preview-label">To</span>
+                                <span class="ql-branch-preview-value">
+                                    <i class="fas fa-store"></i>
+                                    {{ getBranchName(destinationBranchId) }}
+                                </span>
+                                <span class="ql-branch-preview-stock">{{ destInventory.length }} products in
+                                    stock</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ql-form-actions">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--primary" (click)="nextStep()"
+                            [disabled]="!sourceBranchId || !destinationBranchId || sourceBranchId === destinationBranchId">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Add Products -->
+            <div *ngIf="currentStep === 2" class="ql-step-content">
+                <div class="ql-form-container">
+                    <div class="ql-form-section">
+                        <div class="ql-products-header">
+                            <h3 class="ql-section-title"><i class="fas fa-boxes"></i> Add Products</h3>
+                            <div class="ql-products-actions">
+                                <span class="ql-product-count">{{ items.length }} products selected</span>
+                                <button type="button" class="ql-btn ql-btn--danger-sm" (click)="clearAllItems()"
+                                    *ngIf="items.length > 0">
+                                    <i class="fas fa-trash"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <p class="ql-section-desc">Search and add products from the source branch</p>
+
+                        <!-- Product Search -->
+                        <div class="ql-field">
+                            <div class="ql-search-wrap">
+                                <i class="fas fa-search ql-search-icon"></i>
+                                <input type="text" class="ql-search-input"
+                                    placeholder="Search product by name or SKU..." (input)="onProductSearch($event)"
+                                    (focus)="showProductDropdown = true"
+                                    (blur)="onProductBlur()"
+                                    [value]="productSearchTerm" autocomplete="off">
+                                <div class="ql-product-dropdown"
+                                    *ngIf="showProductDropdown && filteredProducts.length > 0">
+                                    <div *ngFor="let product of filteredProducts" class="ql-product-option"
+                                        (mousedown)="addProduct(product)">
+                                        <span class="ql-product-name">{{ product.name }}</span>
+                                        <span class="ql-product-sku">{{ product.sku }}</span>
+                                        <span class="ql-product-stock">
+                                            Stock: {{ getSourceStock(product.id) }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="ql-product-dropdown ql-product-dropdown--empty"
+                                    *ngIf="showProductDropdown && filteredProducts.length === 0">
+                                    <span>No products found</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Products -->
+                        <div class="ql-selected-products" *ngIf="items.length > 0">
+                            <div *ngFor="let item of items.controls; let i = index" class="ql-selected-item"
+                                [formGroup]="$any(item)">
+                                <div class="ql-selected-item-info">
+                                    <span class="ql-selected-item-name">{{ item.get('productName')?.value }}</span>
+                                    <span class="ql-selected-item-sku">{{ item.get('sku')?.value }}</span>
+                                    <span class="ql-selected-item-stock">
+                                        Available: <strong>{{ item.get('sourceStock')?.value }}</strong>
+                                        <span class="ql-selected-item-dest" *ngIf="item.get('destinationStock')?.value">
+                                            | At destination: <strong>{{ item.get('destinationStock')?.value }}</strong>
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="ql-selected-item-qty">
+                                    <label class="ql-flabel">Qty</label>
+                                    <input type="number" class="ql-input ql-input--small" formControlName="quantity"
+                                        min="1" (change)="updateQuantity(i)">
+                                    <span class="ql-selected-item-max">/ {{ item.get('sourceStock')?.value }}</span>
+                                </div>
+                                <button type="button" class="ql-btn ql-btn--danger-sm" (click)="removeItem(i)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div *ngIf="items.length === 0" class="ql-empty-items">
+                            <i class="fas fa-box"></i>
+                            <p>No products selected</p>
+                            <span>Search and add products to transfer</span>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="ql-items-summary" *ngIf="items.length > 0">
+                            <span>Products: <strong>{{ getTotalProducts() }}</strong></span>
+                            <span>Total Units: <strong>{{ getTotalItems() }}</strong></span>
+                            <span>From: <strong>{{ getBranchName(sourceBranchId) }}</strong></span>
+                            <span>To: <strong>{{ getBranchName(destinationBranchId) }}</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="ql-form-actions">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="prevStep()">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--primary" (click)="nextStep()"
+                            [disabled]="items.length === 0">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Review -->
+            <div *ngIf="currentStep === 3" class="ql-step-content">
+                <div class="ql-form-container">
+                    <div class="ql-form-section">
+                        <h3 class="ql-section-title"><i class="fas fa-check-double"></i> Review Transfer</h3>
+                        <p class="ql-section-desc">Review all products and quantities before confirming</p>
+
+                        <div class="ql-review-card">
+                            <div class="ql-review-section">
+                                <h4 class="ql-review-heading">Transfer Summary</h4>
+                                <div class="ql-review-grid">
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">From</span>
+                                        <span class="ql-review-value">{{ getBranchName(sourceBranchId) }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">To</span>
+                                        <span class="ql-review-value">{{ getBranchName(destinationBranchId) }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Products</span>
+                                        <span class="ql-review-value">{{ getTotalProducts() }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Total Units</span>
+                                        <span class="ql-review-value">{{ getTotalItems() }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ql-review-section">
+                                <h4 class="ql-review-heading">Products</h4>
+                                <div class="ql-review-items">
+                                    <div *ngFor="let item of items.controls; let i = index" class="ql-review-item-row">
+                                        <span class="ql-review-item-number">#{{ i + 1 }}</span>
+                                        <span class="ql-review-item-name">{{ item.get('productName')?.value }}</span>
+                                        <span class="ql-review-item-sku">{{ item.get('sku')?.value }}</span>
+                                        <span class="ql-review-item-qty">{{ item.get('quantity')?.value }} units</span>
+                                        <span class="ql-review-item-stock">
+                                            ({{ item.get('sourceStock')?.value }} available)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ql-review-section">
+                                <h4 class="ql-review-heading">Notes</h4>
+                                <div class="ql-field">
+                                    <input type="text" class="ql-input" placeholder="Add transfer notes..."
+                                        formControlName="notes">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ql-form-actions">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="prevStep()">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--primary" (click)="nextStep()">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Confirm -->
+            <div *ngIf="currentStep === 4" class="ql-step-content">
+                <div class="ql-form-container">
+                    <div class="ql-form-section">
+                        <div class="ql-confirmation">
+                            <div class="ql-confirmation-icon">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <h2 class="ql-confirmation-title">Ready to Transfer</h2>
+                            <p class="ql-confirmation-desc">
+                                You are about to transfer <strong>{{ getTotalProducts() }}</strong> products
+                                ({{ getTotalItems() }} units) from <strong>{{ getBranchName(sourceBranchId) }}</strong>
+                                to <strong>{{ getBranchName(destinationBranchId) }}</strong>.
+                            </p>
+
+                            <div class="ql-confirmation-summary">
+                                <div class="ql-confirmation-item">
+                                    <span class="ql-confirmation-label">Products</span>
+                                    <span class="ql-confirmation-value">{{ getTotalProducts() }}</span>
+                                </div>
+                                <div class="ql-confirmation-item">
+                                    <span class="ql-confirmation-label">Total Units</span>
+                                    <span class="ql-confirmation-value">{{ getTotalItems() }}</span>
+                                </div>
+                                <div class="ql-confirmation-item">
+                                    <span class="ql-confirmation-label">Source</span>
+                                    <span class="ql-confirmation-value">{{ getBranchName(sourceBranchId) }}</span>
+                                </div>
+                                <div class="ql-confirmation-item">
+                                    <span class="ql-confirmation-label">Destination</span>
+                                    <span class="ql-confirmation-value">{{ getBranchName(destinationBranchId) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="ql-confirmation-warning">
+                                <i class="fas fa-info-circle"></i>
+                                <span>This will create <strong>{{ getTotalProducts() }}</strong> separate movement
+                                    records.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ql-form-actions">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="prevStep()">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--success" (click)="submitTransfer()"
+                            [disabled]="isSubmitting">
+                            <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-check]="!isSubmitting"
+                                [class.ql-spinning]="isSubmitting"></i>
+                            {{ isSubmitting ? 'Processing...' : 'Confirm Bulk Transfer' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+
+        <!-- ============================================================
+        CONFIRM DIALOG
+        ============================================================ -->
+        <div class="ql-confirm-backdrop" *ngIf="showConfirmDialog"
+            (click)="onBackdropClick($event)">
+            <div class="ql-confirm-modal">
+                <div class="ql-confirm-icon" style="color:#f59e0b"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="ql-confirm-title">Discard Transfer?</div>
+                <div class="ql-confirm-sub">{{ confirmMessage }}</div>
+                <div class="ql-confirm-actions">
+                    <button type="button" class="ql-btn ql-btn--ghost-sm" style="padding:8px 16px;font-size:13px"
+                        (click)="cancelConfirmDialog()">Continue</button>
+                    <button type="button" class="ql-btn"
+                        style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer"
+                        (click)="confirmCancel()">
+                        <i class="fas fa-trash"></i> Discard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

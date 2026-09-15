@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(curl -s \"https://be.optimaxsuites.com/x/api/v2/commerce/products?tenantId=optimax&page=1&size=5\" -H \"Accept: application/json\")"
+    ]
+  }
+}

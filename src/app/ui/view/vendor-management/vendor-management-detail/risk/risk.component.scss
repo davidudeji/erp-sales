@@ -1,0 +1,520 @@
+// risk.component.scss
+// ============================================================
+// VARIABLES
+// ============================================================
+
+// Aligned with the shared vendor-management design tokens (see
+// vendor-management-detail.component.scss for the source of truth).
+$primary-dark: #0f2d2a;
+$primary-mid: #184440;
+$primary-light: #0f2d2a;
+$primary-accent: #184440;
+$primary-surface: #e8f4f2;
+
+$text-primary: #1a2e2c;
+$text-secondary: #1a2e2c;
+$text-muted: #6a8e89;
+
+$border-light: #ccddd9;
+$border-color: #ccddd9;
+
+$shadow-sm: 0 1px 8px rgba(24, 68, 64, 0.08);
+$shadow-md: 0 4px 20px rgba(24, 68, 64, 0.12), 0 2px 6px rgba(24, 68, 64, 0.06);
+$shadow-lg: 0 8px 40px rgba(24, 68, 64, 0.16), 0 4px 12px rgba(24, 68, 64, 0.08);
+
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 12px;
+
+$success: #2EB270;
+$warning: #F5A623;
+$danger: #DC2626;
+
+// ============================================================
+// RISK CONTAINER
+// ============================================================
+
+.risk-container {
+    .risk-overview {
+        margin-bottom: 2rem;
+    }
+
+    .risk-score-card {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        padding: 1.5rem 2rem;
+        border-radius: $radius-sm;
+        border: 2px solid $border-light;
+        background: white;
+        transition: all 0.3s ease;
+
+        &:hover {
+            box-shadow: $shadow-md;
+        }
+
+        &.low {
+            border-color: rgba(46, 178, 112, 0.3);
+            background: rgba(46, 178, 112, 0.02);
+        }
+
+        &.medium {
+            border-color: rgba(245, 166, 35, 0.3);
+            background: rgba(245, 166, 35, 0.02);
+        }
+
+        &.high {
+            border-color: rgba(220, 38, 38, 0.3);
+            background: rgba(220, 38, 38, 0.02);
+        }
+
+        .risk-score-circle {
+            text-align: center;
+            position: relative;
+            padding: 0.5rem 1rem;
+
+            .risk-score {
+                display: block;
+                font-size: 1.5rem;
+                font-weight: 800;
+                color: $text-primary;
+            }
+
+            .risk-label {
+                font-size: 0.75rem;
+                color: $text-muted;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .risk-indicator {
+                width: 40px;
+                height: 4px;
+                border-radius: 2px;
+                margin: 0.5rem auto 0;
+                display: block;
+            }
+        }
+
+        .risk-details {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+
+            @media (max-width: 768px) {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .risk-detail-item {
+                .label {
+                    display: block;
+                    font-size: 0.7rem;
+                    color: $text-muted;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-bottom: 0.25rem;
+                }
+
+                .value {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: $text-primary;
+
+                    &.compliant {
+                        color: $success;
+                    }
+
+                    i {
+                        font-size: 0.9rem;
+                    }
+
+                    .progress-bar-mini {
+                        width: 60px;
+                        height: 4px;
+                        background: $border-light;
+                        border-radius: 2px;
+                        overflow: hidden;
+
+                        .progress-fill {
+                            height: 100%;
+                            background: $success;
+                            border-radius: 2px;
+                            transition: width 0.8s ease;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================
+// ALERTS SUMMARY
+// ============================================================
+
+.alerts-summary {
+    background: white;
+    border: 1px solid $border-light;
+    border-radius: $radius-sm;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+
+    .alerts-summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+
+        h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: $text-primary;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            i {
+                color: $primary-accent;
+            }
+        }
+
+        .alerts-count {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: $danger;
+            background: rgba(220, 38, 38, 0.08);
+            padding: 0.2rem 0.75rem;
+            border-radius: 20px;
+        }
+    }
+
+    .alerts-severity-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+
+        .severity-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.2rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+
+            .severity-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+        }
+    }
+}
+
+// ============================================================
+// ALERTS LIST
+// ============================================================
+
+.alerts-section {
+    .alerts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .alert-group {
+        .alert-group-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: $radius-sm;
+
+            &.critical {
+                color: $danger;
+                background: rgba(220, 38, 38, 0.06);
+            }
+
+            &.high {
+                color: #F97316;
+                background: rgba(249, 115, 22, 0.06);
+            }
+
+            &.medium {
+                color: $warning;
+                background: rgba(245, 166, 35, 0.06);
+            }
+
+            &.low {
+                color: $primary-accent;
+                background: rgba(24, 68, 64, 0.06);
+            }
+
+            &.info {
+                color: #3B82F6;
+                background: rgba(59, 130, 246, 0.06);
+            }
+        }
+    }
+
+    .alert-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: $radius-sm;
+        border-left: 4px solid #6B7280;
+        background: #f0f4f3;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: $primary-surface;
+        }
+
+        &.critical {
+            border-left-color: $danger;
+            background: rgba(220, 38, 38, 0.04);
+        }
+
+        &.high {
+            border-left-color: #F97316;
+            background: rgba(249, 115, 22, 0.04);
+        }
+
+        &.medium {
+            border-left-color: $warning;
+            background: rgba(245, 166, 35, 0.04);
+        }
+
+        &.low {
+            border-left-color: $primary-accent;
+            background: rgba(24, 68, 64, 0.04);
+        }
+
+        &.info {
+            border-left-color: #3B82F6;
+            background: rgba(59, 130, 246, 0.04);
+        }
+
+        &.resolved {
+            opacity: 0.6;
+
+            .alert-status {
+                background: rgba(46, 178, 112, 0.12);
+                color: $success;
+            }
+        }
+
+        .alert-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6B7280;
+            flex-shrink: 0;
+            font-size: 0.85rem;
+
+            .critical & {
+                color: $danger;
+            }
+
+            .high & {
+                color: #F97316;
+            }
+
+            .medium & {
+                color: $warning;
+            }
+        }
+
+        .alert-content {
+            flex: 1;
+            min-width: 0;
+
+            .alert-title {
+                display: block;
+                font-weight: 600;
+                font-size: 0.85rem;
+                color: $text-primary;
+            }
+
+            .alert-description {
+                display: block;
+                font-size: 0.8rem;
+                color: $text-muted;
+                margin-top: 0.1rem;
+            }
+
+            .alert-meta {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 1rem;
+                margin-top: 0.35rem;
+                font-size: 0.7rem;
+                color: $text-muted;
+
+                i {
+                    margin-right: 0.2rem;
+                    font-size: 0.6rem;
+                }
+
+                .alert-status {
+                    font-weight: 700;
+                    padding: 0.05rem 0.6rem;
+                    border-radius: 10px;
+                    background: #ccddd9;
+                    color: $text-muted;
+
+                    &.resolved {
+                        background: rgba(46, 178, 112, 0.12);
+                        color: $success;
+                    }
+                }
+
+                .alert-assignee {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.25rem;
+                }
+            }
+        }
+    }
+}
+
+// ============================================================
+// NO ALERTS
+// ============================================================
+
+.no-alerts {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: $text-muted;
+
+    i {
+        font-size: 2.5rem;
+        color: $success;
+        margin-bottom: 0.5rem;
+    }
+
+    p {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: $text-primary;
+    }
+
+    .no-alerts-sub {
+        display: block;
+        font-size: 0.85rem;
+        color: $text-muted;
+        margin-top: 0.25rem;
+    }
+}
+
+// ============================================================
+// COMPLIANCE STATS
+// ============================================================
+
+.compliance-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: white;
+    border: 1px solid $border-light;
+    border-radius: $radius-sm;
+    align-items: center;
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    @media (max-width: 480px) {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .compliance-stat-item {
+        text-align: center;
+
+        .stat-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: $text-primary;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.7rem;
+            color: $text-muted;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.1rem;
+        }
+    }
+
+    .compliance-stat-divider {
+        width: 1px;
+        height: 30px;
+        background: $border-color;
+
+        @media (max-width: 768px) {
+            display: none;
+        }
+    }
+}
+
+// ============================================================
+// RESPONSIVE
+// ============================================================
+
+@media (max-width: 768px) {
+    .risk-score-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+
+        .risk-score-circle {
+            align-self: center;
+        }
+    }
+
+    .alert-item {
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .alert-meta {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+
+    .alerts-summary {
+        .alerts-summary-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+    }
+}

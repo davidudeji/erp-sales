@@ -1,0 +1,151 @@
+<!-- analytics.component.html -->
+<div class="ql-analytics-shell">
+
+    <!-- Top bar -->
+    <div class="ql-top-bar">
+        <div class="ql-top-bar-left">
+            <h1 class="ql-title">Analytics</h1>
+            <p class="ql-subtitle">Deep-dive performance, stock, and pricing analytics for individual products and
+                branches.</p>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="ql-tabs">
+        <button class="ql-tab" [class.ql-tab--active]="activeTab === 'product'" (click)="setActiveTab('product')">
+            <i class="fas fa-box"></i> Product Analytics
+        </button>
+        <button class="ql-tab" [class.ql-tab--active]="activeTab === 'branch'" (click)="setActiveTab('branch')">
+            <i class="fas fa-store"></i> Branch Analytics
+        </button>
+        <button class="ql-tab" [class.ql-tab--active]="activeTab === 'affordability'"
+            (click)="setActiveTab('affordability')">
+            <i class="fas fa-tags"></i> Affordability
+        </button>
+        <button class="ql-tab" [class.ql-tab--active]="activeTab === 'turnover'" (click)="setActiveTab('turnover')">
+            <i class="fas fa-rotate"></i> Stock Turnover
+        </button>
+        <button class="ql-tab" [class.ql-tab--active]="activeTab === 'likelihood'"
+            (click)="setActiveTab('likelihood')">
+            <i class="fas fa-brain"></i> Sell Likelihood
+        </button>
+        <button class="ql-tab" [class.ql-tab--active]="activeTab === 'reports'" (click)="setActiveTab('reports')">
+            <i class="fas fa-file-alt"></i> Reports
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="ql-tab-content">
+
+        <!-- ========================================================
+        PRODUCT ANALYTICS TAB
+        ======================================================== -->
+        <div *ngIf="activeTab === 'product'" class="ql-tab-panel">
+
+            <div class="ql-entity-selector" *ngIf="!isLoadingProducts && products.length > 0">
+                <label class="ql-flabel">Product</label>
+                <select class="ql-entity-select" [ngModel]="selectedProductId"
+                    (ngModelChange)="onProductChange($event)">
+                    <option *ngFor="let product of products" [value]="product.id">
+                        {{ product.name }} ({{ product.sku }})
+                    </option>
+                </select>
+            </div>
+
+            <div class="ql-empty" *ngIf="!isLoadingProducts && products.length === 0">
+                <i class="fas fa-box-open ql-empty-icon"></i>
+                <p class="ql-empty-title">No products available</p>
+                <p class="ql-empty-sub">Add a product to see its analytics here</p>
+            </div>
+
+            <div class="ql-loading" *ngIf="isLoadingProducts">
+                <div class="ql-spinner"></div>
+                <span>Loading products...</span>
+            </div>
+
+            <app-product-analytics *ngIf="!isLoadingProducts && selectedProductId" [productId]="selectedProductId"
+                (close)="noopClose()">
+            </app-product-analytics>
+        </div>
+
+        <!-- ========================================================
+        BRANCH ANALYTICS TAB
+        ======================================================== -->
+        <div *ngIf="activeTab === 'branch'" class="ql-tab-panel">
+
+            <div class="ql-entity-selector" *ngIf="!isLoadingBranches && branches.length > 0">
+                <label class="ql-flabel">Branch</label>
+                <app-branch-selector [branches]="branches" [selectedBranchId]="selectedBranchId"
+                    (branchChange)="onBranchChange($event)"></app-branch-selector>
+            </div>
+
+            <div class="ql-empty" *ngIf="!isLoadingBranches && branches.length === 0">
+                <i class="fas fa-store-slash ql-empty-icon"></i>
+                <p class="ql-empty-title">No branches available</p>
+                <p class="ql-empty-sub">Add a branch to see its analytics here</p>
+            </div>
+
+            <div class="ql-loading" *ngIf="isLoadingBranches">
+                <div class="ql-spinner"></div>
+                <span>Loading branches...</span>
+            </div>
+
+            <app-branch-analytics *ngIf="!isLoadingBranches && selectedBranchId" [branchId]="selectedBranchId"
+                (close)="noopClose()">
+            </app-branch-analytics>
+        </div>
+
+        <!-- ========================================================
+        AFFORDABILITY TAB
+        ======================================================== -->
+        <div *ngIf="activeTab === 'affordability'" class="ql-tab-panel">
+
+            <div class="ql-entity-selector" *ngIf="!isLoadingBranches && branches.length > 0">
+                <label class="ql-flabel">Branch</label>
+                <app-branch-selector [branches]="branches" [selectedBranchId]="selectedBranchId"
+                    (branchChange)="onBranchChange($event)"></app-branch-selector>
+            </div>
+
+            <div class="ql-empty" *ngIf="!isLoadingBranches && branches.length === 0">
+                <i class="fas fa-store-slash ql-empty-icon"></i>
+                <p class="ql-empty-title">No branches available</p>
+                <p class="ql-empty-sub">Add a branch to see affordability data here</p>
+            </div>
+
+            <div class="ql-loading" *ngIf="isLoadingBranches">
+                <div class="ql-spinner"></div>
+                <span>Loading branches...</span>
+            </div>
+
+            <app-affordability-dashboard *ngIf="!isLoadingBranches && selectedBranchId" [branchId]="selectedBranchId"
+                (close)="noopClose()">
+            </app-affordability-dashboard>
+        </div>
+
+        <!-- ========================================================
+        STOCK TURNOVER TAB
+        ======================================================== -->
+        <div *ngIf="activeTab === 'turnover'" class="ql-tab-panel">
+            <!-- Aggregate report across all products/branches — no entity selector needed. -->
+            <app-stock-turnover (close)="noopClose()"></app-stock-turnover>
+        </div>
+
+        <!-- ========================================================
+        SELL LIKELIHOOD TAB
+        ======================================================== -->
+        <div *ngIf="activeTab === 'likelihood'" class="ql-tab-panel">
+            <!-- Has its own product/branch selection form built in — no external selector needed. -->
+            <app-sell-likelihood (close)="noopClose()"></app-sell-likelihood>
+        </div>
+
+        <!-- ========================================================
+        REPORTS TAB
+        ======================================================== -->
+        <div *ngIf="activeTab === 'reports'" class="ql-tab-panel">
+            <!-- Full report builder with its own filters, templates, and saved reports — self-contained. -->
+            <app-performance-report (close)="noopClose()"></app-performance-report>
+        </div>
+
+    </div>
+
+</div>

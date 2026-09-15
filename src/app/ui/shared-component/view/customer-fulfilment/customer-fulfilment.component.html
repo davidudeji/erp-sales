@@ -1,0 +1,15 @@
+<div class="customer-fulfilment">
+    <p class="customer-fulfilment-title">Customer Fulfilment</p>
+    <div class="customer-fulfilment-line-chart">
+      <!-- <canvasjs-chartooo
+         [options]="chartOptions" [styles]="{width: '100%', height:'200px'}"></canvasjs-chartooo>  -->
+
+         <div id="chart">
+          <apx-chart #chart
+            [series]="chartOptions.series!"
+            [chart]="chartOptions.chart!"
+          ></apx-chart>
+        </div>
+    </div>
+</div>
+  

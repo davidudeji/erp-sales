@@ -1,0 +1,40 @@
+.panel-slide {
+  animation: panelSlide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+@keyframes panelSlide {
+  from { transform: translateX(32px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.modal-pop {
+  animation: modalPop 0.22s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+// Document status badges
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+
+  &-active        { background: #f0fdf4; color: #16a34a; }
+  &-expiring      { background: #fffbeb; color: #d97706; }
+  &-expired       { background: #fef2f2; color: #dc2626; }
+  &-pending       { background: #eff6ff; color: #2563eb; }
+}
+
+:host ::ng-deep {
+  .p-datatable .p-datatable-tbody > tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    &:hover td { background-color: #f5f7f9 !important; }
+  }
+}

@@ -1,0 +1,206 @@
+<div class="route-approval">
+
+  <div class="mb-5">
+    <h1 class="text-[21px] font-bold text-[#14181b]">Route Approval</h1>
+    <p class="text-[13px] text-[#71828a] mt-0.5">Review proposed routes and track approved ones executing live.</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="ra-tabs">
+    <button type="button" class="ra-tab" [class.active]="activeTab === 'pending'" (click)="setTab('pending')">
+      Pending Approval
+      <span class="ra-tab-badge">{{ pendingBatches.length }}</span>
+    </button>
+    <button type="button" class="ra-tab" [class.active]="activeTab === 'active'" (click)="setTab('active')">
+      Active Routes
+      <span class="ra-tab-badge">{{ activeBatches.length }}</span>
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART A — PENDING APPROVAL -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'pending'" class="ra-panel">
+
+    <div *ngIf="!isPendingLoading && !pendingBatches.length" class="ra-empty">
+      <p class="text-[14px] font-medium text-[#14181b]">No routes waiting for approval</p>
+      <p class="text-[13px] text-[#9aa7ae] mt-1">Riders' submitted routes will show up here.</p>
+    </div>
+
+    <div *ngIf="isPendingLoading" class="ra-empty">
+      <p class="text-[13px] text-[#9aa7ae]">Loading approval queue…</p>
+    </div>
+
+    <div *ngIf="!isPendingLoading && pendingBatches.length" class="ra-split">
+
+      <!-- Left: queue list -->
+      <div class="ra-queue-list">
+        <p class="ra-queue-list-title">Queue</p>
+        <button
+          *ngFor="let batch of pendingBatches"
+          type="button"
+          class="ra-queue-item"
+          [class.selected]="selectedBatch?.id === batch.id"
+          (click)="selectBatch(batch)"
+        >
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="ra-batch-code">{{ batch.batchCode }}</span>
+            <span class="ra-wait-pill">{{ waitLabel(batch) }} wait</span>
+          </div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="ra-rider-avatar">{{ batch.riderInitials }}</span>
+            <span class="text-[12.5px] font-medium text-[#14181b] truncate">{{ batch.riderName }}</span>
+          </div>
+          <p class="text-[11.5px] text-[#9aa7ae] truncate">
+            {{ batch.orderIds.length }} stops · {{ batch.proposedRoute[0]?.location }}{{ batch.proposedRoute.length > 1 ? ' + more' : '' }}
+          </p>
+        </button>
+      </div>
+
+      <!-- Right: review panel -->
+      <div class="ra-review" *ngIf="selectedBatch as batch">
+        <div class="flex items-start justify-between mb-1">
+          <h2 class="text-[16px] font-bold text-[#14181b]">{{ batch.batchCode }} Review</h2>
+        </div>
+        <div class="flex gap-2 mb-4">
+          <span *ngIf="batch.isHighPriorityArea" class="ra-chip ra-chip--alert">High Priority Area</span>
+          <span class="ra-chip">Vehicle Type: {{ batch.vehicleType | titlecase }}</span>
+          <span class="ra-chip">Rider: {{ batch.riderName }}</span>
+        </div>
+
+        <div class="ra-review-grid">
+          <!-- Stop list -->
+          <div class="ra-stop-list">
+            <p class="text-[12.5px] font-semibold text-[#14181b] mb-2">
+              Proposed Route Stops ({{ batch.proposedRoute.length }})
+            </p>
+            <div class="ra-stop-scroll">
+              <div *ngFor="let stop of batch.proposedRoute" class="ra-stop" (click)="openOrderDetail(stop.orderId)">
+                <span class="ra-stop-num">{{ stop.sequence }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-[10.5px] font-semibold text-[#9aa7ae] uppercase tracking-wide mb-0.5">Delivery Address</p>
+                  <p class="text-[13px] font-semibold text-[#14181b] truncate">{{ stop.location }}</p>
+                  <p class="text-[11.5px] text-[#9aa7ae] truncate">{{ stop.itemsSummary }} · Pkg ID: {{ stop.orderDisplayId }}</p>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa7ae" stroke-width="2.3" stroke-linecap="round" class="shrink-0">
+                  <path d="m9 18 6-6-6-6"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Map preview -->
+          <div class="ra-map-panel">
+            <app-route-map [stops]="batch.proposedRoute"></app-route-map>
+          </div>
+        </div>
+
+        <!-- Reject panel -->
+        <div *ngIf="showRejectPanel" class="ra-reject-panel">
+          <label class="text-[12.5px] font-semibold text-[#14181b] mb-1.5 block">
+            Note for the rider <span class="text-[#f97316]">(required)</span>
+          </label>
+          <textarea
+            class="ra-textarea"
+            rows="3"
+            placeholder="Explain what needs to change before this route can be approved..."
+            [(ngModel)]="rejectNote"
+          ></textarea>
+          <div class="flex justify-end gap-2 mt-3">
+            <button type="button" class="btn btn-outline" (click)="cancelReject()">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-critical"
+              [disabled]="!rejectNote.trim() || isSubmitting"
+              (click)="submitReject()"
+            >
+              {{ isSubmitting ? 'Sending…' : 'Send Back for Edit' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Review notes + actions -->
+        <div *ngIf="!showRejectPanel" class="ra-review-footer">
+          <input
+            type="text"
+            class="ra-note-input"
+            placeholder="Add specific instructions for the rider (optional)"
+            [(ngModel)]="reviewNote"
+          />
+          <div class="flex gap-2 shrink-0">
+            <button type="button" class="btn btn-critical-outline" [disabled]="isSubmitting" (click)="openRejectPanel()">
+              Send Back for Edit
+            </button>
+            <button type="button" class="btn btn-primary" [disabled]="isSubmitting" (click)="approveSelected()">
+              {{ isSubmitting ? 'Approving…' : 'Approve Route' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART B — ACTIVE ROUTES / LIVE TRACKING -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'active'" class="ra-panel">
+
+    <div *ngIf="!isActiveLoading && !activeBatches.length" class="ra-empty">
+      <p class="text-[14px] font-medium text-[#14181b]">No active deliveries right now</p>
+      <p class="text-[13px] text-[#9aa7ae] mt-1">Approved routes in progress will appear here.</p>
+    </div>
+
+    <div *ngIf="isActiveLoading" class="ra-empty">
+      <p class="text-[13px] text-[#9aa7ae]">Loading active routes…</p>
+    </div>
+
+    <div *ngIf="!isActiveLoading && activeBatches.length" class="ra-active-grid">
+      <div *ngFor="let batch of activeBatches" class="ra-rider-card">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="ra-rider-avatar ra-rider-avatar--lg">{{ batch.riderInitials }}</span>
+            <div>
+              <p class="text-[13.5px] font-semibold text-[#14181b]">{{ batch.riderName }}</p>
+              <p class="text-[11.5px] text-[#9aa7ae]">{{ batch.batchCode }}</p>
+            </div>
+          </div>
+          <span *ngIf="hasFailedStop(batch)" class="ra-chip ra-chip--critical">Failed stop</span>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[12px] font-medium text-[#566670]">{{ progressLabel(batch) }}</span>
+            <span class="text-[12px] font-semibold text-[#00a191]">{{ progressPercent(batch) }}%</span>
+          </div>
+          <div class="ra-progress-track">
+            <div class="ra-progress-fill" [style.width.%]="progressPercent(batch)"></div>
+          </div>
+        </div>
+
+        <div class="ra-stop-pill-list">
+          <button
+            *ngFor="let stop of batch.proposedRoute"
+            type="button"
+            class="ra-stop-pill"
+            (click)="openOrderDetail(stop.orderId)"
+          >
+            <span class="ra-stop-pill-num">{{ stop.sequence }}</span>
+            <span class="flex-1 min-w-0 text-left truncate">{{ stop.location }}</span>
+            <span class="ra-status-pill" [ngClass]="getStopStatusBadgeClass(stop.stopStatus)">
+              {{ stop.stopStatus | lowercase }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="ra-toast-stack">
+    <div *ngFor="let toast of toasts" class="ra-toast">{{ toast.message }}</div>
+  </div>
+
+  <!-- Order detail drawer -->
+  <app-order-detail-drawer *ngIf="selectedOrderId" [orderId]="selectedOrderId" (closed)="closeOrderDetail()"></app-order-detail-drawer>
+
+</div>

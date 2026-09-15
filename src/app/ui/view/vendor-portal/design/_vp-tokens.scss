@@ -1,0 +1,122 @@
+// ════════════════════════════════════════════════════════════════════════
+// VENDOR PORTAL — DESIGN TOKENS
+//
+// Single source of truth for the vendor portal's visual language. Import
+// this partial into any vendor-portal component stylesheet that needs it:
+//
+//   @import '../design/vp-tokens';
+//
+// Tokens are emitted as CSS custom properties on `:host`, so importing this
+// file in multiple components is safe and cheap — each component gets its
+// own encapsulated copy of the same values. Only the top-level shell
+// (vendor-portal.component.scss) needs to actually declare them since custom
+// properties inherit down through the real DOM regardless of Angular's view
+// encapsulation — but re-declaring here means any page can also be rendered
+// standalone (e.g. in a spec/story) without losing its palette.
+//
+// The palette keeps the existing brand navy-teal (#224957) that was already
+// established across the portal — this pass is about turning one good color
+// into a disciplined *system* (full neutral + accent ramps, semantic status
+// colors, one radius/shadow/motion scale), not replacing it.
+// ════════════════════════════════════════════════════════════════════════
+
+@mixin vp-tokens {
+  // ── Neutrals — cool-toned gray ramp, near-black text (never pure black) ──
+  --vp-gray-0: #ffffff;
+  --vp-gray-25: #fbfcfd;
+  --vp-gray-50: #f6f8fa;
+  --vp-gray-100: #eef2f5;
+  --vp-gray-150: #e5eaed;
+  --vp-gray-200: #dce2e6;
+  --vp-gray-300: #c3ccd2;
+  --vp-gray-400: #9aa7ae;
+  --vp-gray-500: #71828a;
+  --vp-gray-600: #566670;
+  --vp-gray-700: #3d4a52;
+  --vp-gray-800: #253239;
+  --vp-gray-900: #14181b;
+
+  // ── Surfaces ──
+  --vp-bg: var(--vp-gray-25);           // app canvas
+  --vp-surface: var(--vp-gray-0);        // cards, panels, table
+  --vp-surface-sunken: var(--vp-gray-50); // sidebar, recessed wells
+  --vp-surface-hover: var(--vp-gray-50);
+
+  // ── Text ──
+  --vp-text-primary: var(--vp-gray-900);
+  --vp-text-secondary: var(--vp-gray-600);
+  --vp-text-tertiary: var(--vp-gray-400);
+  --vp-text-on-accent: #ffffff;
+
+  // ── Borders ──
+  --vp-border: var(--vp-gray-150);
+  --vp-border-strong: var(--vp-gray-200);
+
+  // ── Brand accent — navy-teal, built into a full ramp ──
+  --vp-accent-50: #eef5f7;
+  --vp-accent-100: #dcebf0;
+  --vp-accent-200: #b7d6df;
+  --vp-accent-300: #86b9c8;
+  --vp-accent-400: #4f8fa3;
+  --vp-accent-500: #2d6478;    // interactive default (buttons, links)
+  --vp-accent-600: #224957;    // brand base — original palette anchor
+  --vp-accent-700: #1a3944;
+  --vp-accent-800: #142a32;
+
+  // ── Semantic status — each pairs a color with a *shape* elsewhere (see
+  //    the status-dot classes below), so meaning never rests on hue alone ──
+  --vp-info: #2461d9;
+  --vp-info-bg: #eaf1fd;
+  --vp-success: #17845a;
+  --vp-success-bg: #e7f6ef;
+  --vp-warning: #b3690a;
+  --vp-warning-bg: #fdf1e0;
+  --vp-danger: #c02c2c;
+  --vp-danger-bg: #fceeed;
+  --vp-neutral: var(--vp-gray-600);
+  --vp-neutral-bg: var(--vp-gray-100);
+
+  // ── Radius scale ──
+  --vp-radius-sm: 6px;
+  --vp-radius-md: 8px;
+  --vp-radius-lg: 12px;
+  --vp-radius-xl: 16px;
+  --vp-radius-full: 999px;
+
+  // ── Elevation — soft, low-opacity, Linear-style shadows ──
+  --vp-shadow-xs: 0 1px 2px rgba(20, 24, 27, 0.05);
+  --vp-shadow-sm: 0 1px 3px rgba(20, 24, 27, 0.06), 0 1px 2px rgba(20, 24, 27, 0.05);
+  --vp-shadow-md: 0 6px 16px rgba(20, 24, 27, 0.08);
+  --vp-shadow-lg: 0 16px 40px rgba(20, 24, 27, 0.14);
+  --vp-focus-ring: 0 0 0 3px rgba(45, 100, 120, 0.18);
+
+  // ── Type scale — deliberately compact; Linear's UI text runs 12–14px ──
+  --vp-text-2xs: 0.6875rem;   // 11px
+  --vp-text-xs: 0.75rem;      // 12px
+  --vp-text-sm: 0.8125rem;    // 13px
+  --vp-text-base: 0.875rem;   // 14px
+  --vp-text-md: 0.9375rem;    // 15px
+  --vp-text-lg: 1rem;         // 16px
+  --vp-text-xl: 1.25rem;      // 20px
+  --vp-text-2xl: 1.5rem;      // 24px
+  --vp-text-3xl: 1.875rem;    // 30px
+
+  // ── Motion — one eased curve, three durations ──
+  --vp-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --vp-duration-fast: 120ms;
+  --vp-duration-base: 180ms;
+  --vp-duration-slow: 260ms;
+
+  // ── Layout ──
+  --vp-sidebar-w: 244px;
+  --vp-sidebar-w-collapsed: 64px;
+  --vp-content-max: 1320px;
+}
+
+// ── Shared, reduced-motion-aware helpers ──────────────────────────────────
+@mixin vp-motion-safe {
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+    transition: none !important;
+  }
+}

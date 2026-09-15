@@ -1,0 +1,12 @@
+<div class="ql-branch-selector" [class.ql-branch-selector--title]="size === 'title'">
+    <i class="fas fa-store ql-branch-selector-icon" *ngIf="size === 'default'"></i>
+    <select class="ql-branch-selector-select" [disabled]="disabled || isLoading"
+        [value]="selectedBranchId || ''" (change)="onSelectChange($any($event.target).value)">
+        <option *ngIf="showAllOption" value="" [selected]="!selectedBranchId">{{ allOptionLabel }}</option>
+        <option *ngIf="!showAllOption && !selectedBranchId" value="" disabled selected>{{ placeholder }}</option>
+        <option *ngFor="let branch of branchOptions" [value]="branch.id" [selected]="isBranchSelected(branch.id)">
+            {{ branch.name }}{{ branch.location?.city ? ' (' + branch.location.city + ')' : '' }}
+        </option>
+    </select>
+    <i class="fas fa-chevron-down ql-branch-selector-chevron"></i>
+</div>

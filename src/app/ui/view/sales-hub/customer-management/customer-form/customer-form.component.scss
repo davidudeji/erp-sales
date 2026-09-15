@@ -1,0 +1,710 @@
+// src/app/ui/view/sales-module/customer-form/customer-form.component.scss
+
+:host {
+  --p: #184440;
+  --p-dk: #0f2d2a;
+  --p-lt: #e8f4f2;
+  --a: #2a736e;
+  --bg: #eef3f2;
+  --surface: #ffffff;
+  --border: #ccddd9;
+  --text: #1a2e2c;
+  --muted: #6a8e89;
+  --danger: #dc2626;
+  --paper: #fffef7;
+  --shadow: 0 2px 14px rgba(24, 68, 64, 0.09);
+  --radius: 10px;
+}
+
+.customer-form-container {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 0;
+  font-family: 'Outfit', sans-serif;
+}
+
+.form-wrapper {
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 1.25rem 1.5rem 1.5rem 1.5rem;
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============ LOADING STATE ============ */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+
+  .spinner-glow {
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 4px solid var(--border);
+    border-top-color: var(--p);
+    border-radius: 50%;
+    animation: spin-glow 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    box-shadow: 0 0 30px rgba(24, 68, 64, 0.1);
+  }
+
+  p {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+}
+
+@keyframes spin-glow {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.05); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* ============ CUSTOMER FORM ============ */
+.customer-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ============ TOP ACTION BAR - Matching Quote Form ============ */
+.qf-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 1.25rem;
+  flex-shrink: 0;
+  z-index: 50;
+
+  .qf-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .qf-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.qf-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+
+  i {
+    font-size: 9px;
+  }
+
+  .qf-breadcrumb-active {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+/* ============ BACK BUTTON OVERRIDE ============ */
+::ng-deep app-back-button {
+  .back-btn {
+    padding: 0.5rem !important;
+    background-color: transparent !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #4a5a6e !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+
+    &:hover {
+      background-color: #f1f5f9 !important;
+      border-color: #94a3b8 !important;
+      color: #0f1a2e !important;
+      transform: translateX(-2px);
+    }
+
+    .pi-arrow-left {
+      font-size: 0.85rem !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
+}
+
+/* ============ TOPBAR BUTTONS ============ */
+.qf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+
+  &--primary {
+    background: var(--p);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(24, 68, 64, 0.15);
+
+    &:hover:not(:disabled) {
+      background: var(--p-dk);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(24, 68, 64, 0.25);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+
+    &:hover {
+      background: var(--bg);
+    }
+  }
+
+  &--sm {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+}
+
+/* ============ TWO-COLUMN BODY - Matching Quote Form ============ */
+.qf-body {
+  flex: 1;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 58fr 42fr;
+  gap: 1.25rem;
+  align-items: stretch;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+}
+
+.qf-form-col {
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+
+  @media (max-width: 1024px) {
+    overflow-y: visible;
+    padding-right: 0;
+  }
+}
+
+.qf-preview-col {
+  background: #f3f6f5;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  @media (max-width: 1024px) {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+}
+
+/* ============ FORM CARDS - Matching Quote Form ============ */
+.qf-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.qf-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  background: linear-gradient(135deg, #fafcfc 0%, #f5f9f8 100%);
+
+  i {
+    color: var(--p);
+    font-size: 14px;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.qf-card-action {
+  margin-left: auto;
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  color: var(--p);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    background: var(--p-lt);
+  }
+}
+
+.qf-card-body {
+  padding: 18px 18px 16px;
+}
+
+/* ============ FORM ELEMENTS ============ */
+.qf-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.qf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+
+  &--grow {
+    flex: 1;
+  }
+}
+
+.qf-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.qf-req {
+  color: var(--danger);
+}
+
+.qf-field-err {
+  font-size: 11px;
+  color: var(--danger);
+}
+
+.qf-input,
+.qf-select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--p);
+    box-shadow: 0 0 0 3px rgba(24, 68, 64, 0.11);
+  }
+
+  &--mono {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  &--err {
+    border-color: var(--danger);
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.11);
+    }
+  }
+
+  &[readonly] {
+    background: #f8fafc;
+    cursor: not-allowed;
+  }
+}
+
+.qf-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236a8e89' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 2.5rem;
+  cursor: pointer;
+
+  option {
+    color: #1a2e2c;
+    background: #ffffff;
+  }
+}
+
+/* ============ BANK ACCOUNTS ============ */
+.qf-bank-account-item {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--p);
+    background: var(--surface);
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.qf-bank-account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.qf-bank-account-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.qf-del-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) {
+    background: #fee2e2;
+    color: var(--danger);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+}
+
+.bank-accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ============ PREVIEW DOCUMENT CARD ============ */
+.qf-doc-card {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 18px;
+  background: var(--paper);
+  border-radius: 8px;
+  border: 1px solid #e8e0c4;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  font-size: 12px;
+  color: var(--text);
+
+  @media (max-width: 1024px) {
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+}
+
+.qf-doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2.5px solid var(--p);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.qf-doc-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.qf-doc-company-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--p);
+}
+
+.qf-doc-company-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.qf-doc-badge-wrap {
+  text-align: right;
+}
+
+.qf-doc-badge {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--p);
+  letter-spacing: 1px;
+}
+
+.qf-doc-badge-num {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.qf-doc-section {
+  margin-bottom: 14px;
+}
+
+.qf-doc-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin-bottom: 7px;
+}
+
+.qf-doc-billto {
+  font-size: 12px;
+
+  strong {
+    color: var(--text);
+    display: block;
+  }
+}
+
+.qf-doc-party-addr {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.qf-doc-notes {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+
+  p {
+    margin: 0;
+    min-height: 1.5rem;
+  }
+}
+
+.qf-doc-bank-num {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+
+.qf-doc-footer {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--border);
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+/* ============ STATUS BADGE ============ */
+.qf-status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem;
+  padding: 0.15rem 0.6rem !important;
+  border-radius: 999px !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  text-transform: none;
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  &.status-active {
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #065f46 !important;
+    .status-dot { background: #10b981; }
+  }
+  &.status-inactive {
+    background: rgba(107, 114, 128, 0.12) !important;
+    color: #374151 !important;
+    .status-dot { background: #6b7280; }
+  }
+  &.status-blacklisted {
+    background: rgba(220, 38, 38, 0.12) !important;
+    color: #991b1b !important;
+    .status-dot { background: #dc2626; }
+  }
+}
+
+/* ============ EMPTY HINT ============ */
+.qf-empty-hint {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px 0;
+
+  i {
+    color: var(--border);
+  }
+}
+
+/* ============ MOBILE ACTIONS ============ */
+.qf-mobile-actions {
+  @media (min-width: 1025px) {
+    display: none !important;
+  }
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+  .form-wrapper {
+    padding: 1rem;
+  }
+
+  .qf-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 12px 16px;
+
+    .qf-topbar-left {
+      flex-wrap: wrap;
+    }
+
+    .qf-topbar-right {
+      flex-wrap: wrap;
+      justify-content: stretch;
+
+      .qf-btn {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  }
+
+  .qf-card-body {
+    padding: 1rem;
+  }
+
+  .qf-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .qf-bank-account-item {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-wrapper {
+    padding: 0.75rem;
+  }
+
+  .qf-topbar {
+    padding: 10px 12px;
+  }
+
+  .qf-breadcrumb {
+    font-size: 12px;
+  }
+}
+
+/* ============ SCROLLBAR ============ */
+.form-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.form-wrapper::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+.form-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}

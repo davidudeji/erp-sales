@@ -1,0 +1,377 @@
+<!-- sales-dashboard.component.html -->
+<p-toast position="top-right"></p-toast>
+
+<div class="ql-layout">
+
+  <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+  <aside class="ql-sidebar">
+
+    <div class="ql-sidebar-title">
+      <span>Sales Activity</span>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="ql-filter-section" *ngIf="stats">
+      <div class="ql-filter-heading">Overview</div>
+      <div class="ql-sidebar-stat">
+        <span class="ql-sidebar-stat-label">Total Revenue</span>
+        <span class="ql-sidebar-stat-value">{{ formatCurrency(stats.totalRevenue) }}</span>
+      </div>
+      <div class="ql-sidebar-stat">
+        <span class="ql-sidebar-stat-label" style="color: #2E6276;">Quotes</span>
+        <span class="ql-sidebar-stat-value" style="color: #2E6276;">{{ stats.totalQuotes }}</span>
+      </div>
+      <div class="ql-sidebar-stat">
+        <span class="ql-sidebar-stat-label" style="color: #F59E0B;">Pending</span>
+        <span class="ql-sidebar-stat-value" style="color: #F59E0B;">{{ stats.pendingQuotes }}</span>
+      </div>
+      <div class="ql-sidebar-stat" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+        <span class="ql-sidebar-stat-label" style="color: #2EB270;">Invoices</span>
+        <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ stats.totalInvoices }}</span>
+      </div>
+      <div class="ql-sidebar-stat">
+        <span class="ql-sidebar-stat-label" style="color: #DC2626;">Overdue</span>
+        <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ stats.overdueInvoices }}</span>
+      </div>
+      <div class="ql-sidebar-stat">
+        <span class="ql-sidebar-stat-label">Customers</span>
+        <span class="ql-sidebar-stat-value">{{ stats.totalCustomers }}</span>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="ql-filter-section">
+      <div class="ql-filter-heading">Actions</div>
+      <button class="ql-sidebar-action" (click)="refreshData()" [disabled]="isLoading">
+        <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+        {{ isLoading ? 'Loading...' : 'Refresh' }}
+      </button>
+      <button class="ql-sidebar-action" (click)="navigateToQuoteList()">
+        <i class="fas fa-file-invoice"></i> View All Quotes
+      </button>
+      <button class="ql-sidebar-action" (click)="navigateToInvoiceList()">
+        <i class="fas fa-file-invoice-dollar"></i> View All Invoices
+      </button>
+      <button class="ql-sidebar-action" (click)="navigateToCustomerList()">
+        <i class="fas fa-users"></i> View All Customers
+      </button>
+      <button class="ql-sidebar-action" (click)="navigateToNewQuote()">
+        <i class="fas fa-plus-circle"></i> New Quote
+      </button>
+      <button class="ql-sidebar-action" (click)="navigateToNewInvoice()">
+        <i class="fas fa-plus-circle"></i> New Invoice
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+  <main class="ql-main">
+
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="ql-loading">
+      <div class="ql-spinner"></div>
+      <span>Loading sales dashboard...</span>
+    </div>
+
+    <!-- Error state -->
+    <div *ngIf="error && !isLoading" class="ql-error-banner">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button class="ql-error-dismiss" (click)="refreshData()"><i class="fas fa-sync-alt"></i> Retry</button>
+    </div>
+
+    <!-- ============================================================
+    CONTENT
+    ============================================================ -->
+    <ng-container *ngIf="!isLoading && stats">
+
+      <!-- Top bar -->
+      <div class="ql-top-bar">
+        <div class="ql-top-bar-left">
+          <h1 class="ql-title">Sales Command Center</h1>
+          <span class="ql-total-badge">Live</span>
+          <span class="ql-vendor-badge" style="background: #18444020; color: #184440;">
+            <i class="fas fa-file-invoice"></i>
+            {{ stats.totalQuotes }} quotes
+          </span>
+          <span class="ql-pending-badge" style="background: #F59E0B20; color: #F59E0B;">
+            <i class="fas fa-clock"></i>
+            {{ stats.pendingQuotes }} pending
+          </span>
+        </div>
+        <div class="ql-top-bar-right">
+          <div class="ql-date-range-selector">
+            <button class="ql-range-btn" [class.ql-range-btn--active]="dateRange === 'week'" (click)="changeDateRange('week')">Week</button>
+            <button class="ql-range-btn" [class.ql-range-btn--active]="dateRange === 'month'" (click)="changeDateRange('month')">Month</button>
+            <button class="ql-range-btn" [class.ql-range-btn--active]="dateRange === 'quarter'" (click)="changeDateRange('quarter')">Quarter</button>
+            <button class="ql-range-btn" [class.ql-range-btn--active]="dateRange === 'year'" (click)="changeDateRange('year')">Year</button>
+          </div>
+          <button type="button" class="ql-btn ql-btn--ghost" (click)="refreshData()" [disabled]="isLoading">
+            <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+            {{ isLoading ? 'Loading...' : 'Refresh' }}
+          </button>
+          <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewQuote()">
+            <i class="fas fa-plus"></i> New Quote
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="ql-stats-row">
+        <div class="ql-stat-mini" (click)="navigateToQuoteList()">
+          <span class="ql-stat-mini-value">{{ formatCurrency(stats.totalRevenue) }}</span>
+          <span class="ql-stat-mini-label">Total Revenue</span>
+        </div>
+        <div class="ql-stat-mini" (click)="navigateToQuoteList()">
+          <span class="ql-stat-mini-value" style="color: #2E6276;">{{ stats.totalQuotes }}</span>
+          <span class="ql-stat-mini-label">Total Quotes</span>
+        </div>
+        <div class="ql-stat-mini" (click)="navigateToQuoteList()">
+          <span class="ql-stat-mini-value" style="color: #F59E0B;">{{ stats.pendingQuotes }}</span>
+          <span class="ql-stat-mini-label">Pending Review</span>
+        </div>
+        <div class="ql-stat-mini" (click)="navigateToInvoiceList()">
+          <span class="ql-stat-mini-value" style="color: #2EB270;">{{ stats.totalInvoices }}</span>
+          <span class="ql-stat-mini-label">Total Invoices</span>
+        </div>
+        <div class="ql-stat-mini" (click)="navigateToInvoiceList()">
+          <span class="ql-stat-mini-value" style="color: #DC2626;">{{ stats.overdueInvoices }}</span>
+          <span class="ql-stat-mini-label">Overdue</span>
+        </div>
+        <div class="ql-stat-mini" (click)="navigateToCustomerList()">
+          <span class="ql-stat-mini-value" style="color: #8B5CF6;">{{ stats.totalCustomers }}</span>
+          <span class="ql-stat-mini-label">Total Customers</span>
+        </div>
+      </div>
+
+      <!-- Quick Insights Cards -->
+      <div class="ql-insights-row">
+        <div class="ql-insight-card" *ngFor="let metric of getInsightMetrics()" [style.border-left-color]="metric.color">
+          <div class="ql-insight-icon" [style.background]="metric.color + '15'" [style.color]="metric.color">
+            <i class="fas" [class.fa-chart-line]="metric.label.includes('Revenue')"
+                [class.fa-file-invoice]="metric.label.includes('Quotes')"
+                [class.fa-percent]="metric.label.includes('Conversion')"
+                [class.fa-clock]="metric.label.includes('Pending')"></i>
+          </div>
+          <div class="ql-insight-content">
+            <span class="ql-insight-label">{{ metric.label }}</span>
+            <span class="ql-insight-value">{{ metric.value }}</span>
+          </div>
+          <div class="ql-insight-trend" [style.color]="metric.trend === 'up' ? '#2EB270' : '#DC2626'">
+            <i class="fas fa-arrow-{{ metric.trend === 'up' ? 'up' : 'down' }}"></i>
+            {{ metric.percent }}%
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue Chart - Two Column Layout -->
+      <div class="ql-two-col">
+        <!-- Revenue Chart -->
+        <div class="ql-info-card">
+          <div class="ql-card-header">
+            <h3 class="ql-info-title"><i class="fas fa-chart-bar"></i> Revenue Analytics</h3>
+            <span class="ql-badge">{{ dateRange === 'week' ? 'This Week' : dateRange === 'month' ? 'This Month' : dateRange === 'quarter' ? 'This Quarter' : 'This Year' }}</span>
+          </div>
+          <div class="ql-chart-container">
+            <!-- Bar Chart -->
+            <div class="ql-bar-chart" *ngIf="customization.chartType === 'bar'">
+              <div class="ql-bar-grid-lines">
+                <div class="ql-bar-grid-line" *ngFor="let i of [0,1,2,3,4]"></div>
+              </div>
+              <div *ngFor="let data of revenueData; let idx = index" class="ql-bar-item">
+                <div class="ql-bar-wrapper">
+                  <div class="ql-bar" [style.height.%]="(data.amount / getMaxRevenue()) * 100"
+                       [style.background]="getBarColor(idx)">
+                    <div class="ql-bar-tooltip">{{ formatCurrency(data.amount) }}</div>
+                  </div>
+                </div>
+                <div class="ql-bar-label">{{ data.month }}</div>
+              </div>
+            </div>
+
+            <!-- Line Chart -->
+            <div class="ql-line-chart" *ngIf="customization.chartType === 'line'">
+              <svg viewBox="0 0 500 280" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <linearGradient id="qlAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#2E6276;stop-opacity:0.3" />
+                    <stop offset="100%" style="stop-color:#2E6276;stop-opacity:0.0" />
+                  </linearGradient>
+                </defs>
+                <line *ngFor="let i of [0, 50, 100, 150, 200, 250]" x1="20" [attr.y1]="20 + i" x2="480" [attr.y2]="20 + i" class="ql-chart-grid" />
+                <polygon [attr.points]="getLineChartAreaPath()" class="ql-chart-area" />
+                <polyline [attr.points]="getLineChartPath()" class="ql-chart-line" />
+                <circle *ngFor="let d of revenueData; let idx = index" [attr.cx]="getPointX(idx)" [attr.cy]="getPointY(d.amount)" r="5" class="ql-chart-dot">
+                  <title>{{ d.month }}: {{ formatCurrency(d.amount) }}</title>
+                </circle>
+                <text *ngFor="let d of revenueData; let idx = index" [attr.x]="getPointX(idx)" y="270" class="ql-chart-label">{{ d.month }}</text>
+              </svg>
+            </div>
+
+            <!-- Pie/Doughnut Chart -->
+            <div class="ql-pie-chart" *ngIf="customization.chartType === 'pie' || customization.chartType === 'doughnut'">
+              <div class="ql-callout-wrapper">
+                <div class="ql-pie-circle" [class.ql-doughnut]="customization.chartType === 'doughnut'"
+                     [style.background]="getConicGradient()">
+                  <div class="ql-doughnut-hole" *ngIf="customization.chartType === 'doughnut'">
+                    <span class="ql-hole-total">{{ formatCurrency(stats.totalRevenue).replace('NGN', '₦') }}</span>
+                    <span class="ql-hole-label">Total Revenue</span>
+                  </div>
+                </div>
+                <svg class="ql-callout-svg" viewBox="0 0 580 360" width="100%" height="100%">
+                  <path *ngFor="let callout of getChartCallouts()" [attr.d]="callout.linePath" fill="none" stroke="#0a1628" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  <g *ngFor="let callout of getChartCallouts()">
+                    <text [attr.x]="callout.textX" [attr.y]="callout.textY - 8" [attr.text-anchor]="callout.textAnchor" class="ql-callout-label">{{ callout.label }}</text>
+                    <text [attr.x]="callout.textX" [attr.y]="callout.textY + 8" [attr.text-anchor]="callout.textAnchor" class="ql-callout-value">{{ callout.amount }} ({{ callout.percent }})</text>
+                  </g>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Chart Type Selector -->
+            <div class="ql-chart-controls">
+              <button class="ql-chart-btn" [class.ql-chart-btn--active]="customization.chartType === 'bar'" (click)="customization.chartType = 'bar'; saveCustomization()">
+                <i class="fas fa-chart-bar"></i>
+              </button>
+              <button class="ql-chart-btn" [class.ql-chart-btn--active]="customization.chartType === 'line'" (click)="customization.chartType = 'line'; saveCustomization()">
+                <i class="fas fa-chart-line"></i>
+              </button>
+              <button class="ql-chart-btn" [class.ql-chart-btn--active]="customization.chartType === 'pie'" (click)="customization.chartType = 'pie'; saveCustomization()">
+                <i class="fas fa-chart-pie"></i>
+              </button>
+              <button class="ql-chart-btn" [class.ql-chart-btn--active]="customization.chartType === 'doughnut'" (click)="customization.chartType = 'doughnut'; saveCustomization()">
+                <i class="fas fa-circle-notch"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Insights -->
+        <div class="ql-info-card">
+          <div class="ql-card-header">
+            <h3 class="ql-info-title"><i class="fas fa-bolt"></i> Performance Insights</h3>
+            <span class="ql-badge">Key Metrics</span>
+          </div>
+          <div class="ql-insights-list">
+            <div *ngFor="let metric of getInsightMetrics()" class="ql-insight-item" [style.border-left-color]="metric.color">
+              <div class="ql-insight-item-info">
+                <span class="ql-insight-item-label">{{ metric.label }}</span>
+                <span class="ql-insight-item-value">{{ metric.value }}</span>
+              </div>
+              <div class="ql-insight-item-trend" [style.color]="metric.trend === 'up' ? '#2EB270' : '#DC2626'">
+                <i class="fas fa-arrow-{{ metric.trend === 'up' ? 'up' : 'down' }}"></i>
+                {{ metric.percent }}%
+                <span class="ql-insight-period">vs last month</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Column: Recent Quotes & Recent Invoices -->
+      <div class="ql-two-col">
+        <!-- Recent Quotes -->
+        <div class="ql-info-card">
+          <div class="ql-card-header">
+            <h3 class="ql-info-title"><i class="fas fa-file-invoice"></i> Recent Quotes</h3>
+            <button class="ql-card-action" (click)="navigateToQuoteList()">
+              View All <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+          <div class="ql-activity-list">
+            <div *ngFor="let quote of recentQuotes" class="ql-activity-item">
+              <div class="ql-activity-icon" style="background: #2E627620; color: #2E6276;">
+                <i class="fas fa-file-invoice"></i>
+              </div>
+              <div class="ql-activity-content">
+                <span class="ql-activity-title">#{{ quote.quoteNumber || quote.id }}</span>
+                <span class="ql-activity-desc">{{ getCustomerName(quote) }}</span>
+                <span class="ql-activity-time">{{ formatDate(quote.createdAt || quote.date) }}</span>
+              </div>
+              <div class="ql-activity-amount">{{ formatCurrency(quote.totalAmount || quote.total) }}</div>
+              <span class="ql-status-badge" [class]="'ql-status-badge--' + getStatusClass(quote.status)">
+                {{ getStatusLabel(quote.status) }}
+              </span>
+              <button class="ql-activity-action" (click)="navigateToQuoteDetail(quote.id)">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+            <div *ngIf="recentQuotes.length === 0" class="ql-empty-small">
+              <i class="fas fa-inbox"></i>
+              <span>No recent quotes</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Invoices -->
+        <div class="ql-info-card">
+          <div class="ql-card-header">
+            <h3 class="ql-info-title"><i class="fas fa-file-invoice-dollar"></i> Recent Invoices</h3>
+            <button class="ql-card-action" (click)="navigateToInvoiceList()">
+              View All <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+          <div class="ql-activity-list">
+            <div *ngFor="let invoice of recentInvoices" class="ql-activity-item">
+              <div class="ql-activity-icon" style="background: #F59E0B20; color: #F59E0B;">
+                <i class="fas fa-file-invoice-dollar"></i>
+              </div>
+              <div class="ql-activity-content">
+                <span class="ql-activity-title">#{{ invoice.invoiceNumber || invoice.id }}</span>
+                <span class="ql-activity-desc">{{ getCustomerName(invoice) }}</span>
+                <span class="ql-activity-time">{{ formatDate(invoice.dueDate) }}</span>
+              </div>
+              <div class="ql-activity-amount">{{ formatCurrency(invoice.totalAmount || invoice.total) }}</div>
+              <span class="ql-status-badge" [class]="'ql-status-badge--' + getStatusClass(invoice.status)">
+                {{ getStatusLabel(invoice.status) }}
+              </span>
+              <button class="ql-activity-action" (click)="navigateToInvoiceDetail(invoice.id)">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+            <div *ngIf="recentInvoices.length === 0" class="ql-empty-small">
+              <i class="fas fa-inbox"></i>
+              <span>No recent invoices</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Sales & Transactions -->
+      <div class="ql-info-card">
+        <div class="ql-card-header">
+          <h3 class="ql-info-title"><i class="fas fa-receipt"></i> Recent Sales & Transactions</h3>
+          <button class="ql-card-action" (click)="navigateToTransactionsList()">
+            View All <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+        <div class="ql-activity-list">
+          <div *ngFor="let tx of recentTransactions" class="ql-activity-item">
+            <div class="ql-activity-icon" style="background: #18444020; color: #184440;">
+              <i class="fas fa-receipt"></i>
+            </div>
+            <div class="ql-activity-content">
+              <span class="ql-activity-title">#{{ tx.orderNumber || tx.orderId || tx.id }}</span>
+              <span class="ql-activity-desc">{{ getCustomerName(tx) }}</span>
+              <span class="ql-activity-time">{{ formatDate(tx.orderDate) }}</span>
+            </div>
+            <div class="ql-activity-amount">{{ formatCurrency(tx.totalAmount) }}</div>
+            <span class="ql-status-badge" [class]="'ql-status-badge--' + getTransactionStatusClass(tx.status)">
+              {{ formatTransactionStatusLabel(tx.status) }}
+            </span>
+            <button class="ql-activity-action" (click)="navigateToTransactionDetail(tx.id)">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+          <div *ngIf="recentTransactions.length === 0" class="ql-empty-small">
+            <i class="fas fa-inbox"></i>
+            <span>No recent transactions</span>
+          </div>
+        </div>
+      </div>
+
+    </ng-container>
+
+  </main>
+</div>

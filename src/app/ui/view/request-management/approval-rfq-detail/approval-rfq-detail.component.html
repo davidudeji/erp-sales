@@ -1,0 +1,271 @@
+<div class="approval-detail-container" *ngIf="!isLoading && procurementRequest">
+  <div class="detail-wrapper">
+
+    <!-- Top Nav -->
+    <div class="top-nav">
+      <button class="back-link-btn" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Back to Inbox
+      </button>
+    </div>
+
+    <!-- Header -->
+    <div class="detail-header">
+      <div class="header-main">
+        <div class="title-section">
+          <h1 class="request-title">{{ procurementRequest.title }}</h1>
+          <div class="request-sub-meta">
+            <span class="request-id-badge">#{{ procurementRequest.id }}</span>
+            <span class="request-type-badge">
+              <i class="fas" [class.fa-box]="procurementRequest.procurementType === 'PRODUCT'"
+                             [class.fa-briefcase]="procurementRequest.procurementType === 'SERVICE'"></i>
+              {{ procurementRequest.procurementType }}
+            </span>
+          </div>
+        </div>
+        <div class="header-status-actions">
+          <span class="status-badge">
+            <i class="fas fa-clock"></i> Pending Approval
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="detail-grid">
+
+      <!-- Left Column -->
+      <div class="left-col">
+
+        <!-- Request Details -->
+        <div class="detail-card">
+          <div class="card-header">
+            <h3><i class="fas fa-file-alt"></i> Request Details</h3>
+          </div>
+          <div class="card-body">
+            <div class="instructions-section" *ngIf="procurementRequest.description">
+              <h4>Scope Description</h4>
+              <p class="instructions-text">{{ procurementRequest.description }}</p>
+            </div>
+
+            <div class="items-table-wrapper">
+              <h4>Requested Items / Services</h4>
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-right">Unit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of procurementRequest.items">
+                    <td><span class="item-name">{{ item.name }}</span></td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-right">{{ item.unit || 'Units' }}</td>
+                  </tr>
+                  <tr class="total-row">
+                    <td colspan="2">Total Budget</td>
+                    <td class="text-right total-budget-cell">
+                      {{ formatCurrency(procurementRequest.totalBudget, procurementRequest.currency) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Workflow Actions History -->
+        <div class="detail-card">
+          <div class="card-header">
+            <h3><i class="fas fa-comments"></i> Approval Actions History</h3>
+          </div>
+          <div class="card-body">
+            <div class="comments-timeline">
+              <div *ngFor="let action of workflowInstance?.actions" class="comment-bubble-item">
+                <div class="comment-avatar">
+                  {{ (action.actorName || 'U').charAt(0) }}
+                </div>
+                <div class="comment-content-wrapper">
+                  <div class="comment-header">
+                    <span class="comment-user">{{ action.actorName || ('User #' + action.actorUserId) }}</span>
+                    <span class="comment-role">{{ action.actorRoleCode }}</span>
+                    <span class="comment-time">{{ formatDate(action.createdAt) }}</span>
+                  </div>
+                  <p class="comment-text">
+                    <strong>{{ action.action }}</strong>
+                    <span *ngIf="action.comment"> — {{ action.comment }}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div *ngIf="!workflowInstance?.actions || workflowInstance!.actions!.length === 0" class="no-comments">
+                <p>No actions recorded yet for this workflow instance.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-col">
+
+        <!-- Action Panel -->
+        <div class="detail-card action-panel-card pending-action">
+          <div class="card-header">
+            <h3><i class="fas fa-shield-alt"></i> Approval Actions</h3>
+          </div>
+          <div class="card-body text-center">
+            <div *ngIf="workflowInstance; else noWorkflow">
+              <p class="action-prompt">Inspect the request and choose an action to advance the workflow.</p>
+              <div class="panel-buttons">
+                <button class="btn-forward-vendor" (click)="forwardToVendor()" [disabled]="isActioning">
+                  <i class="fas fa-check-circle"></i> Approve Stage
+                </button>
+                <button class="btn-panel-reject" (click)="rejectRequest()" [disabled]="isActioning">
+                  <i class="fas fa-times-circle"></i> Reject Request
+                </button>
+              </div>
+            </div>
+            <ng-template #noWorkflow>
+              <p class="action-prompt" style="color:#64748b;font-style:italic;">
+                Workflow instance not available. The request may not have been submitted correctly.
+              </p>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- Metadata Summary -->
+        <div class="detail-card">
+          <div class="card-header">
+            <h3><i class="fas fa-info-circle"></i> Metadata Summary</h3>
+          </div>
+          <div class="card-body">
+            <div class="meta-item-row">
+              <span class="meta-label">Total Budget:</span>
+              <span class="meta-val highlight-green">
+                {{ formatCurrency(procurementRequest.totalBudget, procurementRequest.currency) }}
+              </span>
+            </div>
+            <div class="meta-item-row">
+              <span class="meta-label">Currency:</span>
+              <span class="meta-val">{{ procurementRequest.currency || 'NGN' }}</span>
+            </div>
+            <div class="meta-item-row" *ngIf="procurementRequest.deliveryLocation">
+              <span class="meta-label">Delivery Location:</span>
+              <span class="meta-val">{{ procurementRequest.deliveryLocation }}</span>
+            </div>
+            <div class="meta-item-row" *ngIf="procurementRequest.deliveryDeadline">
+              <span class="meta-label">Delivery Deadline:</span>
+              <span class="meta-val">{{ formatDate(procurementRequest.deliveryDeadline) }}</span>
+            </div>
+            <div class="meta-item-row" *ngIf="workflowInstance">
+              <span class="meta-label">Workflow Instance:</span>
+              <span class="meta-val">#{{ workflowInstance.id }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Approval Stages -->
+        <div class="detail-card">
+          <div class="card-header">
+            <h3><i class="fas fa-history"></i> Approval Stages</h3>
+          </div>
+          <div class="card-body">
+            <div class="sidebar-progress" *ngIf="workflowInstance">
+              <div class="progress-details">
+                <span>Progress</span>
+                <span>{{ getApprovalProgress() | number:'1.0-0' }}%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" [style.width.%]="getApprovalProgress()"></div>
+              </div>
+            </div>
+
+            <div class="steps-hierarchy-list" *ngIf="workflowInstance?.approval?.stages">
+              <div *ngFor="let stage of workflowInstance!.approval!.stages" class="step-hierarchy-item">
+                <div class="step-bullet-avatar">
+                  <span>{{ stage.orderIndex }}</span>
+                </div>
+                <div class="step-meta-details">
+                  <div class="step-row-top">
+                    <span class="step-role-label">{{ stage.name }}</span>
+                    <span class="step-status-chip">{{ stage.approvalType }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p *ngIf="!workflowInstance" style="color:#94a3b8;font-style:italic;font-size:0.85rem;">
+              Workflow not loaded.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-state-container" *ngIf="isLoading">
+  <div class="spinner"></div>
+  <p>Loading approval details...</p>
+</div>
+
+<!-- Not found -->
+<div class="empty-state-container" *ngIf="!isLoading && !procurementRequest">
+  <i class="fas fa-exclamation-triangle empty-icon"></i>
+  <h3>Request not found</h3>
+  <p>The requested procurement record is missing or has been archived.</p>
+  <button class="btn-secondary" (click)="goBack()">Back to Inbox</button>
+</div>
+
+<!-- Approve Modal -->
+<div class="modal-overlay" *ngIf="showApproveModal" (click)="showApproveModal = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Approve Stage</h2>
+      <button class="modal-close" (click)="showApproveModal = false">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Approving current workflow stage for <strong>{{ procurementRequest?.title }}</strong>.</p>
+      <div class="form-group">
+        <label class="form-label">Comments (Optional)</label>
+        <textarea class="form-textarea" [(ngModel)]="commentsText" rows="3" placeholder="Add approval notes…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="showApproveModal = false" [disabled]="isActioning">Cancel</button>
+      <button class="btn-approve" (click)="confirmApprove()" [disabled]="isActioning">
+        {{ isActioning ? 'Approving…' : 'Confirm Approve' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-overlay" *ngIf="showRejectModal" (click)="showRejectModal = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Reject Request</h2>
+      <button class="modal-close" (click)="showRejectModal = false">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Provide a reason for rejecting <strong>{{ procurementRequest?.title }}</strong>.</p>
+      <div class="form-group">
+        <label class="form-label required">Reason for Rejection</label>
+        <textarea class="form-textarea" [(ngModel)]="commentsText" rows="3" placeholder="Explain why the request is being rejected…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="showRejectModal = false" [disabled]="isActioning">Cancel</button>
+      <button class="btn-reject" (click)="confirmReject()" [disabled]="isActioning || !commentsText.trim()">
+        {{ isActioning ? 'Rejecting…' : 'Confirm Reject' }}
+      </button>
+    </div>
+  </div>
+</div>

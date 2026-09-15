@@ -1,0 +1,390 @@
+<!-- ═══════════════════════════════════════════════════
+     DOCUMENTS PAGE
+════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
+
+  <div class="flex items-start justify-between mb-7 gap-4 flex-wrap">
+    <div>
+      <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Documents</h1>
+      <p class="text-sm text-[#5a7380] mt-0.5">Manage your compliance certificates, licences and company documents</p>
+    </div>
+    <button (click)="openUploadModal()"
+      class="flex items-center gap-2 px-4 py-2 bg-[#224957] text-white text-sm font-semibold rounded-xl hover:bg-[#2d6478] transition-colors shrink-0">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Upload Document
+    </button>
+  </div>
+
+  <!-- ── Stats ─────────────────────────────────────────── -->
+  <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Total Documents</span>
+        <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.total }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.active }}</strong> currently active</p>
+    </div>
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Expiring Soon</span>
+        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1" [class.text-amber-600]="stats.expiringSoon > 0">{{ stats.expiringSoon }}</div>
+      <p class="text-xs" [class.text-amber-600]="stats.expiringSoon > 0" [class.text-[#5a7380]]="stats.expiringSoon === 0">
+        <ng-container *ngIf="stats.expiringSoon > 0">Renew within 30 days</ng-container>
+        <ng-container *ngIf="stats.expiringSoon === 0">All up to date</ng-container>
+      </p>
+    </div>
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Expired</span>
+        <span class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1" [class.text-red-600]="stats.expired > 0">{{ stats.expired }}</div>
+      <p class="text-xs" [class.text-red-500]="stats.expired > 0" [class.text-[#5a7380]]="stats.expired === 0">
+        <ng-container *ngIf="stats.expired > 0">Immediate action required</ng-container>
+        <ng-container *ngIf="stats.expired === 0">None expired</ng-container>
+      </p>
+    </div>
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Pending Review</span>
+        <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.pendingReview }}</div>
+      <p class="text-xs text-[#5a7380]">Awaiting verification</p>
+    </div>
+  </div>
+
+  <!-- ── Urgent alerts ──────────────────────────────────── -->
+  <!-- <div *ngIf="allDocs | pureFilter:'expired' as expiredDocs">
+    <div *ngFor="let doc of allDocs" class="hidden"></div>
+  </div> -->
+
+  <!-- Expired warning banner -->
+  <div *ngIf="stats && stats.expired > 0"
+    class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
+    <svg class="text-red-500 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <p class="text-sm text-red-700 flex-1">
+      <strong>{{ stats.expired }} document{{ stats.expired > 1 ? 's have' : ' has' }} expired.</strong>
+      Upload renewed versions to avoid disruption to your procurement activities.
+    </p>
+  </div>
+
+  <!-- Expiring soon warning banner -->
+  <div *ngIf="stats && stats.expiringSoon > 0"
+    class="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+    <svg class="text-amber-500 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <p class="text-sm text-amber-700 flex-1">
+      <strong>{{ stats.expiringSoon }} document{{ stats.expiringSoon > 1 ? 's are' : ' is' }} expiring within 30 days.</strong>
+      Renew early to keep your profile compliant.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       DOCUMENT GRID
+  ═════════════════════════════════════════════════════════ -->
+  <div class="bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
+
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#eef2f6] flex-wrap gap-3">
+      <h2 class="text-sm font-semibold text-[#1a2c35]">All Documents</h2>
+      <div class="flex gap-1.5 flex-wrap">
+        <button *ngFor="let f of categoryFilters" (click)="setFilter(f.value)"
+          class="px-3 py-1 rounded-full text-xs font-medium transition-all border"
+          [class.bg-[#224957]]="filter === f.value" [class.text-white]="filter === f.value" [class.border-[#224957]]="filter === f.value"
+          [class.bg-white]="filter !== f.value" [class.text-[#5a7380]]="filter !== f.value" [class.border-[#e6edf2]]="filter !== f.value">
+          {{ f.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="p-5">
+      <!-- Empty state -->
+      <div *ngIf="docs.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-14 h-14 rounded-2xl bg-[#f5f7f9] border border-[#e6edf2] flex items-center justify-center mb-4 text-2xl">📄</div>
+        <p class="text-sm font-semibold text-[#1a2c35] mb-1">No documents found</p>
+        <p class="text-xs text-[#5a7380] mb-4">Upload your compliance documents to appear here</p>
+        <button (click)="openUploadModal()" class="px-4 py-2 bg-[#224957] text-white text-xs font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">Upload Document</button>
+      </div>
+
+      <!-- Document cards grid -->
+      <div class="grid grid-cols-3 gap-4" *ngIf="docs.length > 0">
+        <div *ngFor="let doc of docs"
+          class="border rounded-xl p-4 cursor-pointer hover:border-[#224957] hover:shadow-sm transition-all group relative"
+          [class.border-red-200]="doc.status === 'expired'"
+          [class.bg-red-50]="doc.status === 'expired'"
+          [class.border-amber-200]="doc.status === 'expiring_soon'"
+          [class.bg-amber-50]="doc.status === 'expiring_soon'"
+          [class.border-[#e6edf2]]="doc.status === 'active' || doc.status === 'pending_review'"
+          [class.bg-white]="doc.status === 'active' || doc.status === 'pending_review'"
+          (click)="openPanel(doc)">
+
+          <!-- Card head -->
+          <div class="flex items-start justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">{{ categoryIcon(doc.category) }}</span>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-[#1a2c35] leading-tight">{{ doc.name }}</p>
+                <p class="text-[10px] text-[#5a7380] mt-0.5">{{ categoryLabel(doc.category) }}</p>
+              </div>
+            </div>
+            <!-- Delete button -->
+            <button (click)="openDeleteConfirm(doc, $event)"
+              class="w-6 h-6 rounded-md flex items-center justify-center text-[#94a9b3] hover:bg-red-50 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+
+          <!-- Status badge -->
+          <div class="mb-3">
+            <span [ngClass]="statusBadge(doc.status)">{{ statusLabel(doc.status) }}</span>
+            <span *ngIf="doc.isRequired" class="ml-1.5 text-[10px] font-semibold text-[#5a7380] bg-[#f5f7f9] px-1.5 py-0.5 rounded-full border border-[#e6edf2]">Required</span>
+          </div>
+
+          <!-- File info -->
+          <div class="flex items-center gap-2 text-xs text-[#5a7380] mb-2">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+            <span class="truncate">{{ doc.fileName }}</span>
+            <span class="shrink-0 text-[#94a9b3]">{{ doc.fileSize }}</span>
+          </div>
+
+          <!-- Expiry -->
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-[#5a7380]">
+              <ng-container *ngIf="doc.expiryDate">
+                Expires: <strong [class.text-red-600]="doc.status === 'expired'" [class.text-amber-600]="doc.status === 'expiring_soon'" [class.text-[#1a2c35]]="doc.status === 'active'">{{ fmtDate(doc.expiryDate) }}</strong>
+              </ng-container>
+              <ng-container *ngIf="!doc.expiryDate">No expiry</ng-container>
+            </span>
+            <!-- Days until expiry -->
+            <span *ngIf="doc.expiryDate && doc.status === 'expiring_soon'"
+              class="text-amber-600 font-semibold">{{ daysUntilExpiry(doc.expiryDate) }}d left</span>
+            <span *ngIf="doc.expiryDate && doc.status === 'expired'"
+              class="text-red-600 font-semibold">Expired</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     DOCUMENT DETAIL SIDE PANEL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showPanel && selectedDoc">
+  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closePanel()"></div>
+  <aside class="fixed top-0 right-0 h-full z-[1001] w-[520px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+
+    <!-- Head -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">{{ categoryIcon(selectedDoc.category) }}</span>
+          <div>
+            <h2 class="text-base font-bold text-[#1a2c35] leading-tight">{{ selectedDoc.name }}</h2>
+            <p class="text-xs text-[#5a7380] mt-0.5">{{ categoryLabel(selectedDoc.category) }}</p>
+          </div>
+        </div>
+        <button (click)="closePanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+      <!-- Status + badges -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <span [ngClass]="statusBadge(selectedDoc.status)">{{ statusLabel(selectedDoc.status) }}</span>
+        <span *ngIf="selectedDoc.isRequired" class="text-[10px] font-semibold text-[#5a7380] bg-[#f5f7f9] px-2 py-0.5 rounded-full border border-[#e6edf2]">Required</span>
+      </div>
+
+      <!-- Expired / expiring alert -->
+      <div *ngIf="selectedDoc.status === 'expired'"
+        class="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+        <svg class="text-red-500 shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p class="text-xs text-red-700">This document has expired. Upload a renewed version as soon as possible.</p>
+      </div>
+      <div *ngIf="selectedDoc.status === 'expiring_soon' && selectedDoc.expiryDate"
+        class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+        <svg class="text-amber-500 shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <p class="text-xs text-amber-700">This document expires in <strong>{{ daysUntilExpiry(selectedDoc.expiryDate) }} days</strong>. Start the renewal process now.</p>
+      </div>
+
+      <!-- Details grid -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">File Name</span>
+          <span class="text-sm text-[#1a2c35] font-medium truncate">{{ selectedDoc.fileName }}</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">File Size</span>
+          <span class="text-sm text-[#1a2c35] font-medium">{{ selectedDoc.fileSize }}</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Uploaded</span>
+          <span class="text-sm text-[#1a2c35] font-medium">{{ fmtDate(selectedDoc.uploadedDate) }}</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Expiry Date</span>
+          <span class="text-sm font-medium"
+            [class.text-red-600]="selectedDoc.status === 'expired'"
+            [class.text-amber-600]="selectedDoc.status === 'expiring_soon'"
+            [class.text-[#1a2c35]]="selectedDoc.status !== 'expired' && selectedDoc.status !== 'expiring_soon'">
+            {{ fmtDate(selectedDoc.expiryDate) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div *ngIf="selectedDoc.notes">
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Notes</h3>
+        <p class="text-sm text-[#1a2c35] leading-relaxed bg-[#f9fcfd] border border-[#e6edf2] rounded-xl px-4 py-3">{{ selectedDoc.notes }}</p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center justify-between gap-2 sticky bottom-0">
+      <button (click)="openDeleteConfirm(selectedDoc, $event)"
+        class="px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+        Delete
+      </button>
+      <button (click)="downloadDoc(selectedDoc, $event)"
+        class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">
+        ↓ Download
+      </button>
+    </div>
+
+  </aside>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     UPLOAD MODAL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showUploadModal">
+  <div class="fixed inset-0 z-[1050]" style="background:rgba(15,30,36,0.5);backdrop-filter:blur(2px)" (click)="closeUploadModal()"></div>
+  <div class="fixed inset-0 z-[1051] flex items-start justify-center pt-10 px-4 pb-4 overflow-y-auto pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-auto modal-pop pointer-events-auto" (click)="$event.stopPropagation()">
+
+      <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#eef2f6]">
+        <h2 class="text-base font-bold text-[#1a2c35]">Upload Document</h2>
+        <button (click)="closeUploadModal()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="px-6 py-5 flex flex-col gap-4">
+
+        <!-- Document name -->
+        <div>
+          <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Document Name <span class="text-red-500">*</span></label>
+          <input type="text" [(ngModel)]="uploadForm.name" placeholder="e.g. CAC Certificate of Incorporation"
+            class="w-full border rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] outline-none transition-all focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10"
+            [class.border-red-400]="uploadErrors['name']" [class.border-[#e6edf2]]="!uploadErrors['name']" />
+          <p *ngIf="uploadErrors['name']" class="text-xs text-red-500 mt-1">{{ uploadErrors['name'] }}</p>
+        </div>
+
+        <!-- Category -->
+        <div>
+          <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Category</label>
+          <select [(ngModel)]="uploadForm.category"
+            class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10">
+            <option *ngFor="let opt of categoryOptions" [value]="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+
+        <!-- File upload area -->
+        <div>
+          <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">File <span class="text-red-500">*</span></label>
+          <div (click)="simulateFilePick()"
+            class="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all hover:border-[#224957] hover:bg-[#f9fcfd]"
+            [class.border-red-400]="uploadErrors['fileName']"
+            [class.border-[#e6edf2]]="!uploadErrors['fileName'] && !uploadForm.fileName"
+            [class.border-green-400]="!!uploadForm.fileName && !uploadErrors['fileName']"
+            [class.bg-green-50]="!!uploadForm.fileName && !uploadErrors['fileName']">
+            <ng-container *ngIf="!uploadForm.fileName">
+              <svg class="mx-auto mb-2 text-[#94a9b3]" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <p class="text-sm text-[#5a7380]">Click to select a file</p>
+              <p class="text-xs text-[#94a9b3] mt-0.5">PDF, JPEG, PNG up to 10MB</p>
+            </ng-container>
+            <ng-container *ngIf="uploadForm.fileName">
+              <svg class="mx-auto mb-2 text-green-500" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <p class="text-sm font-semibold text-green-700">{{ uploadForm.fileName }}</p>
+              <p class="text-xs text-[#5a7380] mt-0.5">{{ uploadForm.fileSize }}</p>
+            </ng-container>
+          </div>
+          <p *ngIf="uploadErrors['fileName']" class="text-xs text-red-500 mt-1">{{ uploadErrors['fileName'] }}</p>
+        </div>
+
+        <!-- Expiry date -->
+        <div>
+          <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Expiry Date <span class="text-[#94a9b3] font-normal normal-case">(optional)</span></label>
+          <input type="date" [(ngModel)]="uploadForm.expiryDate"
+            class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10" />
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-xs font-bold text-[#5a7380] uppercase tracking-wide mb-1.5">Notes <span class="text-[#94a9b3] font-normal normal-case">(optional)</span></label>
+          <textarea [(ngModel)]="uploadForm.notes" rows="2" placeholder="Any additional notes about this document…"
+            class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] outline-none resize-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 font-sans"></textarea>
+        </div>
+
+        <!-- Required toggle -->
+        <label class="flex items-center gap-3 cursor-pointer">
+          <div class="relative shrink-0">
+            <input type="checkbox" class="sr-only peer" [(ngModel)]="uploadForm.isRequired" />
+            <div class="w-9 h-5 rounded-full bg-[#e6edf2] peer-checked:bg-[#224957] transition-colors"></div>
+            <div class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4"></div>
+          </div>
+          <span class="text-sm text-[#1a2c35] font-medium">Mark as required compliance document</span>
+        </label>
+
+      </div>
+
+      <div class="px-6 pb-6 flex gap-3 justify-end">
+        <button (click)="closeUploadModal()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+        <button (click)="submitUpload()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">Upload Document</button>
+      </div>
+
+    </div>
+  </div>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     DELETE CONFIRM MODAL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showDeleteConfirm && docToDelete">
+  <div class="fixed inset-0 z-[1100]" style="background:rgba(15,30,36,0.5)" (click)="closeDeleteConfirm()"></div>
+  <div class="fixed inset-0 z-[1101] flex items-center justify-center p-4 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-[400px] max-w-full p-8 text-center modal-pop pointer-events-auto" (click)="$event.stopPropagation()">
+      <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </div>
+      <h3 class="text-base font-bold text-[#1a2c35] mb-2">Delete Document?</h3>
+      <p class="text-sm text-[#5a7380] leading-relaxed mb-6">
+        You are about to permanently delete <strong class="text-[#1a2c35]">{{ docToDelete.name }}</strong>.
+        This action cannot be undone.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <button (click)="closeDeleteConfirm()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+        <button (click)="confirmDelete()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors">Delete</button>
+      </div>
+    </div>
+  </div>
+</ng-container>

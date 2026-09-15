@@ -1,0 +1,772 @@
+<!-- ═══════════════════════════════════════════════════
+     FINANCE PAGE
+════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
+
+  <div class="mb-7">
+    <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Finance</h1>
+    <p class="text-sm text-[#5a7380] mt-0.5">Manage purchase orders, raise invoices and track payments</p>
+  </div>
+
+  <!-- ── Stats cards ─────────────────────────────────────── -->
+  <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="lpoStats && financeStats">
+
+    <button (click)="filterCard('lpos','pending')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='pending' && activeTable==='lpos'" [class.ring-[#224957]]="lpoFilter==='pending' && activeTable==='lpos'">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Pending LPOs</span>
+        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ lpoStats.pending }}</div>
+      <p class="text-xs" [class.text-amber-600]="lpoStats.unread > 0" [class.text-[#5a7380]]="!lpoStats.unread">
+        <ng-container *ngIf="lpoStats.unread > 0"><strong>{{ lpoStats.unread }} unread</strong> — action needed</ng-container>
+        <ng-container *ngIf="lpoStats.unread === 0">All reviewed</ng-container>
+      </p>
+    </button>
+
+    <button (click)="filterCard('lpos','accepted')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='accepted' && activeTable==='lpos'" [class.ring-[#224957]]="lpoFilter==='accepted' && activeTable==='lpos'">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Accepted Value</span>
+        <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      </div>
+      <div class="text-xl font-bold tracking-tight text-green-600 mb-1">{{ fmtCurrency(lpoStats.totalValue) }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ lpoStats.accepted }}</strong> accepted · <strong class="text-[#1a2c35]">{{ lpoStats.fulfilled }}</strong> fulfilled</p>
+    </button>
+
+    <button (click)="filterCard('invoices',undefined,'submitted')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="invoiceFilter==='submitted' && activeTable==='invoices'" [class.ring-[#224957]]="invoiceFilter==='submitted' && activeTable==='invoices'">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Outstanding</span>
+        <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+      </div>
+      <div class="text-xl font-bold tracking-tight text-[#224957] mb-1">{{ fmtCurrency(financeStats.totalOutstanding) }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ financeStats.pendingCount }}</strong> invoices awaiting payment</p>
+    </button>
+
+    <button (click)="filterCard('invoices',undefined,'overdue')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="invoiceFilter==='overdue' && activeTable==='invoices'" [class.ring-[#224957]]="invoiceFilter==='overdue' && activeTable==='invoices'">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Overdue</span>
+        <span class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1" [class.text-red-600]="financeStats.overdueCount > 0">{{ financeStats.overdueCount }}</div>
+      <p class="text-xs" [class.text-red-500]="financeStats.overdueCount > 0" [class.text-[#5a7380]]="!financeStats.overdueCount">
+        <ng-container *ngIf="financeStats.overdueCount > 0"><strong>{{ fmtCurrency(financeStats.totalOverdue) }}</strong> overdue</ng-container>
+        <ng-container *ngIf="financeStats.overdueCount === 0">No overdue invoices</ng-container>
+      </p>
+    </button>
+
+  </div>
+
+  <!-- ── Activity pills ──────────────────────────────────── -->
+  <div class="flex flex-wrap gap-2 mb-7" *ngIf="lpoStats && financeStats">
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#5a7380]"></span><strong class="text-[#1a2c35]">{{ lpoStats.total }}</strong>&nbsp;Total LPOs
+    </span>
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium">
+      <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span><strong class="text-[#1a2c35]">{{ lpoStats.pending }}</strong>&nbsp;Pending
+    </span>
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium">
+      <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span><strong class="text-[#1a2c35]">{{ financeStats.paidCount }}</strong>&nbsp;Invoices Paid
+    </span>
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#224957]"></span><strong class="text-[#1a2c35]">{{ fmtCurrency(financeStats.totalPaid) }}</strong>&nbsp;Total Paid
+    </span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TABLE SECTION — same toggle pattern as dashboard
+  ═════════════════════════════════════════════════════════ -->
+  <div class="bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
+
+    <!-- Toggle header -->
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#eef2f6] flex-wrap gap-3">
+      <div class="flex bg-[#f5f7f9] border border-[#e6edf2] rounded-xl p-0.5">
+        <button
+          class="flex items-center gap-2 px-4 py-2 rounded-[9px] text-sm font-medium transition-all"
+          [class.bg-white]="activeTable==='lpos'" [class.text-[#224957]]="activeTable==='lpos'"
+          [class.font-semibold]="activeTable==='lpos'" [class.shadow-sm]="activeTable==='lpos'"
+          [class.text-[#5a7380]]="activeTable!=='lpos'"
+          (click)="switchTable('lpos')">
+          Purchase Orders
+          <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold transition-all"
+            [class.bg-amber-500]="lpoUnreadCount > 0" [class.text-white]="lpoUnreadCount > 0"
+            [class.bg-[#e6edf2]]="lpoUnreadCount === 0" [class.text-[#5a7380]]="lpoUnreadCount === 0">
+            {{ lpos.length }}
+          </span>
+        </button>
+        <button
+          class="flex items-center gap-2 px-4 py-2 rounded-[9px] text-sm font-medium transition-all"
+          [class.bg-white]="activeTable==='invoices'" [class.text-[#224957]]="activeTable==='invoices'"
+          [class.font-semibold]="activeTable==='invoices'" [class.shadow-sm]="activeTable==='invoices'"
+          [class.text-[#5a7380]]="activeTable!=='invoices'"
+          (click)="switchTable('invoices')">
+          Invoices
+          <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold transition-all"
+            [class.bg-red-500]="invoiceOverdueCount > 0" [class.text-white]="invoiceOverdueCount > 0"
+            [class.bg-[#e6edf2]]="invoiceOverdueCount === 0" [class.text-[#5a7380]]="invoiceOverdueCount === 0">
+            {{ invoices.length }}
+          </span>
+        </button>
+      </div>
+
+      <!-- New Invoice button — only on invoice tab -->
+      <button *ngIf="activeTable === 'invoices'"
+        (click)="openBlankInvoiceModal()"
+        class="flex items-center gap-2 px-4 py-2 bg-[#224957] text-white text-xs font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Invoice
+      </button>
+    </div>
+
+    <div class="p-4">
+
+      <!-- ── LPO TABLE — 5 columns, 5 <td>s ── -->
+
+      <!-- Active filter chip -->
+      <div *ngIf="activeTable==='lpos' && lpoFilter!=='all'"
+        class="flex items-center gap-2 px-5 py-2.5 border-b border-[#f0f4f8]">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f2f7] text-[#224957]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          LPOs: {{ lpoFilter | titlecase }}
+          <button (click)="clearLpoFilter()" class="ml-0.5 hover:text-red-500 transition-colors">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </span>
+        <span class="text-xs text-[#5a7380]">{{ filteredLpos.length }} result{{ filteredLpos.length !== 1 ? 's' : '' }}</span>
+      </div>
+      <div *ngIf="activeTable==='invoices' && invoiceFilter!=='all'"
+        class="flex items-center gap-2 px-5 py-2.5 border-b border-[#f0f4f8]">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f2f7] text-[#224957]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Invoices: {{ invoiceFilter | titlecase }}
+          <button (click)="clearInvoiceFilter()" class="ml-0.5 hover:text-red-500 transition-colors">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </span>
+        <span class="text-xs text-[#5a7380]">{{ filteredInvoices.length }} result{{ filteredInvoices.length !== 1 ? 's' : '' }}</span>
+      </div>
+      <ng-container *ngIf="activeTable === 'lpos'">
+        <app-table
+          [columns]="lpoColumns" [rows]="filteredLpos" [actions]="[]"
+          [rowClickable]="true" [paginator]="true" [rowsPerPage]="10"
+          emptyMessage="No purchase orders found. LPOs issued against your quotations will appear here."
+          (rowClick)="onLpoRowClick($event)">
+          <ng-template appTableBody let-row>
+
+            <!-- 1. LPO No. + unread dot + sub-ref -->
+            <td class="app-table-main-col">
+              <div class="flex items-center gap-2">
+                <span *ngIf="!row.isRead" class="w-2 h-2 rounded-full bg-amber-500 shrink-0 ring-2 ring-amber-100"></span>
+                <div>
+                  <p class="font-semibold text-[#1a2c35] text-sm">{{ row.lpoNumber }}</p>
+                  <p *ngIf="row.quotationNumber" class="text-xs text-[#5a7380]">Quot: {{ row.quotationNumber }}</p>
+                </div>
+              </div>
+            </td>
+
+            <!-- 2. Client + RFQ ref -->
+            <td>
+              <p class="text-sm text-[#1a2c35]">{{ row.clientName }}</p>
+              <p *ngIf="row.rfqNumber" class="text-xs text-[#5a7380]">RFQ: {{ row.rfqNumber }}</p>
+            </td>
+
+            <!-- 3. Delivery date -->
+            <td class="text-sm whitespace-nowrap" [ngClass]="deliveryDateClass(row)">
+              {{ fmtDate(row.deliveryDate) }}
+              <span *ngIf="(row.status==='pending'||row.status==='accepted') && isDueSoon(row.deliveryDate) && !isExpired(row.deliveryDate)"
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600">Soon</span>
+              <span *ngIf="(row.status==='pending'||row.status==='accepted') && isExpired(row.deliveryDate)"
+                class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600">Overdue</span>
+            </td>
+
+            <!-- 4. Total value -->
+            <td class="text-sm font-semibold text-[#224957] text-right whitespace-nowrap">
+              {{ fmtCurrency(row.total, row.currency) }}
+            </td>
+
+            <!-- 5. Status badge -->
+            <td><span [ngClass]="lpoBadge(row.status)">{{ row.status }}</span></td>
+
+          </ng-template>
+        </app-table>
+      </ng-container>
+
+      <!-- ── INVOICE TABLE — 5 columns, 5 <td>s ── -->
+      <ng-container *ngIf="activeTable === 'invoices'">
+        <app-table
+          [columns]="invoiceColumns" [rows]="filteredInvoices" [actions]="[]"
+          [rowClickable]="true" [paginator]="true" [rowsPerPage]="10"
+          emptyMessage="No invoices yet. Accept an LPO and click 'Create Invoice', or use New Invoice above."
+          (rowClick)="onInvoiceRowClick($event)">
+          <ng-template appTableBody let-row>
+
+            <!-- 1. Invoice No. + LPO ref -->
+            <td class="app-table-main-col">
+              <p class="font-semibold text-[#1a2c35] text-sm">{{ row.invoiceNumber }}</p>
+              <p *ngIf="row.lpoNumber" class="text-xs text-[#5a7380]">LPO: {{ row.lpoNumber }}</p>
+            </td>
+
+            <!-- 2. Client -->
+            <td class="text-sm text-[#1a2c35]">{{ row.clientName }}</td>
+
+            <!-- 3. Issued + Due -->
+            <td>
+              <p class="text-sm text-[#1a2c35]">{{ fmtDate(row.issuedDate) }}</p>
+              <p class="text-xs" [class.text-red-500]="row.status==='overdue'" [class.text-[#5a7380]]="row.status!=='overdue'">
+                Due {{ fmtDate(row.dueDate) }}
+              </p>
+            </td>
+
+            <!-- 4. Total + outstanding -->
+            <td class="text-right">
+              <p class="text-sm font-semibold text-[#224957]">{{ fmtCurrency(row.total, row.currency) }}</p>
+              <p *ngIf="row.amountOutstanding > 0" class="text-xs text-amber-600">
+                {{ fmtCurrency(row.amountOutstanding, row.currency) }} due
+              </p>
+            </td>
+
+            <!-- 5. Status badge -->
+            <td><span [ngClass]="invoiceBadge(row.status)">{{ row.status }}</span></td>
+
+          </ng-template>
+        </app-table>
+      </ng-container>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LAYER 1A — LPO SIDE PANEL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showLpoPanel && selectedLpo">
+  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closeLpoPanel()"></div>
+  <aside class="fixed top-0 right-0 h-full z-[1001] w-[640px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+
+    <!-- Head -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedLpo.lpoNumber }}</h2>
+            <span [ngClass]="lpoBadge(selectedLpo.status)">{{ selectedLpo.status }}</span>
+          </div>
+          <p class="text-sm text-[#5a7380]">
+            {{ selectedLpo.clientName }}<span *ngIf="selectedLpo.clientEmail"> · {{ selectedLpo.clientEmail }}</span>
+          </p>
+        </div>
+        <button (click)="closeLpoPanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <!-- Where this sits in the pipeline -->
+      <div class="flex items-center gap-1.5 mb-3">
+        <ng-container *ngFor="let s of lpoLifecycleStages(selectedLpo); let last = last">
+          <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+            [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
+            [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
+            [class.bg-red-50]="s.state==='stopped'" [class.text-red-600]="s.state==='stopped'"
+            [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
+          <span *ngIf="!last" class="text-[#d5dee3] text-xs">—</span>
+        </ng-container>
+      </div>
+      <p class="text-sm text-[#5a7380] mb-3" *ngIf="selectedLpo.quotationNumber || selectedLpo.rfqNumber">
+        Raised from
+        <strong class="text-[#1a2c35]" *ngIf="selectedLpo.quotationNumber">Quotation {{ selectedLpo.quotationNumber }}</strong>
+        <span *ngIf="selectedLpo.quotationNumber && selectedLpo.rfqNumber"> · </span>
+        <strong class="text-[#1a2c35]" *ngIf="selectedLpo.rfqNumber">RFQ {{ selectedLpo.rfqNumber }}</strong>
+      </p>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <span class="text-[#5a7380]">Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedLpo.issuedDate) }}</strong></span>
+        <span [class.text-red-600]="isExpired(selectedLpo.deliveryDate)"
+              [class.text-amber-600]="!isExpired(selectedLpo.deliveryDate) && isDueSoon(selectedLpo.deliveryDate)"
+              [class.text-[#5a7380]]="!isExpired(selectedLpo.deliveryDate) && !isDueSoon(selectedLpo.deliveryDate)">
+          Delivery <strong>{{ fmtDate(selectedLpo.deliveryDate) }}</strong>
+          <span *ngIf="isExpired(selectedLpo.deliveryDate)"> · OVERDUE</span>
+          <span *ngIf="!isExpired(selectedLpo.deliveryDate) && isDueSoon(selectedLpo.deliveryDate)"> · Due soon</span>
+        </span>
+        <span class="text-[#5a7380]">Payment: <strong class="text-[#1a2c35]">{{ selectedLpo.paymentTerms }}</strong></span>
+        <span *ngIf="selectedLpo.quotationNumber" class="text-[#5a7380]">Quot: <strong class="text-[#1a2c35]">{{ selectedLpo.quotationNumber }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+      <!-- Rejection banner -->
+      <div *ngIf="selectedLpo.status === 'rejected' && selectedLpo.rejectionReason"
+        class="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+        <svg class="shrink-0 mt-0.5 text-red-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>
+          <p class="text-xs font-bold text-red-600 mb-0.5">Rejection Reason</p>
+          <p class="text-sm text-red-700 leading-relaxed">{{ selectedLpo.rejectionReason }}</p>
+        </div>
+      </div>
+
+      <!-- Special conditions -->
+      <div *ngIf="selectedLpo.specialConditions">
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Special Conditions</h3>
+        <div class="bg-[#f9fcfd] border border-[#e6edf2] border-l-[3px] border-l-[#224957] rounded-xl px-4 py-3 text-sm text-[#1a2c35] leading-relaxed whitespace-pre-line">{{ selectedLpo.specialConditions }}</div>
+      </div>
+
+      <!-- Delivery info -->
+      <div>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Delivery Details</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2 flex flex-col gap-0.5">
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Delivery Address</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.deliveryAddress }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Payment Terms</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.paymentTerms }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Currency</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.currency }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items -->
+      <div>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Ordered Items ({{ selectedLpo.items.length }})</h3>
+        <div class="flex flex-col gap-2">
+          <div *ngFor="let item of selectedLpo.items; let i = index"
+            class="border border-[#e6edf2] rounded-xl p-4 flex items-center gap-3">
+            <span class="w-5 h-5 rounded-full bg-[#e8f2f7] text-[#224957] text-[9px] font-bold flex items-center justify-center shrink-0">{{ i+1 }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-base font-semibold text-[#1a2c35]">{{ item.name }}</p>
+              <p class="text-sm text-[#5a7380] mt-1">{{ item.description }}</p>
+              <p class="text-sm text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedLpo.currency) }}</p>
+            </div>
+            <span class="text-base font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedLpo.currency) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.subtotal, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.tax, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
+          <span class="text-[#1a2c35]">Total</span>
+          <span class="text-lg text-[#224957]">{{ fmtCurrency(selectedLpo.total, selectedLpo.currency) }}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] sticky bottom-0">
+      <div class="flex items-center gap-2 justify-end flex-wrap">
+        <button (click)="downloadLpo(selectedLpo, $event)"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">
+          ↓ Download LPO
+        </button>
+
+        <!-- Pending: accept / reject -->
+        <ng-container *ngIf="selectedLpo.status === 'pending'">
+          <button (click)="openRejectModal(selectedLpo)"
+            class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors">
+            Reject
+          </button>
+          <button (click)="openAcceptModal(selectedLpo)"
+            class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">
+            Accept LPO ✓
+          </button>
+        </ng-container>
+
+        <!-- Accepted, something left to bill: create invoice -->
+        <button *ngIf="selectedLpo.status === 'accepted' && !lpoFullyInvoiced(selectedLpo)"
+          (click)="createInvoiceFromLpo(selectedLpo)"
+          class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create Invoice
+        </button>
+        <!-- Accepted but nothing left to bill (all invoices already raised) -->
+        <span *ngIf="selectedLpo.status === 'accepted' && lpoFullyInvoiced(selectedLpo)" class="text-xs font-medium text-[#5a7380] flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Fully invoiced
+        </span>
+
+        <!-- Status labels for other states -->
+        <span *ngIf="selectedLpo.status === 'fulfilled'" class="text-xs font-medium text-blue-600 flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Fulfilled
+        </span>
+        <span *ngIf="selectedLpo.status === 'rejected'" class="text-xs font-medium text-red-500">LPO rejected</span>
+      </div>
+    </div>
+
+  </aside>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LAYER 1B — INVOICE SIDE PANEL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showInvoicePanel && selectedInvoice">
+  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closeInvoicePanel()"></div>
+  <aside class="fixed top-0 right-0 h-full z-[1001] w-[600px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+
+    <!-- Head -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <h2 class="text-lg font-bold text-[#1a2c35]">{{ selectedInvoice.invoiceNumber }}</h2>
+            <span [ngClass]="invoiceBadge(selectedInvoice.status)">{{ selectedInvoice.status }}</span>
+          </div>
+          <p class="text-sm text-[#5a7380]">
+            {{ selectedInvoice.clientName }}<span *ngIf="selectedInvoice.clientEmail"> · {{ selectedInvoice.clientEmail }}</span>
+          </p>
+        </div>
+        <button (click)="closeInvoicePanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="flex items-center gap-1.5 mb-3">
+        <ng-container *ngFor="let s of invoiceLifecycleStages(selectedInvoice); let last = last">
+          <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+            [class.bg-[#e8f2f7]]="s.state==='done'" [class.text-[#224957]]="s.state==='done'"
+            [class.bg-amber-50]="s.state==='current'" [class.text-amber-700]="s.state==='current'"
+            [class.bg-[#f5f7f9]]="s.state==='upcoming'" [class.text-[#94a9b3]]="s.state==='upcoming'">{{ s.label }}</span>
+          <span *ngIf="!last" class="text-[#d5dee3] text-xs">—</span>
+        </ng-container>
+      </div>
+      <p class="text-sm text-[#5a7380] mb-3" *ngIf="selectedInvoice.lpoNumber || selectedInvoice.quotationNumber">
+        Billed from
+        <strong class="text-[#1a2c35]" *ngIf="selectedInvoice.lpoNumber">LPO {{ selectedInvoice.lpoNumber }}</strong>
+        <span *ngIf="selectedInvoice.lpoNumber && selectedInvoice.quotationNumber"> · </span>
+        <strong class="text-[#1a2c35]" *ngIf="selectedInvoice.quotationNumber">Quotation {{ selectedInvoice.quotationNumber }}</strong>
+      </p>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#5a7380]">
+        <span>Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedInvoice.issuedDate) }}</strong></span>
+        <span [class.text-red-500]="selectedInvoice.status==='overdue'">Due <strong>{{ fmtDate(selectedInvoice.dueDate) }}</strong></span>
+        <span *ngIf="selectedInvoice.paidDate">Paid <strong class="text-green-600">{{ fmtDate(selectedInvoice.paidDate) }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+      <!-- Payment progress bar -->
+      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4">
+        <div class="flex justify-between text-sm text-[#5a7380] mb-2">
+          <span>Payment progress</span>
+          <span><strong class="text-[#1a2c35]">{{ paymentProgress(selectedInvoice) }}%</strong> paid</span>
+        </div>
+        <div class="w-full h-2 bg-[#e6edf2] rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all"
+            [style.width.%]="paymentProgress(selectedInvoice)"
+            [class.bg-green-500]="selectedInvoice.status==='paid'"
+            [class.bg-amber-400]="selectedInvoice.status!=='paid' && paymentProgress(selectedInvoice)>0"
+            [class.bg-[#e6edf2]]="paymentProgress(selectedInvoice)===0"></div>
+        </div>
+        <div class="flex justify-between text-sm mt-2">
+          <span class="text-green-600 font-medium">Paid: {{ fmtCurrency(selectedInvoice.amountPaid, selectedInvoice.currency) }}</span>
+          <span *ngIf="selectedInvoice.amountOutstanding > 0" class="text-amber-600 font-medium">Outstanding: {{ fmtCurrency(selectedInvoice.amountOutstanding, selectedInvoice.currency) }}</span>
+        </div>
+      </div>
+
+      <!-- Line items -->
+      <div>
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Line Items</h3>
+        <div class="flex flex-col gap-2">
+          <div *ngFor="let item of selectedInvoice.items"
+            class="flex items-start justify-between gap-3 border border-[#e6edf2] rounded-xl p-4">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-[#1a2c35]">{{ item.description }}</p>
+              <p class="text-sm text-[#5a7380] mt-1">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedInvoice.currency) }}</p>
+            </div>
+            <span class="text-base font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedInvoice.currency) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.subtotal, selectedInvoice.currency) }}</span></div>
+        <div class="flex justify-between text-sm text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedInvoice.tax, selectedInvoice.currency) }}</span></div>
+        <div class="flex justify-between text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
+          <span>Total</span><span class="text-[#224957] text-lg">{{ fmtCurrency(selectedInvoice.total, selectedInvoice.currency) }}</span>
+        </div>
+      </div>
+
+      <!-- Bank details -->
+      <div *ngIf="selectedInvoice.bankDetails">
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Payment Details</h3>
+        <div class="border border-[#e6edf2] rounded-xl p-4 grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Bank</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.bankName }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Account Name</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedInvoice.bankDetails.accountName }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5 col-span-2">
+            <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide">Account Number</span>
+            <span class="text-sm text-[#1a2c35] font-medium font-mono tracking-wider">{{ selectedInvoice.bankDetails.accountNumber }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div *ngIf="selectedInvoice.notes">
+        <h3 class="text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">Notes</h3>
+        <p class="text-sm text-[#1a2c35] leading-relaxed bg-[#f9fcfd] border border-[#e6edf2] rounded-xl px-4 py-3">{{ selectedInvoice.notes }}</p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] flex items-center justify-end sticky bottom-0">
+      <button (click)="downloadInvoice(selectedInvoice, $event)"
+        class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">
+        ↓ Download Invoice
+      </button>
+    </div>
+
+  </aside>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LAYER 2 — CREATE INVOICE CENTRE MODAL
+     Opens on top of LPO side panel (pre-filled) or standalone
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showInvoiceModal">
+  <div class="fixed inset-0 z-[1050]" style="background:rgba(15,30,36,0.45);backdrop-filter:blur(1px)" (click)="closeInvoiceModal()"></div>
+  <div class="fixed inset-0 z-[1051] flex items-start justify-center pt-8 px-4 pb-4 overflow-y-auto pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-auto modal-pop flex flex-col pointer-events-auto" (click)="$event.stopPropagation()">
+
+      <!-- Head -->
+      <div class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#eef2f6]">
+        <div>
+          <h2 class="text-lg font-bold text-[#1a2c35]">{{ invoiceForm.invoiceNumber }}</h2>
+          <p class="text-sm text-[#5a7380] mt-0.5">
+            New invoice<span *ngIf="invoiceForm.lpoNumber"> · From LPO {{ invoiceForm.lpoNumber }}</span>
+          </p>
+        </div>
+        <button (click)="closeInvoiceModal()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div *ngIf="sourceLpo" class="flex items-start gap-2.5 mx-6 mt-4 px-4 py-3 bg-[#e8f2f7] border border-[#c4dce8] rounded-xl">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[#224957] shrink-0 mt-0.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <p class="text-sm text-[#224957] leading-relaxed">
+          Raised against <strong>{{ sourceLpo.lpoNumber }}</strong>. Description and unit price are locked to the LPO; quantity can be reduced for a partial/staged delivery.
+          <span *ngIf="excludedFullyInvoicedCount > 0"> {{ excludedFullyInvoicedCount }} item{{ excludedFullyInvoicedCount > 1 ? 's' : '' }} already fully invoiced and left off this draft.</span>
+        </p>
+      </div>
+
+      <!-- Body -->
+      <div class="px-6 py-5 flex flex-col gap-4 overflow-y-auto max-h-[60vh]">
+
+        <!-- Client + Due date row -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-[#5a7380] uppercase tracking-wide mb-1.5">Client Name <span class="text-red-500">*</span></label>
+            <input type="text" [(ngModel)]="invoiceForm.clientName" placeholder="Client name"
+              class="w-full border rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] outline-none transition-all focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10"
+              [class.border-red-400]="invoiceFormErrors['clientName']" [class.border-[#e6edf2]]="!invoiceFormErrors['clientName']" />
+            <p *ngIf="invoiceFormErrors['clientName']" class="text-xs text-red-500 mt-1">{{ invoiceFormErrors['clientName'] }}</p>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-[#5a7380] uppercase tracking-wide mb-1.5">Due Date</label>
+            <input type="date" [(ngModel)]="invoiceForm.dueDate"
+              class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10" />
+          </div>
+        </div>
+
+        <!-- Line items -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-semibold text-[#5a7380] uppercase tracking-wide">Line Items <span class="text-red-500">*</span></label>
+            <button (click)="addInvoiceItem()"
+              class="flex items-center gap-1 text-xs font-semibold text-[#224957] hover:text-[#2d6478] transition-colors">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Item
+            </button>
+          </div>
+          <p *ngIf="invoiceFormErrors['items']" class="text-xs text-red-500 mb-2">{{ invoiceFormErrors['items'] }}</p>
+
+          <div class="flex flex-col gap-2">
+            <div *ngFor="let item of invoiceForm.items; let i = index"
+              class="border rounded-xl p-4 flex gap-3 items-start"
+              [class.border-[#e6edf2]]="!isLockedItem(item)"
+              [class.border-[#c4dce8]]="isLockedItem(item)"
+              [class.bg-[#f9fcfd]]="isLockedItem(item)">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 mb-2">
+                  <input *ngIf="!isLockedItem(item)" type="text" [(ngModel)]="item.description" placeholder="Description"
+                    class="flex-1 border border-[#e6edf2] rounded-lg px-3 py-2 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] outline-none focus:border-[#224957]" />
+                  <p *ngIf="isLockedItem(item)" class="flex-1 text-sm font-medium text-[#1a2c35] px-1 py-1">{{ item.description }}</p>
+                  <span *ngIf="isLockedItem(item)" class="shrink-0 text-xs font-bold uppercase tracking-wide text-[#224957] bg-[#e8f2f7] px-1.5 py-0.5 rounded">From LPO</span>
+                </div>
+                <div class="flex gap-2">
+                  <div class="flex-1">
+                    <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide block mb-1">
+                      Qty <span *ngIf="isLockedItem(item)">(max {{ maxQtyForItem(item) }})</span>
+                    </span>
+                    <input type="number" [value]="item.quantity" (change)="updateItemQty(item, $any($event.target).value)"
+                      class="w-full border border-[#e6edf2] rounded-lg px-3 py-1.5 text-sm text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957]"
+                      min="1" [attr.max]="maxQtyForItem(item)" />
+                  </div>
+                  <div class="flex-1">
+                    <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide block mb-1">Unit</span>
+                    <input type="text" [(ngModel)]="item.unit" placeholder="pcs" [disabled]="isLockedItem(item)"
+                      class="w-full border border-[#e6edf2] rounded-lg px-3 py-1.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] outline-none focus:border-[#224957] disabled:opacity-70 disabled:cursor-not-allowed" />
+                  </div>
+                  <div class="flex-1">
+                    <span class="text-xs text-[#5a7380] font-semibold uppercase tracking-wide block mb-1">Unit Price</span>
+                    <input type="text" inputmode="decimal" [value]="fmtNumber(item.unitPrice)" (change)="updateItemPrice(item, $any($event.target).value)"
+                      [disabled]="isLockedItem(item)"
+                      class="w-full border border-[#e6edf2] rounded-lg px-3 py-1.5 text-sm font-semibold text-[#1a2c35] bg-[#f5f7f9] outline-none focus:border-[#224957] disabled:opacity-70 disabled:cursor-not-allowed" />
+                  </div>
+                  <div class="flex-none flex flex-col justify-end pb-1">
+                    <span class="text-xs font-bold text-[#224957] whitespace-nowrap">{{ fmtCurrency(item.totalPrice, invoiceForm.currency || 'NGN') }}</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Remove item — only for lines that aren't tied to an LPO -->
+              <button *ngIf="!isLockedItem(item) && (invoiceForm.items.length) > 1" (click)="removeInvoiceItem(i)"
+                class="w-6 h-6 flex items-center justify-center text-[#94a9b3] hover:text-red-500 transition-colors shrink-0 mt-0.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+              <span *ngIf="isLockedItem(item)" class="w-6 h-6 flex items-center justify-center text-[#c4dce8] shrink-0 mt-0.5" title="Locked to the LPO — reduce quantity instead of removing">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Signature -->
+        <div class="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[#e6edf2] bg-[#f9fafb]">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-[#1a2c35]">Include my signature</p>
+            <p class="text-xs text-[#9ab0bb]" *ngIf="profile?.signatureDataUrl">Uses the signature saved in your profile</p>
+            <p class="text-xs text-amber-600" *ngIf="!profile?.signatureDataUrl">No saved signature yet — set one up in Profile → Your Signature</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <img *ngIf="profile?.signatureDataUrl" [src]="profile?.signatureDataUrl" class="h-7 object-contain" />
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" [(ngModel)]="invoiceForm.includeSignature" [disabled]="!profile?.signatureDataUrl" class="sr-only peer" />
+              <div class="w-9 h-5 bg-[#e6edf2] peer-checked:bg-[#224957] rounded-full peer-disabled:opacity-50 transition-colors"></div>
+              <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-xs font-semibold text-[#5a7380] uppercase tracking-wide mb-1.5">Notes</label>
+          <textarea [(ngModel)]="invoiceForm.notes" rows="2" placeholder="Payment instructions, additional notes…"
+            class="w-full border border-[#e6edf2] rounded-xl px-4 py-2.5 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] resize-none outline-none focus:border-[#224957] focus:ring-2 focus:ring-[#224957]/10 font-sans"></textarea>
+        </div>
+
+      </div>
+
+      <!-- Footer with totals + actions -->
+      <div class="flex items-end justify-between gap-4 px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] rounded-b-2xl flex-wrap">
+        <div class="flex flex-col gap-1 min-w-[200px]">
+          <div class="flex justify-between gap-8 text-sm text-[#5a7380]">
+            <span>Subtotal</span>
+            <span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(invoiceForm.subtotal || 0, invoiceForm.currency || 'NGN') }}</span>
+          </div>
+          <div class="flex justify-between gap-8 text-sm text-[#5a7380]">
+            <span>VAT (7.5%)</span>
+            <span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(invoiceForm.tax || 0, invoiceForm.currency || 'NGN') }}</span>
+          </div>
+          <div class="flex justify-between gap-8 text-base font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5">
+            <span class="text-[#1a2c35]">Total</span>
+            <span class="text-lg text-[#224957]">{{ fmtCurrency(invoiceForm.total || 0, invoiceForm.currency || 'NGN') }}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button (click)="closeInvoiceModal()" class="px-3 py-2 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+          <button (click)="submitInvoice()" class="px-5 py-2 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">Create Invoice</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LPO ACCEPT CONFIRM MODAL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showAcceptModal && lpoToAccept">
+  <div class="fixed inset-0 z-[1100]" style="background:rgba(15,30,36,0.5);backdrop-filter:blur(2px)" (click)="closeAcceptModal()"></div>
+  <div class="fixed inset-0 z-[1101] flex items-center justify-center p-4 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-[420px] max-w-full p-8 text-center modal-pop pointer-events-auto" (click)="$event.stopPropagation()">
+      <div class="w-14 h-14 rounded-full bg-green-50 text-green-600 flex items-center justify-center mx-auto mb-4">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3 class="text-base font-bold text-[#1a2c35] mb-2">Accept this LPO?</h3>
+      <p class="text-sm text-[#5a7380] leading-relaxed mb-2">
+        You are about to accept <strong class="text-[#1a2c35]">{{ lpoToAccept.lpoNumber }}</strong> from
+        <strong class="text-[#1a2c35]">{{ lpoToAccept.clientName }}</strong>.
+      </p>
+      <p class="text-sm font-semibold text-[#224957] mb-6">Total: {{ fmtCurrency(lpoToAccept.total, lpoToAccept.currency) }}</p>
+      <div class="flex gap-3 justify-center">
+        <button (click)="closeAcceptModal()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+        <button (click)="confirmAccept()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors">Yes, Accept It</button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LPO REJECT MODAL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showRejectModal && lpoToReject">
+  <div class="fixed inset-0 z-[1100]" style="background:rgba(15,30,36,0.5);backdrop-filter:blur(2px)" (click)="closeRejectModal()"></div>
+  <div class="fixed inset-0 z-[1101] flex items-center justify-center p-4 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-[460px] max-w-full modal-pop pointer-events-auto" (click)="$event.stopPropagation()">
+      <div class="px-6 pt-6 pb-4 border-b border-[#eef2f6]">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-[#1a2c35]">Reject LPO</h3>
+            <p class="text-sm text-[#5a7380]">{{ lpoToReject.lpoNumber }} · {{ lpoToReject.clientName }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-5">
+        <label class="block text-xs font-bold uppercase tracking-[0.05em] text-[#5a7380] mb-1.5">Reason for rejection <span class="text-red-500">*</span></label>
+        <textarea [(ngModel)]="rejectionReason" (input)="rejectionError = false" rows="4"
+          placeholder="Explain why you are rejecting this LPO — this will be visible to the client…"
+          class="w-full border rounded-xl px-4 py-3 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] leading-relaxed resize-none outline-none transition-all font-sans"
+          [class.border-red-400]="rejectionError" [class.ring-2]="rejectionError" [class.ring-red-100]="rejectionError"
+          [class.border-[#e6edf2]]="!rejectionError"></textarea>
+        <p *ngIf="rejectionError" class="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+          A rejection reason is required.
+        </p>
+      </div>
+      <div class="px-6 pb-6 flex gap-3 justify-end">
+        <button (click)="closeRejectModal()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+        <button (click)="confirmReject()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors">Reject LPO</button>
+      </div>
+    </div>
+  </div>
+</ng-container>

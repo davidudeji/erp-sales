@@ -1,0 +1,185 @@
+<div class="lpo-preview-container" *ngIf="!isLoading && quotation">
+  <div class="preview-wrapper">
+
+    <!-- Header Section -->
+    <div class="preview-header">
+      <div class="header-back-title-group">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div class="header-content">
+          <div class="header-badge">
+            <i class="fas fa-file-invoice"></i>
+            <span>LPO GENERATION</span>
+          </div>
+          <h1 class="header-title">Generate LPO for {{ quotation.vendorName }}</h1>
+          <p class="header-subtitle">Preview, download, and send the Local Purchase Order</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar glass">
+      <div class="action-bar-left">
+        <div class="meta-info">
+          <span><i class="fas fa-hashtag"></i> Ref: #{{ lpoNumber }}</span>
+          <span class="meta-divider"></span>
+          <span><i class="fas fa-file-contract"></i> Quote Ref: #{{ quotation.id }}</span>
+          <span class="meta-divider"></span>
+          <span><i class="fas fa-money-bill-wave"></i> Total Value: {{ formatCurrency(quotation.totalAmount) }}</span>
+        </div>
+      </div>
+      <div class="action-bar-right">
+        <button class="btn-action edit-btn-bar" (click)="downloadLpoPDF()" [disabled]="isDownloading">
+          <i class="fas" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"
+            [class.fa-file-pdf]="!isDownloading"></i>
+          Download LPO PDF
+        </button>
+        <button *ngIf="quotation.status !== 'LPO_SENT'" class="btn-action success" (click)="sendToVendor()"
+          [disabled]="isProcessing" style="background: #184440; color: white;">
+          <i class="fas" [class.fa-spinner]="isProcessing" [class.fa-spin]="isProcessing"
+            [class.fa-paper-plane]="!isProcessing"></i>
+          Send to Vendor
+        </button>
+        <button *ngIf="lpoId" class="btn-action" (click)="navigateToDelivery()"
+          style="background: #0369a1; color: white;">
+          <i class="fas fa-truck"></i>
+          Track Delivery / GRN
+        </button>
+        <button *ngIf="lpoId" class="btn-action" (click)="navigateToPaymentVoucher()"
+          style="background: #7c3aed; color: white;">
+          <i class="fas fa-money-check-dollar"></i>
+          Payment Voucher
+        </button>
+      </div>
+    </div>
+
+    <!-- Success banner -->
+    <p *ngIf="successMessage || quotation.status === 'LPO_SENT'" class="success-message"
+      style="color: #047857; font-weight: 600; margin: 1rem 0; padding: 0.75rem; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px;">
+      <i class="fas fa-check-circle"></i> LPO successfully sent to {{ quotation.vendorName }}.
+    </p>
+
+    <!-- LPO Sheet -->
+    <div class="lpo-sheet-wrapper shadow-lg" id="lpo-sheet"
+      style="background: white; padding: 3rem; border-radius: 12px; max-width: 800px; margin: 2rem auto; font-family: 'Outfit', sans-serif; color: #1e293b; border: 1px solid #e2e8f0;">
+
+      <!-- LPO Document Header -->
+      <div
+        style="display: flex; justify-content: space-between; border-bottom: 2px solid #184440; padding-bottom: 1.5rem; margin-bottom: 2rem;">
+        <div>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #184440; letter-spacing: 0.5px;">LOCAL PURCHASE ORDER
+          </div>
+          <div style="font-size: 0.95rem; color: #64748b; margin-top: 0.25rem;">Purchase Order for Goods & Services
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">LPO Number: {{ lpoNumber }}</div>
+          <div style="font-size: 0.9rem; color: #64748b; margin-top: 0.25rem;">Date: {{ formatDate(orderDate) }}</div>
+        </div>
+      </div>
+
+      <!-- Parties details -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2.5rem; font-size: 0.95rem;">
+        <!-- Buyer / Customer Info -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 8px;">
+          <h4
+            style="margin: 0 0 0.75rem 0; color: #184440; font-weight: 700; font-size: 1rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.5rem;">
+            BUYER DETAILS</h4>
+          <strong style="color: #0f172a; display: block; font-size: 1.05rem;">Queendom Procurement Corp.</strong>
+          <span style="color: #475569; display: block; margin-top: 0.25rem; line-height: 1.5;">
+            Plot 12, Corporate Avenue,<br>
+            Victoria Island, Lagos,<br>
+            Nigeria
+          </span>
+          <span style="color: #475569; display: block; margin-top: 0.5rem; font-size: 0.9rem;">
+            <i class="fas fa-envelope"></i> orders&#64;queensheba.example<br>
+            <i class="fas fa-phone"></i> +234 1 888 0100
+          </span>
+        </div>
+
+        <!-- Vendor Info -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 8px;">
+          <h4
+            style="margin: 0 0 0.75rem 0; color: #184440; font-weight: 700; font-size: 1rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.5rem;">
+            VENDOR DETAILS</h4>
+          <strong style="color: #0f172a; display: block; font-size: 1.05rem;">{{ quotation.vendorName }}</strong>
+          <span style="color: #475569; display: block; margin-top: 0.25rem; line-height: 1.5;">
+            Code: {{ quotation.vendorCode }}<br>
+            Rating: ★ {{ quotation.vendorRating }} / 5.0
+          </span>
+          <span style="color: #475569; display: block; margin-top: 0.5rem; font-size: 0.9rem;">
+            <i class="fas fa-envelope"></i> {{ quotation.vendorEmail || 'N/A' }}<br>
+            <i class="fas fa-phone"></i> {{ quotation.vendorPhone || 'N/A' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Items breakdown -->
+      <h4 style="color: #0f172a; font-weight: 700; font-size: 1.05rem; margin: 0 0 0.75rem 0;">Ordered Items</h4>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 2.5rem; font-size: 0.9rem;">
+        <thead>
+          <tr style="background: #184440; color: white;">
+            <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: left;">Item Description</th>
+            <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; width: 4rem;">Qty</th>
+            <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; width: 8rem;">Unit Price</th>
+            <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; width: 10rem;">Total Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of quotation.items">
+            <td style="padding: 10px; border: 1px solid #e2e8f0; line-height: 1.4;">
+              <strong style="color: #0f172a;">{{ item.name }}</strong>
+              <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">{{ item.description }}</div>
+            </td>
+            <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: right; font-weight: 600;">{{ item.quantity
+              }}</td>
+            <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: right;">{{ formatCurrency(item.unitPrice)
+              }}</td>
+            <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: right; font-weight: 700; color: #184440;">
+              {{ formatCurrency(item.totalPrice) }}</td>
+          </tr>
+          <tr *ngIf="quotation.items.length === 0">
+            <td colspan="4" style="padding: 20px; text-align: center; color: #64748b; border: 1px solid #e2e8f0;">No
+              items found.</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr style="background: #f8fafc; font-weight: bold; font-size: 1rem;">
+            <td colspan="3" style="padding: 12px; border: 1px solid #e2e8f0; text-align: right;">GRAND TOTAL:</td>
+            <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: right; color: #184440; font-size: 1.1rem;">
+              {{ formatCurrency(quotation.totalAmount) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Terms & conditions -->
+      <div
+        style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.6; margin-bottom: 3rem;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #0f172a; font-weight: 700; font-size: 0.95rem;">LPO Terms & Conditions
+        </h4>
+        <div style="color: #475569;">
+          1. Delivery timeline must be within {{ quotation.deliveryTimeline || 'agreed schedule' }} as specified in
+          quotation Ref #{{ quotation.id }}.<br>
+          2. Goods must be delivered in perfect condition and match specifications listed above.<br>
+          3. Invoice should be submitted immediately upon full delivery and installation.<br>
+          4. Validity of this Local Purchase Order is {{ quotation.validityDays || 30 }} days.
+        </div>
+      </div>
+
+      <!-- Signatures -->
+      <div
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; text-align: center; font-size: 0.9rem; padding-top: 1rem; margin-bottom: 1rem;">
+        <div>
+          <div style="border-bottom: 1px solid #94a3b8; height: 3rem; margin-bottom: 0.5rem;"></div>
+          <strong style="color: #0f172a; display: block;">Authorized Signatory</strong>
+          <span style="color: #64748b; font-size: 0.8rem;">Queendom Procurement Corp</span>
+        </div>
+        <div>
+          <div style="border-bottom: 1px solid #94a3b8; height: 3rem; margin-bottom: 0.5rem;"></div>
+          <strong style="color: #0f172a; display: block;">Authorized Vendor Signatory</strong>
+          <span style="color: #64748b; font-size: 0.8rem;">{{ quotation.vendorName }}</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

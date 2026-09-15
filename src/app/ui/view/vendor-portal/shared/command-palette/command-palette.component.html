@@ -1,0 +1,50 @@
+<ng-container *ngIf="open">
+  <div class="vpcp-scrim" (click)="close()"></div>
+
+  <div class="vpcp-panel" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="vpcp-inputRow">
+      <svg class="vpcp-searchIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input
+        #paletteInput
+        autofocus
+        class="vpcp-input"
+        type="text"
+        placeholder="Search RFQs, quotations, orders, invoices…"
+        [(ngModel)]="query"
+        (ngModelChange)="onQueryChange()"
+      />
+      <kbd class="vpcp-kbd">Esc</kbd>
+    </div>
+
+    <div class="vpcp-results" *ngIf="results.length; else vpcpEmpty">
+      <ng-container *ngFor="let r of results; let i = index; trackBy: trackByResult">
+        <div class="vpcp-groupLabel" *ngIf="isGroupStart(i)">{{ groupLabel(r.kind) }}</div>
+        <button
+          type="button"
+          class="vpcp-row"
+          [class.is-active]="i === activeIndex"
+          (mouseenter)="activeIndex = i"
+          (click)="select(r)"
+        >
+          <span class="vpcp-row__main">
+            <span class="vpcp-row__title">{{ r.title }}</span>
+            <span class="vpcp-row__subtitle">{{ r.subtitle }}</span>
+          </span>
+          <span class="vpcp-row__badge" *ngIf="r.badge">{{ r.badge }}</span>
+        </button>
+      </ng-container>
+    </div>
+
+    <ng-template #vpcpEmpty>
+      <div class="vpcp-noResults">No matches for "{{ query }}"</div>
+    </ng-template>
+
+    <div class="vpcp-footer">
+      <span><kbd class="vpcp-kbd">↑</kbd><kbd class="vpcp-kbd">↓</kbd> Navigate</span>
+      <span><kbd class="vpcp-kbd">↵</kbd> Select</span>
+      <span><kbd class="vpcp-kbd">Esc</kbd> Close</span>
+    </div>
+  </div>
+</ng-container>

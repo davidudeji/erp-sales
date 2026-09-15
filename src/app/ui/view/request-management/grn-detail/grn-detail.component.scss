@@ -1,0 +1,408 @@
+// ────────────────────────────────────────────────────────────────────────────
+// Design tokens — matches delivery-tracking.component.scss's palette
+// ────────────────────────────────────────────────────────────────────────────
+$surface-0:      #ffffff;
+$surface-1:      #f8fafc;
+$surface-2:      #f1f5f9;
+$border:         #e2e8f0;
+$text-primary:   #0f172a;
+$text-secondary: #475569;
+$text-muted:     #94a3b8;
+$accent-blue:    #2563eb;
+$accent-green:   #16a34a;
+$accent-yellow:  #d97706;
+$accent-red:     #dc2626;
+$radius-sm:      6px;
+$radius-md:      10px;
+$radius-lg:      14px;
+$shadow-card:    0 2px 12px rgba(0, 0, 0, 0.06);
+$transition:     all 0.2s ease;
+
+.grnd-root {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color: $text-primary;
+  padding: 4px;
+  max-width: 1000px;
+}
+
+.grnd-back { margin-bottom: 8px; }
+
+.grnd-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 10px;
+  text-align: center;
+  color: $text-secondary;
+
+  h3 { margin: 4px 0 0; color: $text-primary; }
+  p { margin: 0; font-size: 13px; }
+}
+
+.grnd-empty-icon {
+  font-size: 32px;
+  color: $text-muted;
+}
+
+// ── Header ─────────────────────────────────────────────────────────────────
+
+.grnd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.grnd-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grnd-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.grnd-subtitle {
+  font-size: 13px;
+  color: $text-secondary;
+  margin: 4px 0 0;
+}
+
+.grnd-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.grnd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: $radius-sm;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid $border;
+  background: $surface-0;
+  color: $text-primary;
+  transition: $transition;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { background: $surface-2; }
+  &:disabled { opacity: 0.6; cursor: default; }
+
+  &--primary { background: $accent-blue; border-color: $accent-blue; color: #fff; &:hover:not(:disabled) { background: #1d4ed8; } }
+  &--success { background: $accent-green; border-color: $accent-green; color: #fff; &:hover:not(:disabled) { background: #15803d; } }
+  &--warning { background: $accent-yellow; border-color: $accent-yellow; color: #fff; &:hover:not(:disabled) { background: #b45309; } }
+  &--danger { background: $accent-red; border-color: $accent-red; color: #fff; &:hover:not(:disabled) { background: #b91c1c; } }
+  &--danger-outline { color: $accent-red; border-color: rgba($accent-red, 0.35); &:hover:not(:disabled) { background: rgba($accent-red, 0.08); } }
+}
+
+// ── Approve inline form ──────────────────────────────────────────────────
+
+.grnd-approve-form {
+  background: rgba($accent-green, 0.06);
+  border: 1px solid rgba($accent-green, 0.3);
+  border-radius: $radius-md;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.grnd-approve-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.grnd-flabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: $text-muted;
+}
+
+.grnd-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 9px 12px;
+  border: 1px solid $border;
+  border-radius: $radius-sm;
+  font-size: 13px;
+  font-family: inherit;
+
+  &:focus { outline: none; border-color: $accent-blue; }
+}
+
+// ── Status badge ──────────────────────────────────────────────────────────
+
+.grnd-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+
+  &--info { background: rgba($text-muted, 0.15); color: $text-secondary; }
+  &--warning { background: rgba($accent-yellow, 0.15); color: $accent-yellow; }
+  &--success { background: rgba($accent-green, 0.15); color: $accent-green; }
+  &--danger { background: rgba($accent-red, 0.15); color: $accent-red; }
+}
+
+.grnd-condition-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &--acceptable, &--item-good { background: rgba($accent-green, 0.15); color: $accent-green; }
+  &--partial, &--item-short, &--item-excess { background: rgba($accent-yellow, 0.15); color: $accent-yellow; }
+  &--rejected, &--item-damaged, &--item-wrong { background: rgba($accent-red, 0.15); color: $accent-red; }
+}
+
+// ── Value summary ─────────────────────────────────────────────────────────
+
+.grnd-value-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.grnd-value-card {
+  background: $surface-0;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: $shadow-card;
+}
+
+.grnd-value-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: $text-muted;
+}
+
+.grnd-value-amount {
+  font-size: 18px;
+  font-weight: 800;
+
+  &--danger { color: $accent-red; }
+  &--success { color: $accent-green; }
+}
+
+// ── Cards ─────────────────────────────────────────────────────────────────
+
+.grnd-card {
+  background: $surface-0;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.grnd-card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid $border;
+  background: $surface-1;
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    i { color: $accent-blue; }
+  }
+}
+
+.grnd-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+.grnd-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  &--wide { grid-column: span 2; }
+}
+
+.grnd-info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.grnd-info-value {
+  font-size: 13px;
+  color: $text-primary;
+  font-weight: 500;
+}
+
+.grnd-discrepancy {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  border-top: 1px solid $border;
+  background: rgba($accent-red, 0.05);
+
+  i { color: $accent-red; margin-top: 2px; }
+  strong { display: block; font-size: 12px; margin-bottom: 2px; }
+  p { margin: 0; font-size: 13px; color: $text-secondary; }
+}
+
+// ── Line items table ──────────────────────────────────────────────────────
+
+.grnd-table-wrap { overflow-x: auto; }
+
+.grnd-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    background: $surface-1;
+    padding: 10px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: $text-muted;
+    border-bottom: 1px solid $border;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  td {
+    padding: 12px 14px;
+    border-bottom: 1px solid $surface-2;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  tr:last-child td { border-bottom: none; }
+}
+
+.grnd-item-name {
+  display: block;
+  font-weight: 600;
+}
+
+.grnd-item-meta {
+  display: block;
+  font-size: 11px;
+  color: $text-muted;
+}
+
+.grnd-td-danger { color: $accent-red; font-weight: 700; }
+.grnd-td-amount { font-weight: 700; }
+
+.grnd-empty-row {
+  text-align: center;
+  color: $text-muted;
+  padding: 24px !important;
+}
+
+// ── Photos ────────────────────────────────────────────────────────────────
+
+.grnd-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  padding: 16px 18px;
+}
+
+.grnd-photo-thumb {
+  display: block;
+  border-radius: $radius-sm;
+  overflow: hidden;
+  border: 1px solid $border;
+  aspect-ratio: 1;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+}
+
+// ── Timeline ──────────────────────────────────────────────────────────────
+
+.grnd-timeline {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.grnd-timeline-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+
+  div { display: flex; flex-direction: column; gap: 2px; }
+  strong { font-size: 13px; }
+  span { font-size: 12px; color: $text-muted; }
+}
+
+.grnd-timeline-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: $border;
+  margin-top: 4px;
+  flex-shrink: 0;
+
+  &--done { background: $accent-green; }
+}
+
+// ── Delete confirmation ───────────────────────────────────────────────────
+
+.grnd-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.grnd-confirm-modal {
+  background: $surface-0;
+  border-radius: $radius-md;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  max-width: 420px;
+  width: 100%;
+  padding: 28px;
+  text-align: center;
+}
+
+.grnd-confirm-icon { font-size: 32px; margin-bottom: 10px; }
+.grnd-confirm-title { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
+.grnd-confirm-sub { font-size: 13px; color: $text-secondary; margin-bottom: 20px; line-height: 1.5; }
+.grnd-confirm-actions { display: flex; gap: 8px; justify-content: center; }

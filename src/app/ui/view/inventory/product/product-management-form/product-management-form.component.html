@@ -1,0 +1,678 @@
+<!-- product-management-form.component.html -->
+<p-toast position="top-right"></p-toast>
+
+<div class="ql-layout">
+
+    <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <button type="button" class="ql-back-btn" (click)="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h1 class="ql-title">
+                        {{ isEditMode ? 'Edit Product' : 'Add New Product' }}
+                    </h1>
+                    <span class="ql-subtitle">
+                        {{ isEditMode ? 'Update product details' : 'Add a new product to your catalog' }}
+                    </span>
+                </div>
+                <span class="ql-badge ql-badge--{{ isEditMode ? 'primary' : 'success' }}">
+                    {{ isEditMode ? 'Editing' : 'New' }}
+                </span>
+                <span class="ql-sku-badge" *ngIf="isEditMode && productForm.get('sku')?.value">
+                    <i class="fas fa-tag"></i>
+                    {{ productForm.get('sku')?.value }}
+                </span>
+            </div>
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="goBack()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="onSubmit()" [disabled]="isSubmitting">
+                    <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-save]="!isSubmitting" 
+                       [class.ql-spinning]="isSubmitting"></i>
+                    {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update Product' : 'Create Product') }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Error banner -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading product details...</span>
+        </div>
+
+        <!-- ============================================================
+        FORM CONTENT
+        ============================================================ -->
+        <form [formGroup]="productForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" class="ql-form-layout">
+
+            <div class="ql-form-grid">
+                <!-- LEFT COLUMN -->
+                <div class="ql-form-column ql-form-column--left">
+
+                    <!-- Section: General Information -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <h3>General Information</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Product Name <span class="ql-required">*</span></label>
+                                <input type="text" formControlName="name" class="ql-input" 
+                                       placeholder="Enter product name"
+                                       [class.ql-input--error]="isFieldInvalid('name')">
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('name')">
+                                    {{ getFieldError('name') }}
+                                </span>
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel">Description <span class="ql-required">*</span></label>
+                                <textarea formControlName="description" class="ql-input ql-textarea" 
+                                          placeholder="Enter product description" rows="3"
+                                          [class.ql-input--error]="isFieldInvalid('description')"></textarea>
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('description')">
+                                    {{ getFieldError('description') }}
+                                </span>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Category <span class="ql-required">*</span></label>
+                                    <select formControlName="category" class="ql-input"
+                                            [class.ql-input--error]="isFieldInvalid('category')"
+                                            (change)="onCategoryChange($event)">
+                                        <option value="">Select category</option>
+                                        <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                                        <option value="__add_category__">+ Add Category</option>
+                                    </select>
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('category')">
+                                        {{ getFieldError('category') }}
+                                    </span>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Measurement Unit</label>
+                                    <select formControlName="measurementUnit" class="ql-input" (change)="onUnitChange($event)">
+                                        <option *ngFor="let unit of measurementUnits" [value]="unit.name">
+                                            {{ unit.name }}
+                                        </option>
+                                        <option value="__add_unit__">+ Add Unit</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Identifiers -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <h3>Identifiers</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Part Number</label>
+                                    <input type="text" formControlName="partNumber" class="ql-input" 
+                                           placeholder="Enter part number">
+                                </div>
+                                <div class="ql-field">
+                                    <label class="ql-flabel">SKU</label>
+                                    <div class="ql-input-group">
+                                        <input type="text" formControlName="sku" class="ql-input" 
+                                               placeholder="Auto-generated" readonly>
+                                        <button type="button" class="ql-btn ql-btn--icon" 
+                                                (click)="generateSku()" title="Generate SKU">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Code (UPC/Barcode)</label>
+                                    <div class="ql-input-group">
+                                        <input type="text" formControlName="code" class="ql-input" 
+                                               placeholder="Enter code">
+                                        <button type="button" class="ql-btn ql-btn--icon ql-btn--success" 
+                                                (click)="autoFillFromCode()" title="Auto-fill from code">
+                                            <i class="fas fa-magic"></i>
+                                        </button>
+                                    </div>
+                                    <span class="ql-hint">Enter a product code (UPC/Barcode) to auto-fill product details</span>
+                                </div>
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Reorder Threshold</label>
+                                    <input type="number" formControlName="reorderThreshold" class="ql-input" 
+                                           placeholder="Enter threshold" min="0">
+                                </div>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Weight (KG)</label>
+                                    <input type="number" formControlName="weight" class="ql-input" 
+                                           placeholder="0.00" step="0.01" min="0">
+                                </div>
+                                <div class="ql-field" style="justify-content: flex-end;">
+                                    <label class="ql-checkbox">
+                                        <input type="checkbox" formControlName="availableOnline">
+                                        <span class="ql-checkbox-custom"></span>
+                                        Available in Online Store
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Pricing & Inventory -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <h3>Pricing &amp; Inventory</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Cost Price <span class="ql-required">*</span></label>
+                                    <div class="ql-currency-input">
+                                        <span class="ql-currency-symbol">₦</span>
+                                        <input type="number" formControlName="costPrice" class="ql-input" 
+                                               placeholder="0.00" step="0.01" min="0"
+                                               [class.ql-input--error]="isFieldInvalid('costPrice')">
+                                    </div>
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('costPrice')">
+                                        {{ getFieldError('costPrice') }}
+                                    </span>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Selling Price <span class="ql-required">*</span></label>
+                                    <div class="ql-currency-input">
+                                        <span class="ql-currency-symbol">₦</span>
+                                        <input type="number" formControlName="sellingPrice" class="ql-input" 
+                                               placeholder="0.00" step="0.01" min="0"
+                                               [class.ql-input--error]="isFieldInvalid('sellingPrice')">
+                                    </div>
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('sellingPrice')">
+                                        {{ getFieldError('sellingPrice') }}
+                                    </span>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Quantity <span class="ql-required">*</span></label>
+                                    <input type="number" formControlName="quantity" class="ql-input" 
+                                           placeholder="0" min="0"
+                                           [class.ql-input--error]="isFieldInvalid('quantity')">
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('quantity')">
+                                        {{ getFieldError('quantity') }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Expiry Date</label>
+                                    <input type="date" formControlName="expiryDate" class="ql-input" 
+                                           [min]="todayDateString"
+                                           [class.ql-input--error]="isFieldInvalid('expiryDate')">
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('expiryDate')">
+                                        {{ getFieldError('expiryDate') }}
+                                    </span>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Discount</label>
+                                    <select formControlName="discount" class="ql-input">
+                                        <option *ngFor="let opt of discountOptions" [value]="opt">{{ opt }}</option>
+                                    </select>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Supplier</label>
+                                    <select formControlName="supplier" class="ql-input" (change)="onSupplierChange($event)">
+                                        <option value="">Select supplier</option>
+                                        <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
+                                        <option value="__add_supplier__">+ Add Supplier</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Tax(es)</label>
+                                    <select formControlName="taxes" class="ql-input">
+                                        <option *ngFor="let tax of taxOptions" [value]="tax">{{ tax }}</option>
+                                    </select>
+                                </div>
+                                <div class="ql-field" style="justify-content: flex-end;">
+                                    <label class="ql-checkbox">
+                                        <input type="checkbox" formControlName="isComboProduct" 
+                                               (change)="showComboOptions = !showComboOptions">
+                                        <span class="ql-checkbox-custom"></span>
+                                        Is this a combo product?
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Stock Movement -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <h3>Stock Movement</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Movement Date</label>
+                                    <input type="date" formControlName="movementDate" class="ql-input" 
+                                           [max]="todayDateString"
+                                           [class.ql-input--error]="isFieldInvalid('movementDate')">
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('movementDate')">
+                                        {{ getFieldError('movementDate') }}
+                                    </span>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Quantity</label>
+                                    <input type="number" formControlName="movementQuantity" class="ql-input" 
+                                           placeholder="1" min="1">
+                                </div>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Purchase Price</label>
+                                    <div class="ql-currency-input">
+                                        <span class="ql-currency-symbol">₦</span>
+                                        <input type="text" formControlName="movementPurchasePrice" class="ql-input" 
+                                               placeholder="N/A" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Tax</label>
+                                    <input type="text" formControlName="movementTax" class="ql-input" 
+                                           placeholder="e.g. VAT 7.5%">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Combo Options (Conditional) -->
+                    <div class="ql-form-card" *ngIf="showComboOptions">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <h3>Combo Options</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <p class="ql-hint">Configure the products that make up this combo product.</p>
+                            <button type="button" class="ql-btn ql-btn--primary ql-btn--sm" 
+                                    (click)="openVariantModal()">
+                                <i class="fas fa-plus"></i> Add Combo Item
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Section: Product Variants -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-cubes"></i>
+                            </div>
+                            <h3>Product Variants</h3>
+                            <button type="button" class="ql-btn ql-btn--primary ql-btn--sm" 
+                                    (click)="openVariantModal()">
+                                <i class="fas fa-plus"></i> Add Variant
+                            </button>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div *ngIf="variantsArray.length === 0" class="ql-empty-state">
+                                <i class="fas fa-cubes"></i>
+                                <p>No variants added yet</p>
+                                <span>Click "Add Variant" to create product variations</span>
+                            </div>
+                            <div *ngFor="let variant of variantsArray.controls; let i = index" class="ql-variant-item">
+                                <div class="ql-variant-info">
+                                    <span class="ql-variant-name">{{ variant.get('name')?.value || 'Variant ' + (i + 1) }}</span>
+                                    <span class="ql-variant-sku" *ngIf="variant.get('sku')?.value">
+                                        {{ variant.get('sku')?.value }}
+                                    </span>
+                                    <span class="ql-variant-attributes">
+                                        <span class="ql-attr-tag" *ngIf="variant.get('attributes.color')?.value">
+                                            {{ variant.get('attributes.color')?.value }}
+                                        </span>
+                                        <span class="ql-attr-tag" *ngIf="variant.get('attributes.size')?.value">
+                                            {{ variant.get('attributes.size')?.value }}
+                                        </span>
+                                        <span class="ql-attr-tag" *ngIf="variant.get('attributes.material')?.value">
+                                            {{ variant.get('attributes.material')?.value }}
+                                        </span>
+                                    </span>
+                                    <span class="ql-variant-price">₦{{ (variant.get('price')?.value || 0) | number:'1.2-2' }}</span>
+                                    <span class="ql-variant-qty">{{ variant.get('quantity')?.value || 0 }} units</span>
+                                </div>
+                                <div class="ql-variant-actions">
+                                    <button type="button" class="ql-btn ql-btn--icon ql-btn--ghost-sm" 
+                                            (click)="openEditVariantModal(i)" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="ql-btn ql-btn--icon ql-btn--danger-sm" 
+                                            (click)="removeVariant(i)" title="Remove">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN -->
+                <div class="ql-form-column ql-form-column--right">
+
+                    <!-- Section: Product Images -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-images"></i>
+                            </div>
+                            <h3>Product Images</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-upload-zone" (click)="imageInput.click()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to upload product images</p>
+                                <span>Supports PNG, JPG, JPEG</span>
+                            </div>
+                            <input type="file" #imageInput accept="image/*" (change)="onImageSelected($event)" multiple style="display: none;">
+
+                            <div class="ql-input-group ql-input-group--url">
+                                <input type="text" #urlInput class="ql-input" placeholder="Or paste image URL...">
+                                <button type="button" class="ql-btn ql-btn--primary ql-btn--sm" 
+                                        (click)="addImageUrl(urlInput.value); urlInput.value=''">
+                                    Add
+                                </button>
+                            </div>
+
+
+
+                            <div class="ql-image-grid" *ngIf="images.length > 0">
+                                <div class="ql-image-item" *ngFor="let img of images; let idx = index">
+                                    <img [src]="img" alt="Product image">
+                                    <button type="button" class="ql-btn ql-btn--icon ql-btn--danger-sm" 
+                                            (click)="removeImage(idx)" title="Remove">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Pricing Summary -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-percent"></i>
+                            </div>
+                            <h3>Pricing Summary</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-summary-item">
+                                <span class="ql-summary-label">Selling Price</span>
+                                <span class="ql-summary-value">
+                                    {{ (productForm.get('sellingPrice')?.value || 0) | currency:'NGN':'symbol':'1.2-2' }}
+                                </span>
+                            </div>
+                            <div class="ql-summary-item">
+                                <span class="ql-summary-label">Cost Price</span>
+                                <span class="ql-summary-value">
+                                    {{ (productForm.get('costPrice')?.value || 0) | currency:'NGN':'symbol':'1.2-2' }}
+                                </span>
+                            </div>
+                            <div class="ql-summary-item">
+                                <span class="ql-summary-label">Discount</span>
+                                <span class="ql-summary-value">{{ productForm.get('discount')?.value || 'No Discount' }}</span>
+                            </div>
+                            <div class="ql-summary-item ql-summary-item--total">
+                                <span class="ql-summary-label">Current Stock Value</span>
+                                <span class="ql-summary-value ql-summary-grand-total">
+                                    {{ ((productForm.get('sellingPrice')?.value || 0) * 
+                                        (productForm.get('quantity')?.value || 0)) | currency:'NGN':'symbol':'1.2-2' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Reference -->
+                    <div class="ql-form-card">
+                        <div class="ql-form-card-header">
+                            <div class="ql-form-card-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <h3>Reference</h3>
+                        </div>
+                        <div class="ql-form-card-body">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Reference (optional)</label>
+                                <input type="text" formControlName="reference" class="ql-input" 
+                                       placeholder="Enter reference">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+
+        <!-- ============================================================
+        VARIANT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showVariantModal" (click)="$event.target === $event.currentTarget && (showVariantModal = false)">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3>
+                        <i class="fas fa-cube"></i>
+                        {{ currentVariantIndex !== null ? 'Edit Variant' : 'Add Variant' }}
+                    </h3>
+                    <button type="button" class="ql-modal-close" (click)="showVariantModal = false">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <form [formGroup]="variantModalForm" (ngSubmit)="saveVariant()">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Variant Name <span class="ql-required">*</span></label>
+                            <input type="text" formControlName="name" class="ql-input" placeholder="e.g., Large, Red, Deluxe"
+                                   [class.ql-input--error]="variantModalForm.get('name')?.invalid && variantModalForm.get('name')?.touched">
+                            <span class="ql-field-error" *ngIf="variantModalForm.get('name')?.invalid && variantModalForm.get('name')?.touched">
+                                Variant name is required
+                            </span>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">SKU</label>
+                                <input type="text" formControlName="sku" class="ql-input" placeholder="Auto-generated">
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Price <span class="ql-required">*</span></label>
+                                <div class="ql-currency-input">
+                                    <span class="ql-currency-symbol">₦</span>
+                                    <input type="number" formControlName="price" class="ql-input" placeholder="0.00" step="0.01" min="0"
+                                           [class.ql-input--error]="variantModalForm.get('price')?.invalid && variantModalForm.get('price')?.touched">
+                                </div>
+                                <span class="ql-field-error" *ngIf="variantModalForm.get('price')?.invalid && variantModalForm.get('price')?.touched">
+                                    Price must be 0 or greater
+                                </span>
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Quantity <span class="ql-required">*</span></label>
+                                <input type="number" formControlName="quantity" class="ql-input" placeholder="0" min="0"
+                                       [class.ql-input--error]="variantModalForm.get('quantity')?.invalid && variantModalForm.get('quantity')?.touched">
+                                <span class="ql-field-error" *ngIf="variantModalForm.get('quantity')?.invalid && variantModalForm.get('quantity')?.touched">
+                                    Quantity must be 0 or greater
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Color</label>
+                                <input type="text" formControlName="color" class="ql-input" placeholder="e.g., Red">
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Size</label>
+                                <input type="text" formControlName="size" class="ql-input" placeholder="e.g., Large">
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Material</label>
+                                <input type="text" formControlName="material" class="ql-input" placeholder="e.g., Wood">
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Model</label>
+                                <input type="text" formControlName="model" class="ql-input" placeholder="e.g., XPS 13">
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Year</label>
+                                <input type="text" formControlName="year" class="ql-input" placeholder="e.g., 2026">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="showVariantModal = false">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="saveVariant()">
+                        {{ currentVariantIndex !== null ? 'Save Changes' : 'Add Variant' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD CATEGORY MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddCategoryModal"
+             (click)="$event.target === $event.currentTarget && closeAddCategoryModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-tags" style="color: #2EB270;"></i> Add Custom Category</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddCategoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Category Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newCategoryName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Office Miscellaneous">
+                    </div>
+                    <div class="ql-field">
+                        <label class="ql-flabel">Description</label>
+                        <textarea class="ql-input" rows="3" [(ngModel)]="newCategoryDesc"
+                                  [ngModelOptions]="{standalone: true}"
+                                  placeholder="Enter category description..."></textarea>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddCategoryModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newCategoryName.trim()"
+                            (click)="saveCustomCategory()">
+                        <i class="fas fa-save"></i> Save Category
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD UNIT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddUnitModal"
+             (click)="$event.target === $event.currentTarget && closeAddUnitModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-balance-scale" style="color: #2EB270;"></i> Add Custom Unit</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddUnitModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Unit Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newUnitName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. dozen">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddUnitModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newUnitName.trim()"
+                            (click)="saveCustomUnit()">
+                        <i class="fas fa-save"></i> Save Unit
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD SUPPLIER MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddSupplierModal"
+             (click)="$event.target === $event.currentTarget && closeAddSupplierModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-truck" style="color: #2EB270;"></i> Add Custom Supplier</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddSupplierModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Supplier Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newSupplierName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Acme Distributors">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddSupplierModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newSupplierName.trim()"
+                            (click)="saveCustomSupplier()">
+                        <i class="fas fa-save"></i> Save Supplier
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

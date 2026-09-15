@@ -1,0 +1,194 @@
+<div class="scw-page">
+
+  <!-- Persistent progress header -->
+  <div class="scw-header">
+    <div>
+      <h1 class="scw-title">Stop Checklist</h1>
+      <p class="scw-subtitle" *ngIf="batch">{{ doneCount }} of {{ totalCount }} stops completed</p>
+    </div>
+    <div class="scw-stats" *ngIf="batch">
+      <span class="scw-stat"><span class="scw-stat-dot delivered"></span>{{ deliveredCount }} delivered</span>
+      <span class="scw-stat"><span class="scw-stat-dot failed"></span>{{ failedCount }} failed</span>
+      <span class="scw-stat"><span class="scw-stat-dot pending"></span>{{ pendingCount }} pending</span>
+    </div>
+  </div>
+
+  <div *ngIf="!isOnline" class="scw-offline-banner">You're offline — actions will sync automatically once you're back online.</div>
+
+  <div *ngIf="isLoading" class="scw-empty">Loading your route…</div>
+
+  <div *ngIf="!isLoading && !batch" class="scw-empty-state">
+    <p class="text-[15px] font-semibold text-[#14181b] mb-2">No active route</p>
+    <p class="text-[13px] text-[#9aa7ae]">Head to Route Builder to claim your next batch.</p>
+  </div>
+
+  <!-- Route complete -->
+  <div *ngIf="batch && isRouteComplete" class="scw-complete">
+    <div class="scw-complete-badge">✓</div>
+    <h2 class="scw-complete-title">Route complete</h2>
+    <p class="scw-complete-stats">{{ deliveredCount }} delivered · {{ failedCount }} failed · {{ totalCount }} total</p>
+    <p class="text-[13px] text-[#9aa7ae]">Head to the Route Builder tab to claim your next batch.</p>
+  </div>
+
+  <!-- Master-detail workspace -->
+  <div *ngIf="batch && !isRouteComplete" class="scw-workspace" [class.mobile-detail-open]="!!selectedStop">
+
+    <!-- LEFT: Route itinerary -->
+    <div class="scw-list-panel">
+      <div class="scw-list-header">
+        <h2 class="scw-panel-title">Route Itinerary</h2>
+        <button type="button" class="scw-filter-btn" aria-label="Filter">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#71828a" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+        </button>
+      </div>
+
+      <div class="scw-stop-rows">
+        <div
+          *ngFor="let stop of openStops"
+          class="scw-stop-row"
+          [class.active]="selectedStop?.orderId === stop.orderId"
+          [class.en-route]="stop.stopStatus === StopStatus.EN_ROUTE"
+          (click)="selectStop(stop)"
+        >
+          <div class="flex items-center justify-between mb-1">
+            <span class="scw-stop-label">Stop {{ stop.sequence }}</span>
+            <span class="scw-status-pill" [ngClass]="stop.stopStatus">{{ stop.stopStatus === StopStatus.EN_ROUTE ? 'EN ROUTE' : 'PENDING' }}</span>
+          </div>
+          <p class="scw-stop-address">{{ stop.location }}</p>
+          <p class="scw-stop-meta">{{ stop.customerName }}<span *ngIf="stop.customerName && stop.itemsSummary"> · </span>{{ stop.itemsSummary }}</p>
+          <span *ngIf="isPendingSync(stop)" class="scw-sync-pill">Pending sync</span>
+          <button
+            *ngIf="stop.stopStatus === StopStatus.PENDING"
+            type="button"
+            class="scw-enroute-link"
+            (click)="markEnRoute(stop, $event)"
+          >
+            Mark En Route
+          </button>
+        </div>
+
+        <div *ngIf="completedStops.length" class="scw-completed-divider">COMPLETED</div>
+
+        <div *ngFor="let stop of completedStops" class="scw-stop-row completed">
+          <div class="flex items-center justify-between mb-1">
+            <span class="scw-stop-label muted">Stop {{ stop.sequence }}</span>
+            <span class="scw-status-pill" [ngClass]="stop.stopStatus">{{ stop.stopStatus }}</span>
+          </div>
+          <p class="scw-stop-address muted">{{ stop.location }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Action panel (master-detail; full-screen on mobile) -->
+    <div class="scw-detail-panel" *ngIf="selectedStop as stop">
+      <button type="button" class="scw-back-btn" (click)="backToList()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="m15 18-6-6 6-6"></path></svg>
+        Back to list
+      </button>
+
+      <div class="scw-detail-head">
+        <div class="flex-1 min-w-0">
+          <span class="scw-stop-badge">STOP {{ stop.sequence }}</span>
+          <h2 class="scw-detail-address">{{ stop.location }}</h2>
+          <div class="scw-detail-meta-row">
+            <span class="scw-detail-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg>{{ stop.customerName || '—' }}</span>
+            <span class="scw-detail-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>{{ stop.itemsSummary }}</span>
+          </div>
+        </div>
+        <div class="scw-mini-map">
+          <app-route-map [stops]="[stop]"></app-route-map>
+        </div>
+      </div>
+
+      <!-- DELIVERED MODE -->
+      <div *ngIf="actionMode === 'delivered'" class="scw-detail-body">
+        <h3 class="scw-section-title">Proof of Delivery Capture</h3>
+
+        <!-- Signature (default/expanded capture zone) -->
+        <div *ngIf="captureMode === 'signature'" class="scw-sig-panel">
+          <div class="flex items-center justify-between mb-2">
+            <span class="scw-sig-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" class="inline mr-1"><path d="M3 17c3-1 5-4 7-8 1.5-3 3-4 4 0 1 3-1 6 2 6s4-3 5-5"></path></svg>
+              Signature Required
+            </span>
+            <button type="button" class="scw-clear-link" (click)="clearSignature()">Clear</button>
+          </div>
+          <canvas #sigCanvas width="600" height="160" class="scw-sig-canvas"></canvas>
+          <p class="scw-sig-hint">Tap or click to sign</p>
+        </div>
+
+        <!-- Photo capture -->
+        <div *ngIf="captureMode === 'photo'" class="scw-sig-panel">
+          <div class="flex items-center justify-between mb-2">
+            <span class="scw-sig-label">Delivery Photo</span>
+          </div>
+          <img *ngIf="photoDataUrl" [src]="photoDataUrl" class="scw-photo-preview" alt="Delivery photo" />
+          <label class="scw-photo-upload">
+            <input type="file" accept="image/*" capture="environment" (change)="onPhotoSelected($event)" class="hidden" />
+            {{ photoDataUrl ? 'Retake Photo' : 'Tap to Take Photo' }}
+          </label>
+        </div>
+
+        <!-- Code entry -->
+        <div *ngIf="captureMode === 'code'" class="scw-sig-panel">
+          <span class="scw-sig-label mb-2 block">Access / Delivery Code</span>
+          <input type="text" class="scw-code-input" placeholder="Enter code" [(ngModel)]="accessCode" />
+        </div>
+
+        <!-- Alternate capture method cards -->
+        <div class="scw-alt-methods">
+          <button type="button" class="scw-alt-card" [class.active]="captureMode === 'photo'" (click)="setCaptureMode('photo')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00a191" stroke-width="1.8"><rect x="2" y="6" width="20" height="14" rx="2"></rect><circle cx="12" cy="13" r="3.5"></circle><path d="M8 6l1.5-2.5h5L16 6"></path></svg>
+            <span>Take Photo</span>
+          </button>
+          <button type="button" class="scw-alt-card" [class.active]="captureMode === 'code'" (click)="setCaptureMode('code')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00a191" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h6"></path></svg>
+            <span>Enter Code</span>
+          </button>
+        </div>
+
+        <h3 class="scw-section-title mt-5">Receiver Name (Optional)</h3>
+        <input type="text" class="scw-text-input" placeholder="e.g. John Doe, Neighbor" [(ngModel)]="receiverName" />
+      </div>
+
+      <!-- FAILED MODE -->
+      <div *ngIf="actionMode === 'failed'" class="scw-detail-body">
+        <h3 class="scw-section-title">Select Reason</h3>
+        <div class="scw-reason-list">
+          <label *ngFor="let reason of failureReasons" class="scw-reason-row" [class.selected]="selectedReason === reason">
+            <span>{{ getFailureReasonLabel(reason) }}</span>
+            <input type="radio" name="failureReason" [value]="reason" [(ngModel)]="selectedReason" class="scw-radio" />
+          </label>
+        </div>
+        <h3 class="scw-section-title mt-5">Note (Optional)</h3>
+        <textarea class="scw-textarea" rows="3" placeholder="Add any extra detail…" [(ngModel)]="failureNote"></textarea>
+      </div>
+
+      <!-- Footer actions -->
+      <div class="scw-detail-footer">
+        <ng-container *ngIf="actionMode === 'delivered'">
+          <button type="button" class="scw-btn scw-btn-fail-outline" (click)="setActionMode('failed')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+            Mark Failed
+          </button>
+          <button type="button" class="scw-btn scw-btn-deliver" [disabled]="!hasProof || isSubmittingAction" (click)="confirmDelivered()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M20 6 9 17l-5-5"></path></svg>
+            {{ isSubmittingAction ? 'Confirming…' : 'Mark Delivered' }}
+          </button>
+        </ng-container>
+        <ng-container *ngIf="actionMode === 'failed'">
+          <button type="button" class="scw-btn scw-btn-neutral" (click)="setActionMode('delivered')">Back to Delivery</button>
+          <button type="button" class="scw-btn scw-btn-fail" [disabled]="!selectedReason || isSubmittingAction" (click)="confirmFailed()">
+            {{ isSubmittingAction ? 'Confirming…' : 'Confirm Failure' }}
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Empty detail state (desktop only — nothing selected) -->
+    <div class="scw-detail-panel scw-detail-empty" *ngIf="!selectedStop">
+      <p class="text-[14px] text-[#9aa7ae]">Select a stop from the list to record its outcome.</p>
+    </div>
+  </div>
+
+</div>

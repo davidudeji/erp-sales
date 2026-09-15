@@ -1,0 +1,321 @@
+<!-- branch-inventory-table.component.html -->
+<div class="branch-inventory-table">
+
+    <!-- ============================================================
+  HEADER
+  ============================================================ -->
+    <div class="table-header">
+        <div class="header-left">
+            <h3 *ngIf="!compact">
+                <i class="fas fa-boxes"></i>
+                Branch Inventory
+                <span class="item-count" *ngIf="!isLoading">{{ totalItems }} items</span>
+            </h3>
+            <div class="filter-summary" *ngIf="getActiveFilterCount() > 0">
+                <span class="filter-badge">{{ getActiveFilterCount() }} filters applied</span>
+                <button class="clear-filters-btn" (click)="clearFilters()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn-refresh" (click)="refresh()" [disabled]="isLoading" title="Refresh">
+                <i class="fas fa-sync-alt" [class.spinning]="isLoading"></i>
+            </button>
+            <button class="btn-primary" (click)="bulkAction('transfer')" *ngIf="getSelectedCount() > 0">
+                <i class="fas fa-exchange-alt"></i>
+                Transfer ({{ getSelectedCount() }})
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+  FILTER BAR
+  ============================================================ -->
+    <div class="filter-bar" [formGroup]="filterForm">
+        <div class="filter-row">
+            <!-- Search -->
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" placeholder="Search products by name or SKU..."
+                    (input)="onSearchInput($event)" [value]="filterForm.get('search')?.value || ''" />
+                <button class="search-clear" *ngIf="filterForm.get('search')?.value"
+                    (click)="filterForm.patchValue({ search: '' }); applyFilters()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Stock Status Filter -->
+            <div class="filter-group">
+                <label>Stock Status</label>
+                <select formControlName="stockStatus" class="filter-select" (change)="applyFilters()">
+                    <option *ngFor="let status of stockStatuses" [value]="status">
+                        {{ status === 'ALL' ? 'All Statuses' : status }}
+                    </option>
+                </select>
+            </div>
+
+            <!-- Stock Range -->
+            <div class="filter-group compact">
+                <label>Min Stock</label>
+                <input type="number" formControlName="minStock" class="filter-input" placeholder="0"
+                    (input)="applyFilters()" />
+            </div>
+            <div class="filter-group compact">
+                <label>Max Stock</label>
+                <input type="number" formControlName="maxStock" class="filter-input" placeholder="∞"
+                    (input)="applyFilters()" />
+            </div>
+
+            <button class="btn-reset" (click)="clearFilters()">
+                <i class="fas fa-undo-alt"></i>
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+  LOADING STATE
+  ============================================================ -->
+    <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner-glow"></div>
+        <p>Loading inventory...</p>
+    </div>
+
+    <!-- ============================================================
+  ERROR STATE
+  ============================================================ -->
+    <div *ngIf="error && !isLoading" class="error-state">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>{{ error }}</p>
+        <button class="btn-primary-sm" (click)="refresh()">Retry</button>
+    </div>
+
+    <!-- ============================================================
+  TABLE
+  ============================================================ -->
+    <div *ngIf="!isLoading && !error" class="table-container">
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <!-- Select -->
+                        <th class="checkbox-col">
+                            <input type="checkbox" [checked]="selectAll" (change)="toggleSelectAll()" />
+                        </th>
+                        <!-- Product -->
+                        <th (click)="toggleSort('productName')" class="sortable">
+                            Product <i class="fas" [class]="getSortIcon('productName')"></i>
+                        </th>
+                        <!-- SKU -->
+                        <th (click)="toggleSort('sku')" class="sortable">
+                            SKU <i class="fas" [class]="getSortIcon('sku')"></i>
+                        </th>
+                        <!-- Stock -->
+                        <th (click)="toggleSort('quantity')" class="sortable stock-col">
+                            Stock <i class="fas" [class]="getSortIcon('quantity')"></i>
+                        </th>
+                        <!-- Reorder Point -->
+                        <th (click)="toggleSort('reorderPoint')" class="sortable">
+                            Reorder <i class="fas" [class]="getSortIcon('reorderPoint')"></i>
+                        </th>
+                        <!-- Safety Stock -->
+                        <th (click)="toggleSort('safetyStock')" class="sortable">
+                            Safety <i class="fas" [class]="getSortIcon('safetyStock')"></i>
+                        </th>
+                        <!-- Price -->
+                        <th (click)="toggleSort('sellingPrice')" class="sortable price-col">
+                            Price <i class="fas" [class]="getSortIcon('sellingPrice')"></i>
+                        </th>
+                        <!-- Status -->
+                        <th (click)="toggleSort('status')" class="sortable status-col">
+                            Status <i class="fas" [class]="getSortIcon('status')"></i>
+                        </th>
+                        <!-- Actions -->
+                        <th class="actions-heading">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <!-- Empty State -->
+                    <tr *ngIf="filteredItems.length === 0">
+                        <td [attr.colspan]="compact ? 8 : 9" class="empty-cell">
+                            <div class="empty-state-small">
+                                <i class="fas fa-boxes"></i>
+                                <p>No inventory items found</p>
+                                <p class="empty-hint">Try adjusting your filters</p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Data Rows -->
+                    <tr *ngFor="let item of getPaginatedItems()"
+                        [class]="'stock-' + getStockStatusClass(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))">
+                        <!-- Select -->
+                        <td class="checkbox-col" (click)="$event.stopPropagation()">
+                            <input type="checkbox" [checked]="isSelected(item.id)"
+                                (change)="toggleSelectItem(item.id)" />
+                        </td>
+
+                        <!-- Product -->
+                        <td class="product-col">
+                            <div class="product-info" (click)="viewProduct(item.productId)">
+                                <div class="product-avatar"
+                                    [style.background]="getStockStatusColor(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))">
+                                    {{ item.productName.charAt(0).toUpperCase() }}
+                                </div>
+                                <div>
+                                    <div class="product-name">{{ item.productName }}</div>
+                                    <div class="product-meta" *ngIf="!compact">
+                                        <span class="branch-label">{{ item.branchName }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- SKU -->
+                        <td class="sku-col">{{ item.sku }}</td>
+
+                        <!-- Stock -->
+                        <td class="stock-col">
+                            <span class="stock-badge"
+                                [class]="'stock-' + getStockStatusClass(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))">
+                                {{ item.quantity }}
+                            </span>
+                        </td>
+
+                        <!-- Reorder Point -->
+                        <td class="reorder-col">{{ item.reorderPoint }}</td>
+
+                        <!-- Safety Stock -->
+                        <td class="safety-col">{{ item.safetyStock }}</td>
+
+                        <!-- Price -->
+                        <td class="price-col">{{ formatCurrency(item.sellingPrice) }}</td>
+
+                        <!-- Status -->
+                        <td class="status-col">
+                            <span class="status-badge"
+                                [class]="'status-' + getStockStatusClass(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))">
+                                <span class="status-dot"></span>
+                                {{ getStockStatusLabel(getStockStatus(item.quantity, item.reorderPoint,
+                                item.safetyStock)) }}
+                            </span>
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="actions-col" (click)="$event.stopPropagation()">
+                            <div class="actions-wrapper">
+                                <button class="action-btn view-btn" (click)="viewProduct(item.productId)"
+                                    title="View Product">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn edit-btn" (click)="openEditModal(item)" title="Edit Stock">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                                <button class="action-btn transfer-btn" (click)="requestTransfer(item.productId)"
+                                    title="Transfer Stock">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ============================================================
+    PAGINATION
+    ============================================================ -->
+        <div class="pagination-bar" *ngIf="filteredItems.length > 0">
+            <div class="pagination-info">
+                Showing {{ (currentPage - 1) * pageSize + 1 }} to
+                {{ Math.min(currentPage * pageSize, totalItems) }} of
+                {{ totalItems }} items
+            </div>
+
+            <div class="pagination-controls">
+                <div class="page-size-selector">
+                    <select (change)="changePageSize($any($event.target).value)" [value]="pageSize">
+                        <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+                    </select>
+                </div>
+
+                <div class="page-buttons">
+                    <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="page-btn" *ngFor="let page of getPageNumbers()" [class.active]="page === currentPage"
+                        [class.ellipsis]="page === 0" (click)="page !== 0 && goToPage(page)">
+                        {{ page === 0 ? '…' : page }}
+                    </button>
+                    <button class="page-btn" (click)="goToPage(currentPage + 1)"
+                        [disabled]="currentPage === getTotalPages()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+  EDIT MODAL
+  ============================================================ -->
+    <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Stock</h3>
+                <button class="modal-close" (click)="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body" *ngIf="editingItem">
+                <div class="product-summary">
+                    <div class="product-avatar-large">
+                        {{ editingItem.productName.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="product-info">
+                        <h4>{{ editingItem.productName }}</h4>
+                        <p class="sku">{{ editingItem.sku }}</p>
+                        <p class="branch">{{ editingItem.branchName }}</p>
+                    </div>
+                </div>
+
+                <form [formGroup]="editForm">
+                    <div class="form-group">
+                        <label for="edit-quantity">Stock Quantity</label>
+                        <input type="number" id="edit-quantity" formControlName="quantity" class="form-control"
+                            min="0" />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-reorder">Reorder Point</label>
+                            <input type="number" id="edit-reorder" formControlName="reorderPoint" class="form-control"
+                                min="0" />
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-safety">Safety Stock</label>
+                            <input type="number" id="edit-safety" formControlName="safetyStock" class="form-control"
+                                min="0" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-price">Selling Price (₦)</label>
+                        <input type="number" id="edit-price" formControlName="sellingPrice" class="form-control" min="0"
+                            step="0.01" />
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" (click)="closeEditModal()">Cancel</button>
+                <button class="btn-primary" (click)="saveEdit()" [disabled]="editForm.invalid || isSaving">
+                    <i class="fas" [class.fa-save]="!isSaving" [class.fa-spinner]="isSaving" [class.fa-spin]="isSaving"></i> {{ isSaving ? 'Saving...' : 'Save Changes' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

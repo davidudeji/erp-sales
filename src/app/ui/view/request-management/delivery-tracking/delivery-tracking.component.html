@@ -1,0 +1,590 @@
+<div class="delivery-tracking-root">
+
+  <!-- ───────── TAB BAR ───────── -->
+  <div class="tab-bar">
+    <button class="tab-btn" [class.active]="activeTab === 'tracking'" (click)="activeTab = 'tracking'">
+      <i class="pi pi-truck"></i>
+      <span>Delivery Status</span>
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'grn'" (click)="activeTab = 'grn'">
+      <i class="pi pi-clipboard"></i>
+      <span>GRN Form</span>
+      <span *ngIf="grn" class="tab-badge" [ngClass]="'badge-' + getGrnStatusSeverity(grn.status)">
+        {{ getGrnStatusLabel(grn.status) }}
+      </span>
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'history'" (click)="activeTab = 'history'">
+      <i class="pi pi-history"></i>
+      <span>History</span>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       TAB: DELIVERY STATUS
+  ═══════════════════════════════════════════ -->
+  <div *ngIf="activeTab === 'tracking'" class="tab-panel">
+
+    <!-- Loading -->
+    <div *ngIf="isLoadingDelivery" class="empty-state">
+      <i class="pi pi-spin pi-spinner empty-icon"></i>
+      <p>Loading delivery tracking…</p>
+    </div>
+
+    <!-- No tracking yet -->
+    <div *ngIf="!isLoadingDelivery && !delivery" class="empty-state">
+      <i class="pi pi-truck empty-icon" style="color: #94a3b8"></i>
+      <h3>No delivery tracking yet</h3>
+      <p>Delivery tracking will appear here once the vendor confirms dispatch for <strong>{{ lpoNumber }}</strong>.</p>
+      <p class="empty-hint">You will be notified automatically when the status is updated.</p>
+    </div>
+
+    <!-- Delivery info -->
+    <ng-container *ngIf="!isLoadingDelivery && delivery">
+
+      <!-- Current status banner -->
+      <div class="status-banner" [style.border-color]="getStatusInfo(delivery.currentStatus)?.color">
+        <div class="status-banner-icon" [style.background]="getStatusInfo(delivery.currentStatus)?.color + '1a'">
+          <i [class]="getStatusInfo(delivery.currentStatus)?.icon" [style.color]="getStatusInfo(delivery.currentStatus)?.color" style="font-size:1.75rem"></i>
+        </div>
+        <div class="status-banner-body">
+          <div class="status-banner-label">Current Status</div>
+          <div class="status-banner-value" [style.color]="getStatusInfo(delivery.currentStatus)?.color">
+            {{ getStatusInfo(delivery.currentStatus)?.label }}
+          </div>
+          <div class="status-banner-meta">
+            <span *ngIf="delivery.trackingNumber">
+              <strong>Tracking #:</strong> {{ delivery.trackingNumber }}
+            </span>
+            <span *ngIf="delivery.carrierName">
+              <strong>Carrier:</strong> {{ delivery.carrierName }}
+            </span>
+          </div>
+        </div>
+        <div class="status-banner-eta" *ngIf="delivery.currentStatus !== 'DELIVERED'">
+          <div class="eta-label">ETA</div>
+          <div class="eta-date">{{ formatDate(delivery.estimatedDeliveryDate) }}</div>
+          <div class="eta-countdown" [class.overdue]="getDaysUntilDelivery() < 0">
+            <ng-container *ngIf="getDaysUntilDelivery() >= 0">
+              {{ getDaysUntilDelivery() }} day{{ getDaysUntilDelivery() !== 1 ? 's' : '' }} away
+            </ng-container>
+            <ng-container *ngIf="getDaysUntilDelivery() < 0">
+              {{ getDaysUntilDelivery() * -1 }} day{{ getDaysUntilDelivery() !== -1 ? 's' : '' }} overdue
+            </ng-container>
+          </div>
+        </div>
+        <div class="status-banner-eta" *ngIf="delivery.currentStatus === 'DELIVERED'">
+          <div class="eta-label">Delivered</div>
+          <div class="eta-date">{{ formatDate(delivery.actualDeliveryDate) }}</div>
+        </div>
+      </div>
+
+      <!-- Progress stepper (main 5 stages only) -->
+      <div class="stepper-section">
+        <div class="stepper">
+          <ng-container *ngFor="let step of [
+            { value: 'SCHEDULED', label: 'Scheduled', icon: 'pi pi-calendar' },
+            { value: 'DISPATCHED', label: 'Dispatched', icon: 'pi pi-box' },
+            { value: 'IN_TRANSIT', label: 'In Transit', icon: 'pi pi-truck' },
+            { value: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', icon: 'pi pi-send' },
+            { value: 'DELIVERED', label: 'Delivered', icon: 'pi pi-check-circle' }
+          ]; let i = index; let last = last">
+            <div class="stepper-node-wrap">
+              <div class="stepper-node"
+                [class.completed]="getDeliveryStatusStep() > i + 1"
+                [class.active]="getDeliveryStatusStep() === i + 1"
+                [class.pending]="getDeliveryStatusStep() < i + 1">
+                <i [class]="step.icon"></i>
+              </div>
+              <div class="stepper-label">{{ step.label }}</div>
+            </div>
+            <div *ngIf="!last" class="stepper-line"
+              [class.completed]="getDeliveryStatusStep() > i + 1">
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Contact / delivery address -->
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="detail-card-title"><i class="pi pi-map-marker"></i> Delivery Address</div>
+          <div class="detail-card-value">{{ delivery.deliveryAddress }}</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-card-title"><i class="pi pi-user"></i> Contact Person</div>
+          <div class="detail-card-value">{{ delivery.contactPerson }}</div>
+          <div class="detail-card-sub">{{ delivery.contactPhone }}</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-card-title"><i class="pi pi-building"></i> Vendor</div>
+          <div class="detail-card-value">{{ delivery.vendorName }}</div>
+          <div class="detail-card-sub">LPO: {{ delivery.lpoNumber }}</div>
+        </div>
+        <div class="detail-card" *ngIf="delivery.grnNumber">
+          <div class="detail-card-title"><i class="pi pi-file-check"></i> GRN Reference</div>
+          <div class="detail-card-value">{{ delivery.grnNumber }}</div>
+        </div>
+      </div>
+
+      <!-- Tracking timeline -->
+      <div class="section-header">
+        <i class="pi pi-list-check"></i>
+        <span>Tracking Timeline</span>
+      </div>
+      <div class="timeline" *ngIf="delivery.timeline?.length; else noTimeline">
+        <div class="timeline-entry" *ngFor="let event of delivery.timeline; trackBy: trackByIndex">
+          <div class="timeline-dot" [style.background]="getStatusInfo(event.status)?.color ?? '#64748b'"></div>
+          <div class="timeline-content">
+            <div class="timeline-header-row">
+              <span class="timeline-status-badge" [style.color]="getStatusInfo(event.status)?.color">
+                {{ getStatusInfo(event.status)?.label ?? event.status }}
+              </span>
+              <span class="timeline-time">{{ formatDate(event.timestamp) }}</span>
+            </div>
+            <div class="timeline-description">{{ event.description }}</div>
+            <div class="timeline-meta" *ngIf="event.location || event.actor">
+              <span *ngIf="event.location"><i class="pi pi-map-marker"></i> {{ event.location }}</span>
+              <span *ngIf="event.actor"><i class="pi pi-user"></i> {{ event.actor }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ng-template #noTimeline>
+        <div class="empty-state small">
+          <p>No tracking events recorded yet.</p>
+        </div>
+      </ng-template>
+
+    </ng-container>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       TAB: GRN FORM
+  ═══════════════════════════════════════════ -->
+  <div *ngIf="activeTab === 'grn'" class="tab-panel">
+
+    <!-- GRN APPROVED — read-only summary -->
+    <ng-container *ngIf="grn && grn.status === 'APPROVED'">
+      <div class="grn-approved-banner">
+        <i class="pi pi-verified"></i>
+        <div>
+          <strong>GRN Approved</strong>
+          <p>{{ grn.grnNumber }} — Approved by {{ grn.approvedBy }} on {{ formatDate(grn.approvedAt) }}</p>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="grnSummary"></ng-container>
+    </ng-container>
+
+    <!-- GRN SUBMITTED — pending approval -->
+    <ng-container *ngIf="grn && grn.status === 'SUBMITTED'">
+      <div class="grn-pending-banner">
+        <i class="pi pi-clock"></i>
+        <div>
+          <strong>Awaiting Finance Approval</strong>
+          <p>{{ grn.grnNumber }} was submitted on {{ formatDate(grn.submittedAt) }}. Finance will review and approve.</p>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="grnSummary"></ng-container>
+    </ng-container>
+
+    <!-- GRN DRAFT — show form -->
+    <ng-container *ngIf="!grn || grn.status === 'DRAFT'">
+
+      <!-- Draft saved indicator -->
+      <div *ngIf="grn && grn.status === 'DRAFT'" class="grn-draft-banner">
+        <i class="pi pi-file-edit"></i>
+        <div>
+          <strong>Draft Saved</strong>
+          <p>{{ grn.grnNumber }} — Last saved {{ formatDate(grn.updatedAt) }}</p>
+        </div>
+        <button class="btn-outline btn-sm" (click)="openGrnForm()">
+          <i class="pi pi-pencil"></i> Edit Draft
+        </button>
+      </div>
+
+      <!-- No GRN yet prompt -->
+      <div *ngIf="!grn && !showGrnForm" class="empty-state">
+        <i class="pi pi-clipboard empty-icon" style="color: #94a3b8"></i>
+        <h3>No GRN created yet</h3>
+        <p>Once goods arrive, create a Goods Received Note to confirm receipt and trigger the payment process.</p>
+        <button class="btn-primary" (click)="openGrnForm()">
+          <i class="pi pi-plus"></i> Create GRN
+        </button>
+      </div>
+
+      <!-- GRN Form -->
+      <form *ngIf="showGrnForm || (grn && grn.status === 'DRAFT' && showGrnForm)" [formGroup]="grnForm" (ngSubmit)="saveGrn()" class="grn-form" novalidate>
+
+        <!-- Receipt Details -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="pi pi-receipt"></i> Receipt Details
+          </div>
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label>Delivery Note #</label>
+              <input pInputText formControlName="deliveryNoteNumber" placeholder="Vendor's delivery note number" />
+            </div>
+            <div class="form-field">
+              <label>Received By <span class="req">*</span></label>
+              <input pInputText formControlName="receivedBy" placeholder="Full name of receiver" />
+              <small class="field-error" *ngIf="grnForm.get('receivedBy')?.invalid && grnForm.get('receivedBy')?.touched">
+                Receiver name is required.
+              </small>
+            </div>
+            <div class="form-field full-width">
+              <label>Delivery Address <span class="req">*</span></label>
+              <input pInputText formControlName="deliveryAddress" placeholder="Where goods were delivered" />
+              <small class="field-error" *ngIf="grnForm.get('deliveryAddress')?.invalid && grnForm.get('deliveryAddress')?.touched">
+                Delivery address is required.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vehicle / Driver Info -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="pi pi-car"></i> Vehicle &amp; Driver
+          </div>
+          <div class="form-grid-3">
+            <div class="form-field">
+              <label>Vehicle Details</label>
+              <input pInputText formControlName="vehicleDetails" placeholder="e.g. Toyota Hilux · ABC-123-XY" />
+            </div>
+            <div class="form-field">
+              <label>Driver Name</label>
+              <input pInputText formControlName="driverName" placeholder="Driver's full name" />
+            </div>
+            <div class="form-field">
+              <label>Driver Phone</label>
+              <input pInputText formControlName="driverPhone" placeholder="+234 …" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Received Table -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="pi pi-list"></i> Items Received
+          </div>
+          <div class="grn-items-table-wrapper">
+            <table class="grn-items-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th class="col-num">Ordered</th>
+                  <th class="col-num">Received</th>
+                  <th class="col-num">Accepted</th>
+                  <th class="col-num">Rejected</th>
+                  <th>Condition</th>
+                  <th>Batch #</th>
+                  <th>Storage</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody formArrayName="items">
+                <tr *ngFor="let group of itemGroups; let i = index; trackBy: trackByIndex"
+                  [formGroupName]="i"
+                  [class.row-alt]="i % 2 === 1"
+                  [class.row-damaged]="group.get('condition')?.value !== 'GOOD'">
+                  <td class="item-name-cell">
+                    <div class="item-name">{{ group.get('name')?.value }}</div>
+                    <div class="item-unit">{{ group.get('unit')?.value }}</div>
+                  </td>
+                  <td class="col-num read-only-num">{{ group.get('orderedQuantity')?.value }}</td>
+                  <td class="col-num">
+                    <input type="number" formControlName="receivedQuantity" min="0"
+                      class="num-input"
+                      [class.input-error]="group.get('receivedQuantity')?.invalid && group.get('receivedQuantity')?.touched"
+                      (input)="onReceivedQtyChange(i)" />
+                  </td>
+                  <td class="col-num read-only-num computed-num">{{ group.get('acceptedQuantity')?.value }}</td>
+                  <td class="col-num">
+                    <input type="number" formControlName="rejectedQuantity" min="0"
+                      class="num-input"
+                      (input)="onRejectedQtyChange(i)" />
+                  </td>
+                  <td>
+                    <select formControlName="condition" class="condition-select"
+                      [class.cond-good]="group.get('condition')?.value === 'GOOD'"
+                      [class.cond-bad]="group.get('condition')?.value !== 'GOOD'">
+                      <option *ngFor="let opt of conditionOptions" [value]="opt.value">{{ opt.label }}</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input type="text" formControlName="batchNumber" placeholder="—" class="text-input-sm" />
+                  </td>
+                  <td>
+                    <input type="text" formControlName="storageLocation" placeholder="e.g. Shelf A2" class="text-input-sm" />
+                  </td>
+                  <td>
+                    <input type="text" formControlName="notes" placeholder="Optional note" class="text-input-sm" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totals row -->
+          <div class="grn-totals">
+            <div class="totals-row">
+              <span class="totals-label">Ordered Value</span>
+              <span class="totals-value">{{ formatCurrency(computedOrderedValue) }}</span>
+            </div>
+            <div class="totals-row">
+              <span class="totals-label">Received Value</span>
+              <span class="totals-value">{{ formatCurrency(computedReceivedValue) }}</span>
+            </div>
+            <div class="totals-row variance-row">
+              <span class="totals-label">Variance</span>
+              <span class="totals-value" [class.variance-negative]="computedVariance < 0" [class.variance-zero]="computedVariance >= 0">
+                {{ computedVariance >= 0 ? '+' : '' }}{{ formatCurrency(computedVariance) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Overall Condition + Discrepancy -->
+        <div class="form-section">
+          <div class="form-section-title">
+            <i class="pi pi-exclamation-circle"></i> Condition &amp; Discrepancies
+          </div>
+          <div class="form-field">
+            <label>Overall Condition <span class="req">*</span></label>
+            <div class="radio-group">
+              <label class="radio-opt" [class.radio-selected]="grnForm.get('overallCondition')?.value === 'ACCEPTABLE'">
+                <input type="radio" formControlName="overallCondition" value="ACCEPTABLE" />
+                <i class="pi pi-check-circle" style="color:#16a34a"></i>
+                <span>Acceptable</span>
+              </label>
+              <label class="radio-opt" [class.radio-selected]="grnForm.get('overallCondition')?.value === 'PARTIAL'">
+                <input type="radio" formControlName="overallCondition" value="PARTIAL" />
+                <i class="pi pi-exclamation-triangle" style="color:#d97706"></i>
+                <span>Partial</span>
+              </label>
+              <label class="radio-opt" [class.radio-selected]="grnForm.get('overallCondition')?.value === 'REJECTED'">
+                <input type="radio" formControlName="overallCondition" value="REJECTED" />
+                <i class="pi pi-times-circle" style="color:#dc2626"></i>
+                <span>Rejected</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Discrepancy Notes</label>
+            <textarea formControlName="discrepancyNotes" rows="3"
+              placeholder="Describe any shortages, damages, wrong items, or other issues…"
+              class="textarea-field"></textarea>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+          <button type="button" class="btn-outline" (click)="showGrnForm = false" [disabled]="isSubmittingGrn">
+            Cancel
+          </button>
+          <button type="submit" class="btn-secondary" [disabled]="isSubmittingGrn">
+            <i class="pi" [ngClass]="isSubmittingGrn ? 'pi-spin pi-spinner' : 'pi-save'"></i>
+            Save Draft
+          </button>
+          <button type="button" class="btn-primary"
+            *ngIf="grn && grn.status === 'DRAFT'"
+            [disabled]="isSubmittingGrn"
+            (click)="submitGrnForApproval()">
+            <i class="pi" [ngClass]="isSubmittingGrn ? 'pi-spin pi-spinner' : 'pi-send'"></i>
+            Submit for Approval
+          </button>
+        </div>
+
+      </form>
+
+      <!-- Standalone submit button (when draft exists but form is closed) -->
+      <div *ngIf="grn && grn.status === 'DRAFT' && !showGrnForm" class="draft-actions">
+        <button class="btn-primary" [disabled]="isSubmittingGrn" (click)="submitGrnForApproval()">
+          <i class="pi" [ngClass]="isSubmittingGrn ? 'pi-spin pi-spinner' : 'pi-send'"></i>
+          Submit GRN for Approval
+        </button>
+      </div>
+
+    </ng-container>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       TAB: HISTORY
+  ═══════════════════════════════════════════ -->
+  <div *ngIf="activeTab === 'history'" class="tab-panel">
+    <div class="section-header">
+      <i class="pi pi-history"></i>
+      <span>Activity History</span>
+    </div>
+
+    <div class="history-timeline" *ngIf="(delivery?.timeline?.length ?? 0) > 0 || grn; else noHistory">
+
+      <!-- GRN status events -->
+      <ng-container *ngIf="grn">
+        <div class="history-entry" *ngIf="grn.approvedAt">
+          <div class="history-dot history-dot-success"></div>
+          <div class="history-content">
+            <div class="history-title"><i class="pi pi-check-circle"></i> GRN Approved</div>
+            <div class="history-meta">{{ grn.grnNumber }} approved by {{ grn.approvedBy }}</div>
+            <div class="history-time">{{ formatDate(grn.approvedAt) }}</div>
+          </div>
+        </div>
+        <div class="history-entry" *ngIf="grn.submittedAt">
+          <div class="history-dot history-dot-warning"></div>
+          <div class="history-content">
+            <div class="history-title"><i class="pi pi-send"></i> GRN Submitted for Approval</div>
+            <div class="history-meta">{{ grn.grnNumber }} submitted by {{ grn.receivedBy }}</div>
+            <div class="history-time">{{ formatDate(grn.submittedAt) }}</div>
+          </div>
+        </div>
+        <div class="history-entry">
+          <div class="history-dot history-dot-info"></div>
+          <div class="history-content">
+            <div class="history-title"><i class="pi pi-file-plus"></i> GRN Created</div>
+            <div class="history-meta">{{ grn.grnNumber }} — {{ grn.items?.length }} item(s), received by {{ grn.receivedBy }}</div>
+            <div class="history-time">{{ formatDate(grn.createdAt) }}</div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Delivery tracking events -->
+      <ng-container *ngIf="delivery?.timeline?.length">
+        <div class="history-entry" *ngFor="let event of delivery!.timeline; trackBy: trackByIndex">
+          <div class="history-dot" [style.background]="getStatusInfo(event.status)?.color ?? '#64748b'"></div>
+          <div class="history-content">
+            <div class="history-title">
+              <i [class]="getStatusInfo(event.status)?.icon ?? 'pi pi-circle'"></i>
+              {{ getStatusInfo(event.status)?.label ?? event.status }}
+            </div>
+            <div class="history-meta">{{ event.description }}</div>
+            <div class="history-meta" *ngIf="event.location">
+              <i class="pi pi-map-marker"></i> {{ event.location }}
+            </div>
+            <div class="history-time">{{ formatDate(event.timestamp) }} · {{ event.actor }}</div>
+          </div>
+        </div>
+      </ng-container>
+
+    </div>
+
+    <ng-template #noHistory>
+      <div class="empty-state small">
+        <i class="pi pi-history empty-icon small-icon" style="color:#94a3b8"></i>
+        <p>No history recorded yet. Activity will appear here as the delivery progresses.</p>
+      </div>
+    </ng-template>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GRN SUMMARY TEMPLATE (read-only)
+═══════════════════════════════════════════ -->
+<ng-template #grnSummary>
+  <div class="grn-summary" *ngIf="grn">
+    <div class="summary-meta-grid">
+      <div class="summary-meta-item">
+        <span class="meta-label">GRN Number</span>
+        <span class="meta-value mono">{{ grn.grnNumber }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">LPO Reference</span>
+        <span class="meta-value mono">{{ grn.lpoNumber }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Vendor</span>
+        <span class="meta-value">{{ grn.vendorName }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Received By</span>
+        <span class="meta-value">{{ grn.receivedBy }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Received At</span>
+        <span class="meta-value">{{ formatDate(grn.receivedAt) }}</span>
+      </div>
+      <div class="summary-meta-item" *ngIf="grn.deliveryNoteNumber">
+        <span class="meta-label">Delivery Note #</span>
+        <span class="meta-value mono">{{ grn.deliveryNoteNumber }}</span>
+      </div>
+      <div class="summary-meta-item">
+        <span class="meta-label">Overall Condition</span>
+        <span class="meta-value"
+          [class.cond-text-good]="grn.overallCondition === 'ACCEPTABLE'"
+          [class.cond-text-partial]="grn.overallCondition === 'PARTIAL'"
+          [class.cond-text-bad]="grn.overallCondition === 'REJECTED'">
+          {{ grn.overallCondition }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Items table -->
+    <div class="summary-items-table-wrapper">
+      <table class="grn-items-table summary-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="col-num">Ordered</th>
+            <th class="col-num">Received</th>
+            <th class="col-num">Accepted</th>
+            <th class="col-num">Rejected</th>
+            <th>Condition</th>
+            <th>Unit Price</th>
+            <th>Received Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of grn.items; let i = index; trackBy: trackByIndex"
+            [class.row-alt]="i % 2 === 1"
+            [class.row-damaged]="item.condition !== 'GOOD'">
+            <td class="item-name-cell">
+              <div class="item-name">{{ item.name }}</div>
+              <div class="item-unit">{{ item.unit }}</div>
+              <div class="item-batch" *ngIf="item.batchNumber">Batch: {{ item.batchNumber }}</div>
+              <div class="item-storage" *ngIf="item.storageLocation">{{ item.storageLocation }}</div>
+            </td>
+            <td class="col-num">{{ item.orderedQuantity }}</td>
+            <td class="col-num">{{ item.receivedQuantity }}</td>
+            <td class="col-num accepted-num">{{ item.acceptedQuantity }}</td>
+            <td class="col-num rejected-num">{{ item.rejectedQuantity || 0 }}</td>
+            <td>
+              <span class="condition-badge"
+                [class.cond-good]="item.condition === 'GOOD'"
+                [class.cond-bad]="item.condition !== 'GOOD'">
+                {{ item.condition | titlecase }}
+              </span>
+            </td>
+            <td class="col-num">{{ formatCurrency(item.unitPrice) }}</td>
+            <td class="col-num"><strong>{{ formatCurrency(item.receivedQuantity * item.unitPrice) }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Summary totals -->
+    <div class="grn-totals summary-totals">
+      <div class="totals-row">
+        <span class="totals-label">Ordered Value</span>
+        <span class="totals-value">{{ formatCurrency(grn.totalOrderedValue) }}</span>
+      </div>
+      <div class="totals-row">
+        <span class="totals-label">Received Value</span>
+        <span class="totals-value">{{ formatCurrency(grn.totalReceivedValue) }}</span>
+      </div>
+      <div class="totals-row variance-row">
+        <span class="totals-label">Variance</span>
+        <span class="totals-value"
+          [class.variance-negative]="grn.varianceAmount < 0"
+          [class.variance-zero]="grn.varianceAmount >= 0">
+          {{ grn.varianceAmount >= 0 ? '+' : '' }}{{ formatCurrency(grn.varianceAmount) }}
+        </span>
+      </div>
+    </div>
+
+    <div class="discrepancy-box" *ngIf="grn.discrepancyNotes">
+      <strong><i class="pi pi-exclamation-triangle"></i> Discrepancy Notes</strong>
+      <p>{{ grn.discrepancyNotes }}</p>
+    </div>
+  </div>
+</ng-template>

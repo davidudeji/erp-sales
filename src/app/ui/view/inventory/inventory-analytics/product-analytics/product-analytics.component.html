@@ -1,0 +1,465 @@
+<!-- product-analytics.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Product Analytics</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Product Summary -->
+        <div class="ql-filter-section" *ngIf="product">
+            <div class="ql-sidebar-product" (click)="viewProduct()">
+                <div class="ql-sidebar-product-avatar">
+                    <img *ngIf="product.images && product.images.length > 0" [src]="product.images[0]"
+                        alt="{{ product.name }}">
+                    <span *ngIf="!product.images || product.images.length === 0">{{ getInitials(product.name) }}</span>
+                </div>
+                <div class="ql-sidebar-product-info">
+                    <span class="ql-sidebar-product-name">{{ product.name }}</span>
+                    <span class="ql-sidebar-product-sku">{{ product.sku }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Analytics</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Performance</span>
+                <span class="ql-sidebar-stat-value">{{ performance?.performanceScore?.toFixed(0) || '—' }}%</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Stock</span>
+                <span class="ql-sidebar-stat-value">{{ formatNumber(totalStock) }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Value</span>
+                <span class="ql-sidebar-stat-value">{{ formatCurrency(totalValue) }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Branches</span>
+                <span class="ql-sidebar-stat-value">{{ branchCount }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="viewProduct()">
+                <i class="fas fa-eye"></i> View Product
+            </button>
+            <button class="ql-sidebar-action" (click)="exportReport()">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+            <button class="ql-sidebar-action" (click)="refresh()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading analytics data...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refresh()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading && product && !error">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">{{ product.name }}</h1>
+                    <span class="ql-total-badge">Analytics</span>
+                    <span class="ql-status-badge ql-status-badge--{{ getStatusBadgeClass(product.status) }}">
+                        <span class="ql-status-dot"></span>
+                        {{ getStatusLabel(product.status) }}
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <div class="ql-date-range-selector">
+                        <button class="ql-range-btn" [class.active]="dateRange === 'week'"
+                            (click)="changeDateRange('week')">Week</button>
+                        <button class="ql-range-btn" [class.active]="dateRange === 'month'"
+                            (click)="changeDateRange('month')">Month</button>
+                        <button class="ql-range-btn" [class.active]="dateRange === 'quarter'"
+                            (click)="changeDateRange('quarter')">Quarter</button>
+                        <button class="ql-range-btn" [class.active]="dateRange === 'year'"
+                            (click)="changeDateRange('year')">Year</button>
+                    </div>
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="exportReport()">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="ql-stats-row">
+                <div class="ql-stat-mini" (click)="setActiveTab('overview')">
+                    <span class="ql-stat-mini-value" style="color: #2EB270;">{{
+                        performance?.performanceScore?.toFixed(0) || '—' }}%</span>
+                    <span class="ql-stat-mini-label">Performance</span>
+                </div>
+                <div class="ql-stat-mini" (click)="setActiveTab('sales')">
+                    <span class="ql-stat-mini-value" style="color: #3B82F6;">{{ formatNumber(performance?.totalSold ||
+                        0) }}</span>
+                    <span class="ql-stat-mini-label">Units Sold</span>
+                </div>
+                <div class="ql-stat-mini" (click)="setActiveTab('sales')">
+                    <span class="ql-stat-mini-value" style="color: #184440;">{{ formatCurrency(performance?.totalRevenue
+                        || 0) }}</span>
+                    <span class="ql-stat-mini-label">Revenue</span>
+                </div>
+                <div class="ql-stat-mini" (click)="setActiveTab('inventory')">
+                    <span class="ql-stat-mini-value" style="color: #F59E0B;">{{ formatNumber(totalStock) }}</span>
+                    <span class="ql-stat-mini-label">Total Stock</span>
+                </div>
+                <div class="ql-stat-mini" (click)="setActiveTab('trends')">
+                    <span class="ql-stat-mini-value" style="color: #8B5CF6;">{{ performance?.sellThroughRate?.toFixed(0)
+                        || '—' }}%</span>
+                    <span class="ql-stat-mini-label">Sell-Through</span>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'overview'"
+                    (click)="setActiveTab('overview')">
+                    <i class="fas fa-chart-pie"></i> Overview
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'sales'" (click)="setActiveTab('sales')">
+                    <i class="fas fa-shopping-cart"></i> Sales
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'inventory'"
+                    (click)="setActiveTab('inventory')">
+                    <i class="fas fa-boxes"></i> Inventory
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'trends'" (click)="setActiveTab('trends')">
+                    <i class="fas fa-chart-line"></i> Trends
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
+
+                <!-- ========================================================
+                OVERVIEW TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'overview'" class="ql-tab-panel">
+                    <div class="ql-overview-grid">
+                        <div class="ql-overview-left">
+                            <!-- Performance Score -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-chart-simple"></i> Performance Score</h3>
+                                <div class="ql-performance-score">
+                                    <div class="ql-score-circle"
+                                        [style.border-color]="getPerformanceColor(performance?.performanceScore || 0)">
+                                        <span class="ql-score-value">{{ performance?.performanceScore?.toFixed(0) || '—'
+                                            }}</span>
+                                        <span class="ql-score-label">%</span>
+                                    </div>
+                                    <div class="ql-score-details">
+                                        <div class="ql-score-detail">
+                                            <span class="ql-score-detail-label">Sell-Through Rate</span>
+                                            <span class="ql-score-detail-value">{{
+                                                performance?.sellThroughRate?.toFixed(0) || '—' }}%</span>
+                                        </div>
+                                        <div class="ql-score-detail">
+                                            <span class="ql-score-detail-label">Stock Turnover</span>
+                                            <span class="ql-score-detail-value">{{
+                                                performance?.stockTurnover?.toFixed(1) || '—' }}x</span>
+                                        </div>
+                                        <div class="ql-score-detail">
+                                            <span class="ql-score-detail-label">Days of Inventory</span>
+                                            <span class="ql-score-detail-value">{{
+                                                performance?.daysOfInventory?.toFixed(0) || '—' }}</span>
+                                        </div>
+                                        <div class="ql-score-detail">
+                                            <span class="ql-score-detail-label">Trend</span>
+                                            <span class="ql-score-detail-value"
+                                                [style.color]="getTrendColor(performance?.trend || 'STABLE')">
+                                                <i class="fas"
+                                                    [class]="getTrendIcon(performance?.trend || 'STABLE')"></i>
+                                                {{ performance?.trend || 'STABLE' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-info-circle"></i> Summary</h3>
+                                <div class="ql-summary-grid">
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ formatNumber(performance?.totalSold || 0)
+                                            }}</span>
+                                        <span class="ql-summary-label">Units Sold</span>
+                                    </div>
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ formatCurrency(performance?.totalRevenue || 0)
+                                            }}</span>
+                                        <span class="ql-summary-label">Revenue</span>
+                                    </div>
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ formatCurrency(performance?.totalProfit || 0)
+                                            }}</span>
+                                        <span class="ql-summary-label">Profit</span>
+                                    </div>
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ formatNumber(totalStock) }}</span>
+                                        <span class="ql-summary-label">Current Stock</span>
+                                    </div>
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ performance?.averagePrice || 0 |
+                                            currency:'NGN':'symbol':'1.0-0' }}</span>
+                                        <span class="ql-summary-label">Avg Price</span>
+                                    </div>
+                                    <div class="ql-summary-item">
+                                        <span class="ql-summary-value">{{ branchCount }}</span>
+                                        <span class="ql-summary-label">Branches</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ql-overview-right">
+                            <!-- Branch Distribution -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-store"></i> Stock by Branch</h3>
+                                <div class="ql-distribution-list">
+                                    <div *ngFor="let item of branchInventory" class="ql-distribution-item">
+                                        <span class="ql-distribution-branch">{{ getBranchName(item.branchId) }}</span>
+                                        <div class="ql-distribution-bar">
+                                            <div class="ql-distribution-fill"
+                                                [style.width.%]="(item.quantity / (totalStock || 1)) * 100"></div>
+                                        </div>
+                                        <span class="ql-distribution-qty">{{ item.quantity }}</span>
+                                    </div>
+                                    <div *ngIf="branchInventory.length === 0" class="ql-empty-state-small">
+                                        <i class="fas fa-store"></i>
+                                        <p>No stock in any branch</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                SALES TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'sales'" class="ql-tab-panel">
+                    <div class="ql-sales-container">
+                        <div class="ql-sales-header">
+                            <h3><i class="fas fa-shopping-cart"></i> Sales Performance</h3>
+                            <span class="ql-sales-period">{{ dateRange | titlecase }}</span>
+                        </div>
+
+                        <div class="ql-sales-grid">
+                            <div class="ql-sales-card">
+                                <span class="ql-sales-card-value">{{ formatNumber(performance?.totalSold || 0) }}</span>
+                                <span class="ql-sales-card-label">Total Units Sold</span>
+                            </div>
+                            <div class="ql-sales-card">
+                                <span class="ql-sales-card-value">{{ formatCurrency(performance?.totalRevenue || 0)
+                                    }}</span>
+                                <span class="ql-sales-card-label">Total Revenue</span>
+                            </div>
+                            <div class="ql-sales-card">
+                                <span class="ql-sales-card-value">{{ formatCurrency(performance?.totalProfit || 0)
+                                    }}</span>
+                                <span class="ql-sales-card-label">Total Profit</span>
+                            </div>
+                            <div class="ql-sales-card">
+                                <span class="ql-sales-card-value">{{ performance?.sellThroughRate?.toFixed(0) || '—'
+                                    }}%</span>
+                                <span class="ql-sales-card-label">Sell-Through Rate</span>
+                            </div>
+                        </div>
+
+                        <!-- Sales Chart -->
+                        <div class="ql-chart-card">
+                            <h4>Monthly Sales</h4>
+                            <div class="ql-bar-chart">
+                                <div *ngFor="let data of salesData" class="ql-bar-item">
+                                    <div class="ql-bar-value">{{ formatCurrency(data.revenue) }}</div>
+                                    <div class="ql-bar-wrapper">
+                                        <div class="ql-bar" [style.height.%]="(data.revenue / getMaxRevenue()) * 100">
+                                        </div>
+                                    </div>
+                                    <div class="ql-bar-label">{{ data.month }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                INVENTORY TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'inventory'" class="ql-tab-panel">
+                    <div class="ql-inventory-container">
+                        <div class="ql-inventory-header">
+                            <h3><i class="fas fa-boxes"></i> Inventory Overview</h3>
+                            <span class="ql-total-inventory">Total: {{ formatNumber(totalStock) }} units</span>
+                        </div>
+
+                        <div class="ql-inventory-grid">
+                            <div class="ql-inventory-card">
+                                <span class="ql-inventory-card-value" style="color: #2EB270;">{{
+                                    formatNumber(totalStock) }}</span>
+                                <span class="ql-inventory-card-label">Total Stock</span>
+                            </div>
+                            <div class="ql-inventory-card">
+                                <span class="ql-inventory-card-value" style="color: #184440;">{{
+                                    formatCurrency(totalValue) }}</span>
+                                <span class="ql-inventory-card-label">Total Value</span>
+                            </div>
+                            <div class="ql-inventory-card">
+                                <span class="ql-inventory-card-value" style="color: #3B82F6;">{{ branchCount }}</span>
+                                <span class="ql-inventory-card-label">Branches</span>
+                            </div>
+                            <div class="ql-inventory-card">
+                                <span class="ql-inventory-card-value" style="color: #F59E0B;">{{
+                                    performance?.stockTurnover?.toFixed(1) || '—' }}x</span>
+                                <span class="ql-inventory-card-label">Turnover</span>
+                            </div>
+                        </div>
+
+                        <!-- Branch Stock List -->
+                        <div class="ql-branch-stock-list">
+                            <div *ngFor="let item of branchInventory" class="ql-branch-stock-item">
+                                <div class="ql-branch-stock-info">
+                                    <span class="ql-branch-stock-name">{{ getBranchName(item.branchId) }}</span>
+                                    <span class="ql-branch-stock-status"
+                                        [style.color]="getStockStatusColor(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))">
+                                        {{ getStockStatusLabel(getStockStatus(item.quantity, item.reorderPoint,
+                                        item.safetyStock)) }}
+                                    </span>
+                                </div>
+                                <div class="ql-branch-stock-details">
+                                    <span class="ql-branch-stock-qty">{{ item.quantity }} units</span>
+                                    <span class="ql-branch-stock-price">{{ formatCurrency(item.sellingPrice) }}</span>
+                                    <span class="ql-branch-stock-reorder">Reorder: {{ item.reorderPoint }}</span>
+                                </div>
+                            </div>
+                            <div *ngIf="branchInventory.length === 0" class="ql-empty-state-small">
+                                <i class="fas fa-boxes"></i>
+                                <p>No inventory data available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                TRENDS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'trends'" class="ql-tab-panel">
+                    <div class="ql-trends-container">
+                        <div class="ql-trends-header">
+                            <h3><i class="fas fa-chart-line"></i> Performance Trends</h3>
+                            <span class="ql-trends-period">{{ dateRange | titlecase }}</span>
+                        </div>
+
+                        <div class="ql-trends-grid">
+                            <div class="ql-trends-card">
+                                <h4>Sales Trend</h4>
+                                <div class="ql-line-chart">
+                                    <div *ngFor="let data of salesData" class="ql-line-point">
+                                        <div class="ql-line-dot"
+                                            [style.top.%]="100 - (data.sales / getMaxSales()) * 100"></div>
+                                        <div class="ql-line-label">{{ data.month }}</div>
+                                    </div>
+                                    <div class="ql-line-connector"></div>
+                                </div>
+                            </div>
+
+                            <div class="ql-trends-card">
+                                <h4>Inventory Distribution</h4>
+                                <div class="ql-donut-chart">
+                                    <div class="ql-donut-segments" [style.background]="getConicGradient()">
+                                        <div class="ql-donut-hole">
+                                            <span class="ql-donut-total">{{ formatNumber(totalStock) }}</span>
+                                            <span class="ql-donut-label">Total Stock</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ql-donut-legend">
+                                    <div *ngFor="let item of branchInventory; let i = index"
+                                        class="ql-donut-legend-item">
+                                        <span class="ql-donut-legend-color" [style.background]="getColor(i)"></span>
+                                        <span class="ql-donut-legend-label">{{ getBranchName(item.branchId) }}</span>
+                                        <span class="ql-donut-legend-value">{{ item.quantity }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        EXPORT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showExportModal"
+            (click)="$event.target === $event.currentTarget && closeExportModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-file-export"></i> Export Report</h3>
+                    <button class="ql-modal-close" (click)="closeExportModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Export analytics report for <strong>{{ product?.name }}</strong></p>
+                    <div class="ql-export-options">
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="pdf" checked>
+                            <span>PDF Report</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="excel">
+                            <span>Excel Spreadsheet</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="csv">
+                            <span>CSV Data</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeExportModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmExport()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

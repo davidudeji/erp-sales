@@ -1,0 +1,1117 @@
+<!-- ═══════════════════════════════════════════════════
+     VENDOR PROFILE & SETTINGS
+════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-[#fbfcfd] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
+
+  <div class="flex items-start justify-between mb-6 gap-4 flex-wrap">
+    <div>
+      <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Profile & Settings</h1>
+      <p class="text-sm text-[#5a7380] mt-0.5">Manage your company details, compliance documents and document branding</p>
+    </div>
+  </div>
+
+  <!-- ── Tab strip ─────────────────────────────────────── -->
+  <div class="flex gap-1.5 mb-6 border-b border-[#e6edf2]">
+    <button (click)="setTab('profile')"
+      class="px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors"
+      [class.border-[#224957]]="activeTab === 'profile'" [class.text-[#224957]]="activeTab === 'profile'"
+      [class.border-transparent]="activeTab !== 'profile'" [class.text-[#5a7380]]="activeTab !== 'profile'">
+      Company Profile
+    </button>
+    <button (click)="setTab('documents')"
+      class="px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors flex items-center gap-2"
+      [class.border-[#224957]]="activeTab === 'documents'" [class.text-[#224957]]="activeTab === 'documents'"
+      [class.border-transparent]="activeTab !== 'documents'" [class.text-[#5a7380]]="activeTab !== 'documents'">
+      Documents
+      <span *ngIf="stats && (stats.expired > 0 || stats.expiringSoon > 0)"
+        class="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-[10px] font-bold bg-red-500 text-white">
+        {{ stats.expired + stats.expiringSoon }}
+      </span>
+    </button>
+    <button (click)="setTab('branding')"
+      class="px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors"
+      [class.border-[#224957]]="activeTab === 'branding'" [class.text-[#224957]]="activeTab === 'branding'"
+      [class.border-transparent]="activeTab !== 'branding'" [class.text-[#5a7380]]="activeTab !== 'branding'">
+      Document Branding
+    </button>
+  </div>
+
+
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       TAB 1 — COMPANY PROFILE  (view-only)
+  ═════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="activeTab === 'profile' && profile" class="grid grid-cols-3 gap-5">
+
+    <!-- ── Left: identity card ── -->
+    <div class="bg-white border border-[#e6edf2] rounded-xl p-6 flex flex-col items-center text-center">
+      <div class="w-20 h-20 rounded-xl bg-[#e8f2f7] text-[#224957] flex items-center justify-center text-2xl font-bold mb-4">
+        {{ profile.companyName.charAt(0) }}
+      </div>
+      <h2 class="text-lg font-bold text-[#1a2c35] leading-tight">{{ profile.companyName }}</h2>
+      <p *ngIf="profile.tradingName" class="text-xs text-[#5a7380] mt-0.5">Trading as {{ profile.tradingName }}</p>
+
+      <app-vp-status [tone]="verificationTone(profile.verificationStatus)" [icon]="verificationIcon(profile.verificationStatus)" [label]="verificationLabel(profile.verificationStatus)" class="mt-3"></app-vp-status>
+
+      <div class="w-full border-t border-[#eef2f6] my-5"></div>
+
+      <div class="w-full text-left space-y-3">
+        <div class="flex items-center gap-2.5 text-sm">
+          <svg class="text-[#5a7380] shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span class="text-[#5a7380]">Member since {{ fmtDate(profile.memberSince) }}</span>
+        </div>
+        <div class="flex items-center gap-2.5 text-sm">
+          <svg class="text-[#5a7380] shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="text-[#5a7380]">{{ profile.city }}, {{ profile.state }}</span>
+        </div>
+      </div>
+
+      <button disabled
+        class="w-full mt-5 px-4 py-2.5 bg-[#f5f7f9] text-[#9ab0bb] text-sm font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit Profile
+      </button>
+      <p class="text-[10px] text-[#9ab0bb] mt-2">Editing opens in a future update</p>
+    </div>
+
+    <!-- ── Right: detail cards ── -->
+    <div class="col-span-2 flex flex-col gap-5">
+
+      <!-- Company details -->
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-4">Company Details</p>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">RC Number</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.rcNumber }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Tax ID (TIN)</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.taxId }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Primary Category</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.category }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Additional Categories</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.additionalCategories.join(', ') || '—' }}</p>
+          </div>
+          <div class="col-span-2">
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Registered Address</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.address }}, {{ profile.city }}, {{ profile.state }}, {{ profile.country }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact details -->
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-4">Contact Information</p>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Contact Person</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.contactPersonName }}</p>
+            <p class="text-xs text-[#5a7380]">{{ profile.contactPersonRole }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Email</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.email }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Phone</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.phone }}</p>
+          </div>
+          <div *ngIf="profile.alternatePhone">
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Alternate Phone</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.alternatePhone }}</p>
+          </div>
+          <div *ngIf="profile.website">
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Website</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.website }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank details -->
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-4">Bank Details</p>
+        <p class="text-[11px] text-[#9ab0bb] -mt-3 mb-4">Used as the default payment account on generated invoices</p>
+        <div class="grid grid-cols-3 gap-x-6 gap-y-4">
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Bank Name</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.bankDetails.bankName }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Account Name</p>
+            <p class="text-sm font-medium text-[#1a2c35]">{{ profile.bankDetails.accountName }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-[#9ab0bb] uppercase tracking-wide mb-1">Account Number</p>
+            <p class="text-sm font-medium text-[#1a2c35] font-mono tracking-wider">{{ maskAccountNumber(profile.bankDetails.accountNumber) }}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       TAB 2 — DOCUMENTS
+  ═════════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'documents'">
+
+    <div class="flex items-center justify-end mb-5">
+      <button (click)="openUploadModal()"
+        class="flex items-center gap-2 px-4 py-2 bg-[#224957] text-white text-sm font-semibold rounded-xl hover:bg-[#2d6478] transition-colors shrink-0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Upload Document
+      </button>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Total Documents</span>
+          <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </span>
+        </div>
+        <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.total }}</div>
+        <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.active }}</strong> currently active</p>
+      </div>
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Expiring Soon</span>
+          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
+        </div>
+        <div class="text-4xl font-bold tracking-tight mb-1" [class.text-amber-600]="stats.expiringSoon > 0">{{ stats.expiringSoon }}</div>
+        <p class="text-xs" [class.text-amber-600]="stats.expiringSoon > 0" [class.text-[#5a7380]]="stats.expiringSoon === 0">
+          <ng-container *ngIf="stats.expiringSoon > 0">Renew within 30 days</ng-container>
+          <ng-container *ngIf="stats.expiringSoon === 0">All up to date</ng-container>
+        </p>
+      </div>
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Expired</span>
+          <span class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </span>
+        </div>
+        <div class="text-4xl font-bold tracking-tight mb-1" [class.text-red-600]="stats.expired > 0">{{ stats.expired }}</div>
+        <p class="text-xs" [class.text-red-500]="stats.expired > 0" [class.text-[#5a7380]]="stats.expired === 0">
+          <ng-container *ngIf="stats.expired > 0">Immediate action required</ng-container>
+          <ng-container *ngIf="stats.expired === 0">None expired</ng-container>
+        </p>
+      </div>
+      <div class="bg-white border border-[#e6edf2] rounded-xl p-5 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Pending Review</span>
+          <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
+        </div>
+        <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.pendingReview }}</div>
+        <p class="text-xs text-[#5a7380]">Awaiting verification</p>
+      </div>
+    </div>
+
+    <!-- Warning banners -->
+    <div *ngIf="stats && stats.expired > 0"
+      class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
+      <svg class="text-red-500 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p class="text-sm text-red-700 flex-1">
+        <strong>{{ stats.expired }} document{{ stats.expired > 1 ? 's have' : ' has' }} expired.</strong>
+        Upload renewed versions to avoid disruption to your procurement activities.
+      </p>
+    </div>
+    <div *ngIf="stats && stats.expiringSoon > 0"
+      class="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+      <svg class="text-amber-500 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <p class="text-sm text-amber-700 flex-1">
+        <strong>{{ stats.expiringSoon }} document{{ stats.expiringSoon > 1 ? 's are' : ' is' }} expiring within 30 days.</strong>
+        Renew early to keep your profile compliant.
+      </p>
+    </div>
+
+    <!-- Document list -->
+    <div class="bg-white border border-[#e6edf2] rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#eef2f6] flex-wrap gap-3">
+        <h2 class="text-sm font-semibold text-[#1a2c35]">All Documents</h2>
+        <div class="flex gap-1.5 flex-wrap">
+          <button *ngFor="let f of categoryFilters" (click)="setFilter(f.value)"
+            class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+            [class.bg-[#224957]]="filter === f.value" [class.text-white]="filter === f.value"
+            [class.bg-[#f5f7f9]]="filter !== f.value" [class.text-[#5a7380]]="filter !== f.value">
+            {{ f.label }}
+          </button>
+        </div>
+      </div>
+      <div class="divide-y divide-[#f0f4f8]">
+        <ng-container *ngIf="docs.length > 0; else noDocs">
+          <div *ngFor="let doc of docs" (click)="openPanel(doc)"
+            class="flex items-center gap-4 px-5 py-3.5 hover:bg-[#f8fafb] transition-colors cursor-pointer">
+            <span class="text-xl shrink-0">{{ categoryIcon(doc.category) }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-[#1a2c35] truncate">{{ doc.name }}</p>
+              <p class="text-xs text-[#5a7380] truncate">{{ doc.fileName }} · {{ doc.fileSize }}</p>
+            </div>
+            <span class="text-xs text-[#5a7380] shrink-0 hidden sm:block">{{ categoryLabel(doc.category) }}</span>
+            <div class="text-right shrink-0 hidden md:block">
+              <p class="text-xs text-[#5a7380]">{{ doc.expiryDate ? 'Expires ' + fmtDate(doc.expiryDate) : 'No expiry' }}</p>
+            </div>
+            <app-vp-status [tone]="statusTone(doc.status)" [icon]="statusIcon(doc.status)" [label]="statusLabel(doc.status)" class="shrink-0"></app-vp-status>
+            <div class="flex items-center gap-1 shrink-0">
+              <button (click)="downloadDoc(doc, $event)" class="w-7 h-7 rounded-lg hover:bg-[#eef2f6] flex items-center justify-center text-[#5a7380]">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+              <button (click)="openDeleteConfirm(doc, $event)" class="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-[#5a7380] hover:text-red-500">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #noDocs>
+          <div class="px-5 py-12 text-center">
+            <svg class="mx-auto mb-2 text-[#c9dde8]" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <p class="text-sm text-[#5a7380]">No documents in this category</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Detail panel -->
+    <div *ngIf="showPanel && selectedDoc" class="fixed inset-0 z-40 flex justify-end" (click)="closePanel()">
+      <div class="absolute inset-0 bg-black/20"></div>
+      <div class="panel-slide relative bg-white w-full max-w-md h-full shadow-2xl p-6 overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-bold text-[#1a2c35]">Document Details</h3>
+          <button (click)="closePanel()" class="w-8 h-8 rounded-lg hover:bg-[#f5f7f9] flex items-center justify-center text-[#5a7380]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="flex items-center gap-3 mb-5">
+          <span class="text-3xl">{{ categoryIcon(selectedDoc.category) }}</span>
+          <div>
+            <p class="font-semibold text-[#1a2c35]">{{ selectedDoc.name }}</p>
+            <app-vp-status [tone]="statusTone(selectedDoc.status)" [icon]="statusIcon(selectedDoc.status)" [label]="statusLabel(selectedDoc.status)" class="mt-1 inline-block"></app-vp-status>
+          </div>
+        </div>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between py-2 border-b border-[#f0f4f8]"><span class="text-[#5a7380]">File name</span><span class="font-medium">{{ selectedDoc.fileName }}</span></div>
+          <div class="flex justify-between py-2 border-b border-[#f0f4f8]"><span class="text-[#5a7380]">File size</span><span class="font-medium">{{ selectedDoc.fileSize }}</span></div>
+          <div class="flex justify-between py-2 border-b border-[#f0f4f8]"><span class="text-[#5a7380]">Category</span><span class="font-medium">{{ categoryLabel(selectedDoc.category) }}</span></div>
+          <div class="flex justify-between py-2 border-b border-[#f0f4f8]"><span class="text-[#5a7380]">Uploaded</span><span class="font-medium">{{ fmtDate(selectedDoc.uploadedDate) }}</span></div>
+          <div class="flex justify-between py-2 border-b border-[#f0f4f8]" *ngIf="selectedDoc.expiryDate"><span class="text-[#5a7380]">Expires</span><span class="font-medium">{{ fmtDate(selectedDoc.expiryDate) }}</span></div>
+          <div *ngIf="selectedDoc.notes" class="py-2"><span class="text-[#5a7380] block mb-1">Notes</span><span class="font-medium">{{ selectedDoc.notes }}</span></div>
+        </div>
+        <button (click)="downloadDoc(selectedDoc, $event)"
+          class="w-full mt-6 px-4 py-2.5 bg-[#224957] text-white text-sm font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">
+          Download Document
+        </button>
+      </div>
+    </div>
+
+    <!-- Upload modal -->
+    <div *ngIf="showUploadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeUploadModal()">
+      <div class="absolute inset-0 bg-black/30"></div>
+      <div class="modal-pop relative bg-white rounded-xl w-full max-w-md p-6 shadow-2xl" (click)="$event.stopPropagation()">
+        <h3 class="text-lg font-bold text-[#1a2c35] mb-4">Upload Document</h3>
+        <div class="mb-4">
+          <label class="text-xs font-semibold text-[#5a7380] mb-1.5 block">Document Name</label>
+          <input [(ngModel)]="uploadForm.name" type="text" placeholder="e.g. CAC Certificate"
+            class="w-full px-3 py-2 border border-[#e6edf2] rounded-lg text-sm focus:outline-none focus:border-[#224957]" />
+          <p *ngIf="uploadErrors['name']" class="text-xs text-red-500 mt-1">{{ uploadErrors['name'] }}</p>
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-semibold text-[#5a7380] mb-1.5 block">Category</label>
+          <select [(ngModel)]="uploadForm.category"
+            class="w-full px-3 py-2 border border-[#e6edf2] rounded-lg text-sm focus:outline-none focus:border-[#224957]">
+            <option *ngFor="let c of categoryOptions" [value]="c.value">{{ c.label }}</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-semibold text-[#5a7380] mb-1.5 block">File</label>
+          <button (click)="simulateFilePick()"
+            class="w-full px-3 py-6 border-2 border-dashed border-[#e6edf2] rounded-lg text-sm text-[#5a7380] hover:border-[#224957] hover:bg-[#f8fafb] transition-colors flex flex-col items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span *ngIf="!uploadForm.fileName">Click to select a file</span>
+            <span *ngIf="uploadForm.fileName" class="font-medium text-[#1a2c35]">{{ uploadForm.fileName }} ({{ uploadForm.fileSize }})</span>
+          </button>
+          <p *ngIf="uploadErrors['fileName']" class="text-xs text-red-500 mt-1">{{ uploadErrors['fileName'] }}</p>
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-semibold text-[#5a7380] mb-1.5 block">Expiry Date (optional)</label>
+          <input [(ngModel)]="uploadForm.expiryDate" type="date"
+            class="w-full px-3 py-2 border border-[#e6edf2] rounded-lg text-sm focus:outline-none focus:border-[#224957]" />
+        </div>
+        <div class="mb-5">
+          <label class="text-xs font-semibold text-[#5a7380] mb-1.5 block">Notes (optional)</label>
+          <textarea [(ngModel)]="uploadForm.notes" rows="2"
+            class="w-full px-3 py-2 border border-[#e6edf2] rounded-lg text-sm focus:outline-none focus:border-[#224957] resize-none"></textarea>
+        </div>
+        <div class="flex gap-3">
+          <button (click)="closeUploadModal()" class="flex-1 px-4 py-2.5 border border-[#e6edf2] text-[#5a7380] text-sm font-semibold rounded-xl hover:bg-[#f5f7f9] transition-colors">Cancel</button>
+          <button (click)="submitUpload()" class="flex-1 px-4 py-2.5 bg-[#224957] text-white text-sm font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">Upload</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete confirm -->
+    <div *ngIf="showDeleteConfirm && docToDelete" class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeDeleteConfirm()">
+      <div class="absolute inset-0 bg-black/30"></div>
+      <div class="modal-pop relative bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl text-center" (click)="$event.stopPropagation()">
+        <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <h3 class="text-lg font-bold text-[#1a2c35] mb-1">Delete Document?</h3>
+        <p class="text-sm text-[#5a7380] mb-5">"{{ docToDelete.name }}" will be permanently removed. This cannot be undone.</p>
+        <div class="flex gap-3">
+          <button (click)="closeDeleteConfirm()" class="flex-1 px-4 py-2.5 border border-[#e6edf2] text-[#5a7380] text-sm font-semibold rounded-xl hover:bg-[#f5f7f9] transition-colors">Cancel</button>
+          <button (click)="confirmDelete()" class="flex-1 px-4 py-2.5 bg-red-500 text-white text-sm font-semibold rounded-xl hover:bg-red-600 transition-colors">Delete</button>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       TAB 3 — DOCUMENT BRANDING
+  ═════════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'branding'">
+
+    <!-- ── Top bar ── -->
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div class="flex gap-1.5">
+        <button (click)="setTemplateDocType('invoice')"
+          class="px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors"
+          [class.bg-[#224957]]="templateDocType==='invoice'" [class.text-white]="templateDocType==='invoice'"
+          [class.bg-white]="templateDocType!=='invoice'" [class.text-[#5a7380]]="templateDocType!=='invoice'"
+          [class.border]="templateDocType!=='invoice'" [class.border-[#e6edf2]]="templateDocType!=='invoice'">
+          Invoice Templates
+        </button>
+        <button (click)="setTemplateDocType('quotation')"
+          class="px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors"
+          [class.bg-[#224957]]="templateDocType==='quotation'" [class.text-white]="templateDocType==='quotation'"
+          [class.bg-white]="templateDocType!=='quotation'" [class.text-[#5a7380]]="templateDocType!=='quotation'"
+          [class.border]="templateDocType!=='quotation'" [class.border-[#e6edf2]]="templateDocType!=='quotation'">
+          Quotation Templates
+        </button>
+      </div>
+      <button (click)="startNewTemplate()"
+        class="flex items-center gap-2 px-4 py-2 bg-[#224957] text-white text-sm font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Template
+      </button>
+    </div>
+
+    <div class="grid grid-cols-12 gap-5 items-start">
+
+      <!-- ════ LEFT RAIL — saved templates ════ -->
+      <div class="col-span-2 bg-white border border-[#e6edf2] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[#eef2f6]">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Saved Templates</p>
+        </div>
+        <div class="divide-y divide-[#f0f4f8]">
+          <div *ngFor="let t of templates" (click)="loadTemplateIntoForm(t)"
+            class="px-4 py-3.5 cursor-pointer hover:bg-[#f8fafb] transition-colors group"
+            [class.bg-[#f0f6f9]]="editingTemplate?.id === t.id">
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="w-3 h-3 rounded-full shrink-0 ring-1 ring-black/10" [style.background-color]="t.accentColor"></span>
+              <p class="text-sm font-semibold text-[#1a2c35] truncate">{{ t.name }}</p>
+            </div>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#f5f7f9] text-[#5a7380] capitalize">{{ t.baseStyle }}</span>
+              <span *ngIf="t.isActive" class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Active</span>
+            </div>
+            <button *ngIf="!t.isActive" (click)="deleteTemplate(t, $event)"
+              class="mt-1 w-full opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-[11px] text-red-400 hover:text-red-600 transition-all">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Delete
+            </button>
+          </div>
+          <div *ngIf="templates.length === 0" class="px-4 py-8 text-center">
+            <p class="text-xs text-[#9ab0bb]">No templates yet</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ CENTRE — editor ════ -->
+      <div class="col-span-4 bg-white border border-[#e6edf2] rounded-xl p-5">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380] mb-5">
+          {{ editingTemplate ? 'Edit: ' + editingTemplate.name : 'New Template' }}
+        </p>
+
+        <!-- Template name -->
+        <div class="mb-5">
+          <label class="field-label">Template Name</label>
+          <input [(ngModel)]="templateForm.name" type="text" placeholder="e.g. Default, Q4 Promo" class="field-input" />
+        </div>
+
+        <!-- Base style picker -->
+        <div class="mb-5">
+          <label class="field-label">Base Style</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button *ngFor="let s of baseStyles" (click)="templateForm.baseStyle = s.value"
+              class="flex flex-col gap-1 p-3 rounded-xl border text-left transition-all"
+              [class.border-[#224957]]="templateForm.baseStyle === s.value"
+              [class.bg-[#f0f6f9]]="templateForm.baseStyle === s.value"
+              [class.border-[#e6edf2]]="templateForm.baseStyle !== s.value">
+
+              <!-- mini style thumbnail -->
+              <ng-container [ngSwitch]="s.value">
+
+                <!-- Classic thumbnail -->
+                <ng-container *ngSwitchCase="'classic'">
+                  <div class="w-full h-10 rounded bg-white border border-[#e6edf2] overflow-hidden flex flex-col p-1 gap-0.5">
+                    <div class="flex justify-between items-center">
+                      <div class="w-4 h-1.5 rounded bg-[#e6edf2]"></div>
+                      <div class="w-6 h-1.5 rounded" [style.background-color]="templateForm.baseStyle==='classic' ? templateForm.accentColor : '#e6edf2'"></div>
+                    </div>
+                    <div class="h-px w-full bg-[#e6edf2] mt-0.5"></div>
+                    <div class="flex gap-0.5 mt-0.5">
+                      <div class="h-1 flex-1 rounded bg-[#f0f4f8]"></div>
+                      <div class="h-1 w-4 rounded bg-[#f0f4f8]"></div>
+                      <div class="h-1 w-3 rounded bg-[#f0f4f8]"></div>
+                    </div>
+                    <div class="flex gap-0.5">
+                      <div class="h-1 flex-1 rounded bg-[#f8fafb]"></div>
+                      <div class="h-1 w-4 rounded bg-[#f8fafb]"></div>
+                      <div class="h-1 w-3 rounded bg-[#f8fafb]"></div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Bold thumbnail -->
+                <ng-container *ngSwitchCase="'bold'">
+                  <div class="w-full h-10 rounded overflow-hidden flex flex-col">
+                    <div class="h-3 w-full flex items-center px-1" [style.background-color]="templateForm.baseStyle==='bold' ? templateForm.accentColor : '#c9dde8'">
+                      <div class="w-5 h-1 rounded bg-white opacity-70"></div>
+                    </div>
+                    <div class="flex-1 bg-white border border-t-0 border-[#e6edf2] p-1 flex flex-col gap-0.5">
+                      <div class="h-1 w-8 rounded bg-[#e6edf2]"></div>
+                      <div class="h-0.5 w-full rounded bg-[#f0f4f8]"></div>
+                      <div class="h-0.5 w-full rounded bg-[#f0f4f8]"></div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Sidebar thumbnail -->
+                <ng-container *ngSwitchCase="'sidebar'">
+                  <div class="w-full h-10 rounded overflow-hidden flex border border-[#e6edf2] bg-white">
+                    <div class="w-2.5 h-full flex items-center justify-center" [style.background-color]="templateForm.baseStyle==='sidebar' ? templateForm.accentColor : '#c9dde8'">
+                      <span class="text-white font-bold" style="font-size:4px;writing-mode:vertical-rl;transform:rotate(180deg)">INV</span>
+                    </div>
+                    <div class="flex-1 p-1 flex flex-col gap-0.5">
+                      <div class="h-1.5 w-6 rounded bg-[#1a2c35] opacity-30"></div>
+                      <div class="h-px w-full bg-[#e6edf2]"></div>
+                      <div class="h-1 w-full rounded bg-[#f0f4f8]"></div>
+                      <div class="h-1 w-full rounded bg-[#f8fafb]"></div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Modern thumbnail -->
+                <ng-container *ngSwitchCase="'modern'">
+                  <div class="w-full h-10 rounded overflow-hidden flex flex-col border border-[#e6edf2]">
+                    <div class="flex h-4">
+                      <div class="w-1/2 flex items-center px-1" [style.background-color]="templateForm.baseStyle==='modern' ? templateForm.accentColor : '#c9dde8'">
+                        <div class="w-3 h-1 rounded bg-white opacity-70"></div>
+                      </div>
+                      <div class="w-1/2 bg-[#1a2c35] flex items-center justify-end px-1">
+                        <div class="w-4 h-1 rounded bg-white opacity-40"></div>
+                      </div>
+                    </div>
+                    <div class="flex-1 bg-white p-1 flex gap-0.5">
+                      <div class="flex-1 h-full rounded bg-[#f0f4f8]"></div>
+                      <div class="flex-1 h-full rounded bg-[#f8fafb]"></div>
+                    </div>
+                  </div>
+                </ng-container>
+
+              </ng-container>
+
+              <span class="text-xs font-semibold mt-1"
+                [class.text-[#224957]]="templateForm.baseStyle === s.value"
+                [class.text-[#5a7380]]="templateForm.baseStyle !== s.value">{{ s.label }}</span>
+              <span class="text-[10px] text-[#9ab0bb] leading-tight">{{ s.desc }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Logo upload -->
+        <div class="mb-5">
+          <label class="field-label">Logo</label>
+          <input #logoFileInput type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            class="hidden" (change)="onLogoSelected($event)" />
+
+          <div *ngIf="!templateForm.logoUrl"
+            (click)="triggerLogoUpload()"
+            class="w-full px-3 py-4 border-2 border-dashed border-[#e6edf2] rounded-xl text-sm text-[#5a7380] hover:border-[#224957] hover:bg-[#f8fafb] transition-colors flex items-center justify-center gap-2 cursor-pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Upload logo</span>
+          </div>
+
+          <div *ngIf="templateForm.logoUrl" class="flex items-center gap-3 p-2.5 border border-[#e6edf2] rounded-xl bg-[#f8fafb]">
+            <div class="w-14 h-14 rounded-lg bg-white border border-[#e6edf2] flex items-center justify-center overflow-hidden shrink-0">
+              <img [src]="templateForm.logoUrl" class="max-w-full max-h-full object-contain" alt="Logo preview" />
+            </div>
+            <div class="flex-1 flex gap-2">
+              <button type="button" (click)="triggerLogoUpload()"
+                class="flex-1 px-3 py-2 border border-[#e6edf2] bg-white text-[#1a2c35] text-xs font-semibold rounded-lg hover:bg-[#f0f6f9] transition-colors">
+                Change
+              </button>
+              <button type="button" (click)="removeLogo()"
+                class="px-3 py-2 border border-[#e6edf2] text-[#5a7380] text-xs font-semibold rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors">
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <p *ngIf="logoUploadError" class="text-[10px] text-red-500 mt-1.5">{{ logoUploadError }}</p>
+          <p *ngIf="!logoUploadError" class="text-[10px] text-[#9ab0bb] mt-1.5">PNG, SVG or WebP, under 2MB — transparent background recommended</p>
+        </div>
+
+        <!-- Logo position (only for classic / bold / modern) -->
+        <div class="mb-5" *ngIf="templateForm.baseStyle !== 'sidebar'">
+          <label class="field-label">Logo Position</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button *ngFor="let pos of logoPositions" (click)="templateForm.logoPosition = pos.v"
+              class="flex flex-col items-center gap-1.5 py-2.5 rounded-xl border transition-all text-xs font-medium"
+              [class.border-[#224957]]="templateForm.logoPosition === pos.v"
+              [class.bg-[#f0f6f9]]="templateForm.logoPosition === pos.v"
+              [class.text-[#224957]]="templateForm.logoPosition === pos.v"
+              [class.border-[#e6edf2]]="templateForm.logoPosition !== pos.v"
+              [class.text-[#5a7380]]="templateForm.logoPosition !== pos.v">
+              <div class="w-full h-4 rounded bg-[#e6edf2] flex items-center px-1"
+                [class.justify-start]="pos.v === 'left'"
+                [class.justify-center]="pos.v === 'center'"
+                [class.justify-end]="pos.v === 'right'">
+                <div class="w-2.5 h-2.5 rounded" [style.background-color]="templateForm.accentColor"></div>
+              </div>
+              {{ pos.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Accent colour -->
+        <div class="mb-5">
+          <label class="field-label">Accent Colour</label>
+          <div class="flex items-center gap-3">
+            <input [(ngModel)]="templateForm.accentColor" type="color" class="w-10 h-10 rounded-xl border border-[#e6edf2] cursor-pointer shrink-0" />
+            <input [(ngModel)]="templateForm.accentColor" type="text" class="flex-1 field-input font-mono" />
+            <div class="flex gap-1.5">
+              <button *ngFor="let c of ['#224957','#1a1a2e','#2D6A4F','#9B2226','#6B4226']"
+                (click)="templateForm.accentColor = c"
+                class="w-6 h-6 rounded-full ring-2 ring-offset-1 transition-all"
+                [style.background-color]="c"
+                [class.ring-[#224957]]="templateForm.accentColor === c"
+                [class.ring-transparent]="templateForm.accentColor !== c">
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layout density -->
+        <div class="mb-5">
+          <label class="field-label">Layout Density</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button (click)="templateForm.density = 'simple'"
+              class="flex flex-col gap-1.5 p-3 rounded-xl border transition-all text-left"
+              [class.border-[#224957]]="templateForm.density==='simple'" [class.bg-[#f0f6f9]]="templateForm.density==='simple'"
+              [class.border-[#e6edf2]]="templateForm.density!=='simple'">
+              <div class="flex gap-1"><div class="h-1.5 w-8 rounded bg-[#e6edf2]"></div><div class="h-1.5 w-4 rounded bg-[#e6edf2]"></div></div>
+              <div class="h-0.5 w-full bg-[#e6edf2] rounded"></div>
+              <div class="h-0.5 w-3/4 bg-[#e6edf2] rounded"></div>
+              <span class="text-xs font-semibold mt-1" [class.text-[#224957]]="templateForm.density==='simple'" [class.text-[#5a7380]]="templateForm.density!=='simple'">Simple</span>
+              <span class="text-[10px] text-[#9ab0bb]">Total only, minimal</span>
+            </button>
+            <button (click)="templateForm.density = 'detailed'"
+              class="flex flex-col gap-1.5 p-3 rounded-xl border transition-all text-left"
+              [class.border-[#224957]]="templateForm.density==='detailed'" [class.bg-[#f0f6f9]]="templateForm.density==='detailed'"
+              [class.border-[#e6edf2]]="templateForm.density!=='detailed'">
+              <div class="flex gap-1"><div class="h-1.5 w-8 rounded bg-[#e6edf2]"></div><div class="h-1.5 w-4 rounded bg-[#e6edf2]"></div></div>
+              <div class="h-0.5 w-full bg-[#e6edf2] rounded"></div>
+              <div class="h-0.5 w-full bg-[#e6edf2] rounded"></div>
+              <div class="h-0.5 w-3/4 bg-[#e6edf2] rounded"></div>
+              <span class="text-xs font-semibold mt-1" [class.text-[#224957]]="templateForm.density==='detailed'" [class.text-[#5a7380]]="templateForm.density!=='detailed'">Detailed</span>
+              <span class="text-[10px] text-[#9ab0bb]">Full line items</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="flex flex-col gap-3 mb-5">
+
+          <!-- Bank details toggle -->
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <p class="text-sm font-medium text-[#1a2c35]">Show bank details</p>
+              <p class="text-[10px] text-[#9ab0bb]">Payment account on document</p>
+            </div>
+            <div class="relative">
+              <input [(ngModel)]="templateForm.showBankDetails" type="checkbox" class="sr-only peer" />
+              <div class="w-9 h-5 rounded-full border-2 border-[#e6edf2] bg-[#f5f7f9] transition-colors peer-checked:bg-[#224957] peer-checked:border-[#224957]"></div>
+              <div class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4"></div>
+            </div>
+          </label>
+
+        </div>
+
+        <!-- Your signature — a vendor-level asset, not a template setting.
+             Whether it's attached is now decided per document, when you
+             create a quotation or invoice. -->
+        <div class="mb-5 p-3.5 rounded-xl border border-[#e6edf2] bg-[#f8fafb]">
+          <p class="text-xs font-semibold text-[#1a2c35] mb-1">Your Signature</p>
+          <p class="text-[10px] text-[#9ab0bb] mb-3">Saved once here — you'll choose whether to include it each time you create a quotation or invoice</p>
+          <div *ngIf="savedSignatureDataUrl" class="mb-2 h-12 bg-white rounded-lg border border-[#e6edf2] flex items-center justify-center overflow-hidden">
+            <img [src]="savedSignatureDataUrl" class="max-h-10 object-contain" />
+          </div>
+          <div class="flex gap-2">
+            <button (click)="openSignaturePad()"
+              class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#224957] text-white text-xs font-semibold rounded-lg hover:bg-[#2d6478] transition-colors">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              {{ savedSignatureDataUrl ? 'Re-draw' : 'Draw Signature' }}
+            </button>
+            <button *ngIf="savedSignatureDataUrl" (click)="clearSavedSignature()"
+              class="px-3 py-2 border border-[#e6edf2] text-[#5a7380] text-xs font-semibold rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <!-- Footer text -->
+        <div class="mb-5">
+          <label class="field-label">Footer Text</label>
+          <textarea [(ngModel)]="templateForm.footerText" rows="2" placeholder="e.g. Thank you for your business."
+            class="field-input resize-none"></textarea>
+        </div>
+
+        <!-- Default notes -->
+        <div class="mb-6">
+          <label class="field-label">Default Notes / Terms</label>
+          <textarea [(ngModel)]="templateForm.notesDefault" rows="2" placeholder="Pre-filled notes for every new document"
+            class="field-input resize-none"></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2.5">
+          <button (click)="saveTemplate()"
+            class="flex-1 px-4 py-2.5 bg-[#224957] text-white text-sm font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">
+            Save Template
+          </button>
+          <button *ngIf="editingTemplate && !editingTemplate.isActive" (click)="setActiveTemplate(editingTemplate)"
+            class="px-4 py-2.5 border border-[#224957] text-[#224957] text-sm font-semibold rounded-xl hover:bg-[#f0f6f9] transition-colors whitespace-nowrap">
+            Set Active
+          </button>
+        </div>
+        <p *ngIf="editingTemplate?.isActive"
+          class="text-[11px] text-green-600 font-medium mt-2.5 flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          This template is currently active
+        </p>
+      </div>
+
+
+      <!-- ════ RIGHT — live preview (4 base styles) ════ -->
+      <div class="col-span-6">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Live Preview</p>
+          <button (click)="downloadTemplatePdf()" [disabled]="isDownloading"
+            class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border"
+            [class.border-[#224957]]="!isDownloading" [class.text-[#224957]]="!isDownloading"
+            [class.border-[#e6edf2]]="isDownloading"  [class.text-[#9ab0bb]]="isDownloading"
+            [class.cursor-not-allowed]="isDownloading">
+            <svg *ngIf="!isDownloading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <svg *ngIf="isDownloading" class="spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+            {{ isDownloading ? 'Generating…' : 'Download PDF' }}
+          </button>
+        </div>
+
+        <!-- The page "floats" on a neutral canvas rather than sitting flush
+             against the tab background — the same presentation convention
+             as Figma/Canva artboards, and it reads as a page precisely
+             because something distinguishes it from its surroundings even
+             with the portal's no-shadow rule (contrast + margin, not elevation). -->
+        <div class="bg-[#eef2f5] rounded-xl p-6">
+
+        <!-- ══ CLASSIC preview ══ — clean letterhead, ruled table ══ -->
+        <div #previewRef *ngIf="templateForm.baseStyle === 'classic'"
+          class="bg-white rounded-xl border border-[#d8dee3] overflow-hidden preview-root">
+
+          <!-- Letterhead -->
+          <div class="px-7 pt-7 pb-5 border-b-2" [style.border-color]="templateForm.accentColor">
+            <div class="flex items-start"
+              [class.justify-between]="templateForm.logoPosition !== 'center'"
+              [class.flex-row-reverse]="templateForm.logoPosition === 'right'"
+              [class.flex-col]="templateForm.logoPosition === 'center'"
+              [class.space-y-6]="templateForm.logoPosition === 'center'"
+              [class.items-center]="templateForm.logoPosition === 'center'">
+
+              <!-- Logo + company -->
+              <div class="flex flex-col space-y-1" [class.items-center]="templateForm.logoPosition === 'center'">
+                <ng-container *ngIf="templateForm.logoUrl; else classicInitial">
+                  <img [src]="templateForm.logoUrl" class="h-11 max-w-[150px] object-contain mb-1"
+                    [class.mx-auto]="templateForm.logoPosition === 'center'" alt="Company logo" />
+                </ng-container>
+                <ng-template #classicInitial>
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0"
+                    [style.background-color]="templateForm.accentColor">
+                    {{ profile?.companyName?.charAt(0) || 'A' }}
+                  </div>
+                </ng-template>
+                <p class="text-sm font-bold text-[#1a2c35] mt-1">{{ profile?.companyName }}</p>
+                <p class="text-[10px] text-[#9ab0bb]">{{ profile?.address }}, {{ profile?.city }}</p>
+                <p class="text-[10px] text-[#9ab0bb]">{{ profile?.email }}</p>
+              </div>
+
+              <!-- Doc type + meta -->
+              <div [class.text-right]="templateForm.logoPosition !== 'center'" [class.text-center]="templateForm.logoPosition === 'center'">
+                <p class="text-[26px] leading-none font-bold tracking-tight" [style.color]="templateForm.accentColor">
+                  {{ docLabel() }}
+                </p>
+                <div class="mt-2.5 text-[10px] text-[#5a7380] space-y-0.5">
+                  <p><span class="text-[#9ab0bb]">No: </span>{{ previewSample.docNumber }}</p>
+                  <p><span class="text-[#9ab0bb]">Date: </span>{{ previewSample.date }}</p>
+                  <p><span class="text-[#9ab0bb]">{{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}: </span>{{ previewSample.dueDate }}</p>
+                  <p *ngIf="templateDocType === 'invoice'"><span class="text-[#9ab0bb]">PO Ref: </span>{{ previewSample.poReference }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ng-container *ngTemplateOutlet="billToBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+          <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
+        </div>
+
+
+        <!-- ══ BOLD preview ══ — full-width accent header bar ══ -->
+        <div #previewRef *ngIf="templateForm.baseStyle === 'bold'"
+          class="bg-white rounded-xl border border-[#d8dee3] overflow-hidden preview-root">
+
+          <!-- Full-width accent header, with a quiet geometric echo instead of a busy texture -->
+          <div class="px-7 py-6 relative overflow-hidden" [style.background-color]="templateForm.accentColor">
+            <div class="absolute -right-8 -top-12 w-36 h-36 rounded-full pointer-events-none" style="background-color: rgba(255,255,255,0.06)"></div>
+            <div class="absolute right-14 -bottom-16 w-28 h-28 rounded-full pointer-events-none" style="background-color: rgba(255,255,255,0.06)"></div>
+
+            <div class="relative flex items-start"
+              [class.justify-between]="templateForm.logoPosition !== 'center'"
+              [class.flex-row-reverse]="templateForm.logoPosition === 'right'"
+              [class.flex-col]="templateForm.logoPosition === 'center'"
+              [class.space-y-4]="templateForm.logoPosition === 'center'"
+              [class.items-center]="templateForm.logoPosition === 'center'">
+
+              <div class="flex items-center space-x-3">
+                <ng-container *ngIf="templateForm.logoUrl; else boldInitial">
+                  <div class="w-11 h-11 rounded-lg flex items-center justify-center overflow-hidden shrink-0 p-1" style="background-color: rgba(255,255,255,0.95)">
+                    <img [src]="templateForm.logoUrl" class="max-w-full max-h-full object-contain" alt="Company logo" />
+                  </div>
+                </ng-container>
+                <ng-template #boldInitial>
+                  <div class="w-11 h-11 rounded-lg flex items-center justify-center text-white font-bold text-base shrink-0" style="background-color: rgba(255,255,255,0.2)">
+                    {{ profile?.companyName?.charAt(0) || 'A' }}
+                  </div>
+                </ng-template>
+                <div>
+                  <p class="text-white font-bold text-sm">{{ profile?.companyName }}</p>
+                  <p class="text-[10px]" style="color: rgba(255,255,255,0.7)">{{ profile?.address }}</p>
+                </div>
+              </div>
+
+              <p class="text-white font-black text-2xl tracking-[0.15em] opacity-95">{{ docLabel() }}</p>
+            </div>
+          </div>
+
+          <!-- Dark summary strip — the total, up front -->
+          <div class="px-7 py-3 bg-[#1a2c35] flex items-center justify-between flex-wrap">
+            <div class="text-[10px] flex flex-wrap" style="color: rgba(255,255,255,0.6)">
+              <span style="margin-right: 16px; margin-bottom: 4px">No: <span class="text-white font-medium">{{ previewSample.docNumber }}</span></span>
+              <span style="margin-right: 16px; margin-bottom: 4px">Date: <span class="text-white font-medium">{{ previewSample.date }}</span></span>
+              <span style="margin-bottom: 4px">{{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}: <span class="text-white font-medium">{{ previewSample.dueDate }}</span></span>
+            </div>
+            <p class="text-white font-bold text-sm">{{ fmtCurrency(previewSample.total) }}</p>
+          </div>
+
+          <ng-container *ngTemplateOutlet="billToBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+          <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
+        </div>
+
+
+        <!-- ══ SIDEBAR preview ══ — rotated doc label on left edge ══ -->
+        <div #previewRef *ngIf="templateForm.baseStyle === 'sidebar'"
+          class="bg-white rounded-xl border border-[#d8dee3] overflow-hidden preview-root flex">
+
+          <!-- Vertical rail -->
+          <div class="w-11 shrink-0 flex flex-col items-center justify-between py-6" [style.background-color]="templateForm.accentColor">
+            <ng-container *ngIf="templateForm.logoUrl; else sidebarInitial">
+              <div class="w-7 h-7 rounded flex items-center justify-center overflow-hidden p-0.5 shrink-0" style="background-color: rgba(255,255,255,0.9)">
+                <img [src]="templateForm.logoUrl" class="max-w-full max-h-full object-contain" alt="Company logo" />
+              </div>
+            </ng-container>
+            <ng-template #sidebarInitial>
+              <div class="w-7 h-7 rounded flex items-center justify-center text-white font-bold text-[11px] shrink-0" style="background-color: rgba(255,255,255,0.2)">
+                {{ profile?.companyName?.charAt(0) || 'A' }}
+              </div>
+            </ng-template>
+
+            <p class="text-white font-black text-[11px] tracking-[0.2em] whitespace-nowrap" style="transform: rotate(-90deg)">
+              {{ docLabel() }} · {{ previewSample.docNumber }}
+            </p>
+
+            <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background-color: rgba(255,255,255,0.4)"></span>
+          </div>
+
+          <!-- Main body -->
+          <div class="flex-1 flex flex-col min-w-0">
+
+            <div class="px-7 pt-7 pb-4 border-b border-[#f0f4f8] flex items-start justify-between">
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-[#1a2c35]">{{ profile?.companyName }}</p>
+                <p class="text-[10px] text-[#9ab0bb]">{{ profile?.address }}, {{ profile?.city }}</p>
+                <p class="text-[10px] text-[#9ab0bb]">{{ profile?.email }}</p>
+              </div>
+              <div class="text-right text-[10px] text-[#5a7380] space-y-0.5 shrink-0">
+                <p class="font-semibold text-[#1a2c35]">{{ previewSample.docNumber }}</p>
+                <p>Date: {{ previewSample.date }}</p>
+                <p class="font-medium" [style.color]="templateForm.accentColor">
+                  {{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }} {{ previewSample.dueDate }}
+                </p>
+              </div>
+            </div>
+
+            <ng-container *ngTemplateOutlet="billToBlock"></ng-container>
+            <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+            <ng-container *ngTemplateOutlet="totalsBlock"></ng-container>
+            <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
+            <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
+            <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
+          </div>
+        </div>
+
+
+        <!-- ══ MODERN preview ══ — two-tone header, label boxes ══ -->
+        <div #previewRef *ngIf="templateForm.baseStyle === 'modern'"
+          class="bg-white rounded-xl border border-[#d8dee3] overflow-hidden preview-root">
+
+          <!-- Two-tone header: tinted "from" panel + dark meta panel -->
+          <div class="flex flex-col sm:flex-row" [class.sm:flex-row-reverse]="templateForm.logoPosition === 'right'">
+            <div class="flex-1 px-7 py-5" [style.background-color]="templateForm.accentColor + '14'">
+              <ng-container *ngIf="templateForm.logoUrl; else modernInitial">
+                <img [src]="templateForm.logoUrl" class="h-9 max-w-[130px] object-contain mb-2" alt="Company logo" />
+              </ng-container>
+              <ng-template #modernInitial>
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-sm mb-2"
+                  [style.background-color]="templateForm.accentColor">
+                  {{ profile?.companyName?.charAt(0) || 'A' }}
+                </div>
+              </ng-template>
+              <p class="text-sm font-bold text-[#1a2c35]">{{ profile?.companyName }}</p>
+              <p class="text-[10px] text-[#5a7380] mt-0.5">{{ profile?.address }}, {{ profile?.city }}</p>
+              <p class="text-[10px] text-[#5a7380]">{{ profile?.email }}</p>
+            </div>
+            <div class="flex-1 px-7 py-5 bg-[#1a2c35] flex flex-col justify-center items-start sm:items-end text-left sm:text-right">
+              <p class="text-white font-bold text-lg tracking-wide mb-1.5">{{ docLabel() }}</p>
+              <p class="text-[10px]" style="color: rgba(255,255,255,0.5)">No. <span class="font-medium" style="color: rgba(255,255,255,0.9)">{{ previewSample.docNumber }}</span></p>
+              <p class="text-[10px]" style="color: rgba(255,255,255,0.5)">Date <span class="font-medium" style="color: rgba(255,255,255,0.9)">{{ previewSample.date }}</span></p>
+              <p class="text-[10px]" style="color: rgba(255,255,255,0.5)">
+                {{ templateDocType === 'invoice' ? 'Due' : 'Valid Until' }}
+                <span class="font-medium" style="color: rgba(255,255,255,0.9)">{{ previewSample.dueDate }}</span>
+              </p>
+            </div>
+          </div>
+
+          <ng-container *ngTemplateOutlet="billToBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="itemsTable"></ng-container>
+
+          <!-- Modern's signature moment: a statement-style total instead of a plain rule-off row -->
+          <div class="mx-7 mb-3 px-5 py-4 rounded-xl flex items-center justify-between flex-wrap"
+            [style.background-color]="templateForm.accentColor">
+            <span class="text-[11px] font-bold uppercase tracking-widest" style="color: rgba(255,255,255,0.8)">
+              {{ templateDocType === 'invoice' ? 'Amount Due' : 'Quotation Total' }}
+            </span>
+            <span class="text-white text-xl font-bold">{{ fmtCurrency(previewSample.total) }}</span>
+          </div>
+          <div *ngIf="templateForm.density === 'detailed'" class="px-7 pb-3 -mt-1 flex justify-end space-x-6 text-[11px] text-[#5a7380]">
+            <span>Subtotal <strong class="text-[#1a2c35] font-medium">{{ fmtCurrency(previewSample.subtotal) }}</strong></span>
+            <span>Tax <strong class="text-[#1a2c35] font-medium">{{ fmtCurrency(previewSample.tax) }}</strong></span>
+          </div>
+
+          <ng-container *ngTemplateOutlet="bankBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="signatureBlock"></ng-container>
+          <ng-container *ngTemplateOutlet="footerBlock"></ng-container>
+        </div>
+
+        </div>
+
+        <p class="text-[10px] text-[#9ab0bb] mt-2 px-1">
+          Preview reflects your settings live — actual documents use real order data
+        </p>
+      </div>
+    </div>
+
+
+    <!-- ── Shared preview sub-templates ── -->
+    <!-- Reused by all four base styles so the item table, totals, bank details,
+         signature and footer stay structurally consistent — only the letterhead
+         above them changes. A couple of them still read templateForm.baseStyle
+         to vary the item-table header treatment (filled for Bold/Modern, ruled
+         for Classic/Sidebar) without forking the whole block per style. -->
+
+    <ng-template #billToBlock>
+      <div class="px-7 py-3.5 border-b border-[#f0f4f8]">
+        <div class="flex space-x-1.5 items-center mb-1">
+          <span class="w-1 h-3 rounded-full" [style.background-color]="templateForm.accentColor"></span>
+          <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest">{{ templateDocType === 'invoice' ? 'Bill To' : 'Quote For' }}</p>
+        </div>
+        <p class="text-sm font-semibold text-[#1a2c35]">{{ previewSample.clientName }}</p>
+        <p *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380]">{{ previewSample.clientAddress }}</p>
+      </div>
+    </ng-template>
+
+    <ng-template #itemsTable>
+      <div *ngIf="templateForm.density === 'detailed'" class="px-7 pt-4 pb-1">
+        <div class="grid grid-cols-12 text-[9px] font-bold uppercase tracking-widest py-2 px-3 rounded-lg mb-0.5"
+          [class.text-white]="templateForm.baseStyle === 'bold' || templateForm.baseStyle === 'modern'"
+          [class.text-[#9ab0bb]]="templateForm.baseStyle === 'classic' || templateForm.baseStyle === 'sidebar'"
+          [class.border-b]="templateForm.baseStyle === 'classic' || templateForm.baseStyle === 'sidebar'"
+          [style.background-color]="(templateForm.baseStyle === 'bold' || templateForm.baseStyle === 'modern') ? templateForm.accentColor : 'transparent'"
+          [style.border-color]="templateForm.accentColor + '40'">
+          <span class="col-span-6">Description</span>
+          <span class="col-span-2 text-center">Qty</span>
+          <span class="col-span-2 text-right">Unit Price</span>
+          <span class="col-span-2 text-right">Amount</span>
+        </div>
+        <div *ngFor="let item of previewSample.items; let odd = odd; let last = last"
+          class="grid grid-cols-12 text-[11px] py-2.5 px-3"
+          [class.bg-[#fafbfc]]="odd" [class.border-b]="!last" [class.border-[#f5f7f9]]="!last">
+          <span class="col-span-6 text-[#1a2c35] font-medium">{{ item.name }}</span>
+          <span class="col-span-2 text-center text-[#5a7380]">{{ item.qty }}</span>
+          <span class="col-span-2 text-right text-[#5a7380]">{{ fmtCurrency(item.unitPrice) }}</span>
+          <span class="col-span-2 text-right font-semibold text-[#1a2c35]">{{ fmtCurrency(item.total) }}</span>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #totalsBlock>
+      <div class="px-7 pt-3 pb-4 flex justify-end">
+        <div class="w-full max-w-[230px]">
+          <div *ngIf="templateForm.density==='detailed'" class="flex justify-between text-[11px] text-[#5a7380] py-1">
+            <span>Subtotal</span><span>{{ fmtCurrency(previewSample.subtotal) }}</span>
+          </div>
+          <div *ngIf="templateForm.density==='detailed'" class="flex justify-between text-[11px] text-[#5a7380] py-1">
+            <span>Tax (7.5%)</span><span>{{ fmtCurrency(previewSample.tax) }}</span>
+          </div>
+          <div class="flex justify-between items-center mt-1.5 px-3.5 py-2.5 rounded-lg"
+            [style.background-color]="templateForm.accentColor + '12'">
+            <span class="text-xs font-bold uppercase tracking-wide" [style.color]="templateForm.accentColor">Total</span>
+            <span class="text-base font-bold" [style.color]="templateForm.accentColor">{{ fmtCurrency(previewSample.total) }}</span>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #bankBlock>
+      <div *ngIf="templateForm.showBankDetails && profile"
+        class="px-7 py-3 bg-[#f8fafb] border-t border-[#f0f4f8]">
+        <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1.5">Payment Details</p>
+        <div class="flex space-x-6 text-[10px] flex-wrap">
+          <div><p class="text-[#9ab0bb]">Bank</p><p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.bankName }}</p></div>
+          <div><p class="text-[#9ab0bb]">Account</p><p class="font-medium text-[#1a2c35]">{{ profile.bankDetails.accountName }}</p></div>
+          <div><p class="text-[#9ab0bb]">Number</p><p class="font-medium text-[#1a2c35] font-mono">{{ maskAccountNumber(profile.bankDetails.accountNumber) }}</p></div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #signatureBlock>
+      <div class="px-7 py-4 border-t border-[#f0f4f8]">
+        <div class="flex items-end justify-between">
+          <div *ngIf="templateForm.density==='detailed'" class="text-[10px] text-[#5a7380] min-w-0">
+            <p class="text-[9px] text-[#9ab0bb] uppercase tracking-widest mb-1">Notes</p>
+            <p>{{ templateForm.notesDefault || 'All amounts in NGN unless otherwise stated.' }}</p>
+          </div>
+          <div class="text-right shrink-0 ml-auto">
+            <div class="h-10 w-32 border-b border-[#1a2c35] mb-1 flex items-end justify-center overflow-hidden">
+              <img *ngIf="savedSignatureDataUrl" [src]="savedSignatureDataUrl" class="max-h-9 object-contain" alt="Signature" />
+            </div>
+            <p class="text-[9px] text-[#9ab0bb]">Authorised Signature</p>
+            <p class="text-[10px] font-medium text-[#1a2c35]">{{ profile?.contactPersonName }}</p>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #footerBlock>
+      <div *ngIf="templateForm.footerText" class="px-7 py-3.5 border-t-4 text-center" [style.border-color]="templateForm.accentColor">
+        <p class="text-[10px] text-[#9ab0bb] italic">{{ templateForm.footerText }}</p>
+      </div>
+    </ng-template>
+
+
+    <!-- ════ SIGNATURE PAD MODAL ════ -->
+    <div *ngIf="showSignaturePad" class="fixed inset-0 z-50 flex items-center justify-center p-4" (click)="closeSignaturePad()">
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="modal-pop relative bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
+
+        <!-- Modal header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#eef2f6]">
+          <div>
+            <h3 class="text-base font-bold text-[#1a2c35]">Draw Your Signature</h3>
+            <p class="text-xs text-[#9ab0bb] mt-0.5">Use your mouse, finger, or stylus</p>
+          </div>
+          <button (click)="closeSignaturePad()" class="w-8 h-8 rounded-lg hover:bg-[#f5f7f9] flex items-center justify-center text-[#5a7380]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Canvas -->
+        <div class="px-5 pt-4 pb-2">
+          <div class="relative rounded-xl border-2 border-dashed border-[#e6edf2] bg-[#fafbfc] overflow-hidden">
+            <canvas #signatureCanvas width="440" height="180"
+              class="w-full touch-none cursor-crosshair block"
+              (pointerdown)="onSignaturePointerDown($event)"
+              (pointermove)="onSignaturePointerMove($event)"
+              (pointerup)="onSignaturePointerUp()"
+              (pointerleave)="onSignaturePointerUp()">
+            </canvas>
+            <!-- Guide line -->
+            <div class="absolute bottom-10 left-6 right-6 border-b border-[#e6edf2] pointer-events-none"></div>
+            <p class="absolute bottom-3 left-0 right-0 text-center text-[10px] text-[#c9dde8] pointer-events-none">Sign above the line</p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-3 px-5 py-4">
+          <button (click)="clearSignature()"
+            class="flex items-center gap-1.5 px-3 py-2 border border-[#e6edf2] text-[#5a7380] text-sm font-semibold rounded-xl hover:bg-[#f5f7f9] transition-colors">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Clear
+          </button>
+          <button (click)="saveSignature()"
+            class="flex-1 px-4 py-2 bg-[#224957] text-white text-sm font-semibold rounded-xl hover:bg-[#2d6478] transition-colors">
+            Save Signature
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </ng-container>
+
+</div>

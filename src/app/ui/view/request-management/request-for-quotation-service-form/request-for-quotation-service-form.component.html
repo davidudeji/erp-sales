@@ -1,0 +1,413 @@
+<!-- request-for-quotation-service-form.component.html -->
+
+<div class="procurement-service-form">
+
+  <!-- Page Header Banner -->
+  <div class="page-header-banner">
+    <div class="banner-top-row">
+      <app-back-button></app-back-button>
+      <div class="header-main">
+        <div class="header-icon-wrap">
+          <i class="fas fa-hands-helping"></i>
+        </div>
+        <div class="header-text">
+          <h2>Service Procurement Request</h2>
+          <p class="subtitle">Provide detailed information about the services you want to procure</p>
+        </div>
+      </div>
+    </div>
+    <div class="step-progress">
+      <div class="step completed">
+        <span class="step-dot"><i class="fas fa-check"></i></span>
+        <span class="step-label">Type</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step active">
+        <span class="step-dot">2</span>
+        <span class="step-label">Details</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step">
+        <span class="step-dot">3</span>
+        <span class="step-label">Template</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step">
+        <span class="step-dot">4</span>
+        <span class="step-label">Vendors</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step">
+        <span class="step-dot">5</span>
+        <span class="step-label">Submit</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-body">
+    <form [formGroup]="serviceForm" class="service-form">
+
+      <!-- Basic Information -->
+      <div class="form-section">
+        <div class="section-title-row">
+          <span class="section-icon"><i class="fas fa-info-circle"></i></span>
+          <h3 class="section-title">Basic Information</h3>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="title">Request Title <span class="required">*</span></label>
+            <input id="title" type="text" formControlName="title"
+              placeholder="e.g., Website Development & Maintenance Services"
+              class="form-control"
+              [class.error]="serviceForm.get('title')?.invalid && serviceForm.get('title')?.touched">
+            <small class="error-message" *ngIf="serviceForm.get('title')?.invalid && serviceForm.get('title')?.touched">
+              {{ getFormErrorMessage('title') }}
+            </small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="description">Description <span class="required">*</span></label>
+            <textarea id="description" formControlName="description" rows="3"
+              placeholder="Describe the scope of work, deliverables, and requirements"
+              class="form-control"
+              [class.error]="serviceForm.get('description')?.invalid && serviceForm.get('description')?.touched"></textarea>
+            <small class="error-message"
+              *ngIf="serviceForm.get('description')?.invalid && serviceForm.get('description')?.touched">
+              {{ getFormErrorMessage('description') }}
+            </small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="serviceCategory">Service Category <span class="required">*</span></label>
+            <select id="serviceCategory" formControlName="serviceCategory" class="form-control"
+              [class.error]="serviceForm.get('serviceCategory')?.invalid && serviceForm.get('serviceCategory')?.touched">
+              <option value="">Select Category</option>
+              <option *ngFor="let category of serviceCategories" [value]="category">{{ category }}</option>
+            </select>
+            <small class="error-message"
+              *ngIf="serviceForm.get('serviceCategory')?.invalid && serviceForm.get('serviceCategory')?.touched">
+              {{ getFormErrorMessage('serviceCategory') }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Service Items -->
+      <div class="form-section">
+        <div class="section-header">
+          <div class="section-title-row no-border no-margin">
+            <span class="section-icon"><i class="fas fa-concierge-bell"></i></span>
+            <h3 class="section-title">Service Items <span class="required">*</span></h3>
+          </div>
+          <button type="button" class="btn-add-item" (click)="addItem()">
+            <i class="fas fa-plus"></i> Add Service
+          </button>
+        </div>
+
+        <div class="items-container">
+          <div *ngFor="let item of items.controls; let i = index" class="item-card" [formGroup]="$any(item)">
+
+            <div class="item-header">
+              <div class="item-number">
+                <span class="number-badge">{{ i + 1 }}</span>
+                <span class="item-title">Service {{ i + 1 }}</span>
+              </div>
+              <button type="button" class="btn-remove-item" (click)="removeItem(i)"
+                [disabled]="items.length <= 1">
+                <i class="fas fa-times"></i> Remove
+              </button>
+            </div>
+
+            <div class="item-body">
+
+              <!-- Core Service Fields -->
+              <div class="field-grid cols-2">
+                <div class="form-group">
+                  <label>Service Name <span class="required">*</span></label>
+                  <input type="text" formControlName="name"
+                    placeholder="e.g., Custom Software Development"
+                    class="form-control"
+                    [class.error]="item.get('name')?.invalid && item.get('name')?.touched">
+                  <small class="error-message" *ngIf="item.get('name')?.invalid && item.get('name')?.touched">
+                    {{ getItemErrorMessage(i, 'name') }}
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Item Category <span class="required">*</span></label>
+                  <select formControlName="categoryId" class="form-control"
+                    [class.error]="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
+                    <option value="" disabled>Select Category</option>
+                    <option *ngFor="let cat of procurementCategories" [value]="cat.categoryId">{{ cat.name }}</option>
+                  </select>
+                  <small class="error-message"
+                    *ngIf="item.get('categoryId')?.invalid && item.get('categoryId')?.touched">
+                    {{ getItemErrorMessage(i, 'categoryId') }}
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Service Domain <span class="required">*</span></label>
+                  <select formControlName="serviceCategory" class="form-control"
+                    [class.error]="item.get('serviceCategory')?.invalid && item.get('serviceCategory')?.touched">
+                    <option value="">Select Domain</option>
+                    <option *ngFor="let category of serviceCategories" [value]="category">{{ category }}</option>
+                  </select>
+                  <small class="error-message"
+                    *ngIf="item.get('serviceCategory')?.invalid && item.get('serviceCategory')?.touched">
+                    {{ getItemErrorMessage(i, 'serviceCategory') }}
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Quantity <span class="required">*</span></label>
+                  <input type="number" formControlName="quantity" min="1"
+                    placeholder="Number of services needed"
+                    class="form-control"
+                    [class.error]="item.get('quantity')?.invalid && item.get('quantity')?.touched">
+                  <small class="error-message"
+                    *ngIf="item.get('quantity')?.invalid && item.get('quantity')?.touched">
+                    {{ getItemErrorMessage(i, 'quantity') }}
+                  </small>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group full-width">
+                  <label>Service Description <span class="required">*</span></label>
+                  <textarea formControlName="description" rows="2"
+                    placeholder="Detailed description of the service required, deliverables, and success criteria"
+                    class="form-control"
+                    [class.error]="item.get('description')?.invalid && item.get('description')?.touched"></textarea>
+                  <small class="error-message"
+                    *ngIf="item.get('description')?.invalid && item.get('description')?.touched">
+                    {{ getItemErrorMessage(i, 'description') }}
+                  </small>
+                </div>
+              </div>
+
+              <!-- Engagement Details -->
+              <div class="subsection-label"><i class="fas fa-user-clock"></i> Engagement Details</div>
+              <div class="field-grid cols-2">
+                <div class="form-group">
+                  <label>Experience Level <span class="required">*</span></label>
+                  <select formControlName="experienceLevel" class="form-control"
+                    [class.error]="item.get('experienceLevel')?.invalid && item.get('experienceLevel')?.touched">
+                    <option value="">Select Level</option>
+                    <option *ngFor="let level of experienceLevels" [value]="level">{{ level }}</option>
+                  </select>
+                  <small class="error-message"
+                    *ngIf="item.get('experienceLevel')?.invalid && item.get('experienceLevel')?.touched">
+                    {{ getItemErrorMessage(i, 'experienceLevel') }}
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Service Duration <span class="required">*</span></label>
+                  <input type="text" formControlName="serviceDuration"
+                    placeholder="e.g., 3 months, 40 hours"
+                    class="form-control"
+                    [class.error]="item.get('serviceDuration')?.invalid && item.get('serviceDuration')?.touched">
+                  <small class="error-message"
+                    *ngIf="item.get('serviceDuration')?.invalid && item.get('serviceDuration')?.touched">
+                    {{ getItemErrorMessage(i, 'serviceDuration') }}
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Service Start Date <span class="required">*</span></label>
+                  <input type="date" formControlName="serviceStartDate" class="form-control"
+                    [min]="todayDateString"
+                    [class.error]="item.get('serviceStartDate')?.invalid && item.get('serviceStartDate')?.touched">
+                  <small class="error-message"
+                    *ngIf="item.get('serviceStartDate')?.invalid && item.get('serviceStartDate')?.touched">
+                    {{ getItemErrorMessage(i, 'serviceStartDate') }}
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Service End Date <span class="required">*</span></label>
+                  <input type="date" formControlName="serviceEndDate" class="form-control"
+                    [min]="item.get('serviceStartDate')?.value || todayDateString"
+                    [class.error]="item.get('serviceEndDate')?.invalid && item.get('serviceEndDate')?.touched">
+                  <small class="error-message"
+                    *ngIf="item.get('serviceEndDate')?.invalid && item.get('serviceEndDate')?.touched">
+                    {{ getItemErrorMessage(i, 'serviceEndDate') }}
+                  </small>
+                </div>
+              </div>
+
+              <!-- Financial Details -->
+              <div class="subsection-label"><i class="fas fa-coins"></i> Budget & Delivery</div>
+              <div class="field-grid cols-4">
+                <div class="form-group">
+                  <label>Estimated Budget <span class="required">*</span></label>
+                  <div class="input-prefix-wrap">
+                    <span class="input-prefix">₦</span>
+                    <input type="number" formControlName="estimatedBudget" min="0.01" step="0.01"
+                      placeholder="0.00" class="form-control has-prefix"
+                      [class.error]="item.get('estimatedBudget')?.invalid && item.get('estimatedBudget')?.touched">
+                  </div>
+                  <small class="error-message"
+                    *ngIf="item.get('estimatedBudget')?.invalid && item.get('estimatedBudget')?.touched">
+                    {{ getItemErrorMessage(i, 'estimatedBudget') }}
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label>Currency <span class="required">*</span></label>
+                  <select formControlName="currency" class="form-control">
+                    <option *ngFor="let curr of currencies" [value]="curr">{{ curr }}</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Delivery Mode</label>
+                  <select formControlName="deliveryMode" class="form-control">
+                    <option value="STANDARD">Standard</option>
+                    <option value="EXPRESS">Express</option>
+                    <option value="SAME_DAY">Same Day</option>
+                    <option value="PICKUP">Pickup</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Project Deadline <span class="required">*</span></label>
+                  <input type="date" formControlName="deliveryDeadline" class="form-control"
+                    [min]="todayDateString"
+                    [class.error]="item.get('deliveryDeadline')?.invalid && item.get('deliveryDeadline')?.touched">
+                  <small class="error-message"
+                    *ngIf="item.get('deliveryDeadline')?.invalid && item.get('deliveryDeadline')?.touched">
+                    {{ getItemErrorMessage(i, 'deliveryDeadline') }}
+                  </small>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group full-width">
+                  <label>Service Location <span class="required">*</span></label>
+                  <input type="text" formControlName="deliveryLocation"
+                    placeholder="Where will the service be delivered? (e.g., Head Office, Lagos or Remote)"
+                    class="form-control"
+                    [class.error]="item.get('deliveryLocation')?.invalid && item.get('deliveryLocation')?.touched">
+                  <small class="error-message"
+                    *ngIf="item.get('deliveryLocation')?.invalid && item.get('deliveryLocation')?.touched">
+                    Service location is required
+                  </small>
+                </div>
+              </div>
+
+              <!-- Required Qualifications -->
+              <div class="qualifications-section">
+                <div class="qualifications-header">
+                  <div class="subsection-label no-margin"><i class="fas fa-medal"></i> Required Qualifications</div>
+                  <button type="button" class="btn-add-qualification" (click)="addQualification(i)">
+                    <i class="fas fa-plus-circle"></i> Add Qualification
+                  </button>
+                </div>
+
+                <div class="qualifications-list" *ngIf="$any(item.get('requiredQualifications'))?.controls?.length; else noQuals">
+                  <div *ngFor="let qual of $any(item.get('requiredQualifications'))?.controls; let j = index"
+                    class="qualification-item">
+                    <input type="text" [formControl]="$any(qual)"
+                      placeholder="e.g., Certified Project Manager, 5+ years experience" class="form-control">
+                    <button type="button" class="btn-remove-qualification" (click)="removeQualification(i, j)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+                <ng-template #noQuals>
+                  <p class="no-quals-hint">No qualifications added yet. Click "Add Qualification" to specify requirements.</p>
+                </ng-template>
+              </div>
+
+              <!-- Attachments -->
+              <div class="attachments-section">
+                <div class="attachments-header">
+                  <div class="subsection-label no-margin"><i class="fas fa-paperclip"></i> Attachments</div>
+                  <div class="upload-wrapper">
+                    <input type="file" multiple
+                      accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx"
+                      (change)="onFileUpload($event, i)"
+                      style="display: none"
+                      [id]="'file-upload-service-' + i">
+                    <label [for]="'file-upload-service-' + i" class="btn-upload">
+                      <i class="fas fa-cloud-upload-alt"></i> Upload Files
+                    </label>
+                  </div>
+                </div>
+
+                <div class="attachments-list" *ngIf="$any(item.get('attachments'))?.controls?.length">
+                  <div *ngFor="let attachment of $any(item.get('attachments'))?.controls; let k = index"
+                    class="attachment-item">
+                    <div class="attachment-icon">
+                      <i class="fas" [class]="getFileIcon(attachment.get('type')?.value)"></i>
+                    </div>
+                    <div class="attachment-info">
+                      <span class="attachment-name">{{ attachment.get('fileName')?.value }}</span>
+                      <span class="attachment-size">{{ formatFileSize(attachment.get('size')?.value) }}</span>
+                    </div>
+                    <button type="button" class="btn-remove-attachment" (click)="removeAttachment(i, k)">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Special Instructions -->
+      <div class="form-section">
+        <div class="section-title-row">
+          <span class="section-icon"><i class="fas fa-sticky-note"></i></span>
+          <h3 class="section-title">Special Instructions</h3>
+        </div>
+        <div class="form-group">
+          <textarea id="specialInstructions" formControlName="specialInstructions" rows="3"
+            placeholder="Any special requirements, SLA expectations, compliance notes, or additional information for vendors"
+            class="form-control"></textarea>
+        </div>
+      </div>
+
+      <!-- Budget Summary -->
+      <div class="budget-summary">
+        <div class="budget-summary-inner">
+          <div class="budget-icon-wrap">
+            <i class="fas fa-calculator"></i>
+          </div>
+          <div class="summary-content">
+            <span class="summary-label">Total Estimated Budget</span>
+            <span class="summary-value">{{ formatCurrency(getTotalBudget()) }}</span>
+          </div>
+          <div class="budget-items-count">
+            <span>{{ items.length }} service{{ items.length !== 1 ? 's' : '' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onBack()">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <div class="actions-right">
+          <button type="button" class="btn-draft" (click)="saveDraft()">
+            <i class="fas fa-save"></i> Save as Draft
+          </button>
+          <button type="button" class="btn-primary" (click)="onNext()">
+            Next: Choose Template <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>

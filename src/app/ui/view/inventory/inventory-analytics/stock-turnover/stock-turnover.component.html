@@ -1,0 +1,600 @@
+<!-- stock-turnover.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Stock Turnover</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="ql-filter-section" *ngIf="summary">
+            <div class="ql-filter-heading">Summary</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Avg Turnover</span>
+                <span class="ql-sidebar-stat-value" [style.color]="getTurnoverColor(summary.overallTurnover)">
+                    {{ summary.overallTurnover.toFixed(1) }}x
+                </span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Days of Inventory</span>
+                <span class="ql-sidebar-stat-value">{{ summary.averageDaysOfInventory.toFixed(0) }} days</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">High Velocity</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ summary.highVelocityCount }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Medium Velocity</span>
+                <span class="ql-sidebar-stat-value" style="color: #F5A623;">{{ summary.mediumVelocityCount }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Low Velocity</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ summary.lowVelocityCount }}</span>
+            </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div class="ql-filter-section" *ngIf="summary && summary.topPerformers.length > 0">
+            <div class="ql-filter-heading">Top Performers</div>
+            <div *ngFor="let product of summary.topPerformers" class="ql-sidebar-product"
+                (click)="viewProduct(product.productId)">
+                <div class="ql-sidebar-product-avatar">
+                    <span>{{ getInitials(product.productName) }}</span>
+                </div>
+                <div class="ql-sidebar-product-info">
+                    <span class="ql-sidebar-product-name">{{ product.productName }}</span>
+                    <span class="ql-sidebar-product-sku">{{ product.turnoverRate.toFixed(1) }}x turnover</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refreshData()" [disabled]="isRefreshing">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                {{ isRefreshing ? 'Refreshing...' : 'Refresh Data' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="exportReport()">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading turnover data...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refreshData()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading && summary">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">Stock Turnover</h1>
+                    <span class="ql-total-badge">Efficiency</span>
+                    <span class="ql-turnover-badge"
+                        [style.background]="getTurnoverColor(summary.overallTurnover) + '20'"
+                        [style.color]="getTurnoverColor(summary.overallTurnover)">
+                        <i class="fas fa-rotate"></i>
+                        {{ summary.overallTurnover.toFixed(1) }}x Avg Turnover
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refreshData()"
+                        [disabled]="isRefreshing">
+                        <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                        {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="exportReport()">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="ql-stats-row">
+                <div class="ql-stat-mini" (click)="setActiveTab('overview')">
+                    <span class="ql-stat-mini-value" [style.color]="getTurnoverColor(summary.overallTurnover)">
+                        {{ summary.overallTurnover.toFixed(1) }}x
+                    </span>
+                    <span class="ql-stat-mini-label">Avg Turnover</span>
+                </div>
+                <div class="ql-stat-mini" (click)="setActiveTab('overview')">
+                    <span class="ql-stat-mini-value" style="color: #3B82F6;">
+                        {{ summary.averageDaysOfInventory.toFixed(0) }}
+                    </span>
+                    <span class="ql-stat-mini-label">Days of Inventory</span>
+                </div>
+                <div class="ql-stat-mini" (click)="setActiveTab('products')">
+                    <span class="ql-stat-mini-value" style="color: #2EB270;">{{ summary.highVelocityCount }}</span>
+                    <span class="ql-stat-mini-label">High Velocity</span>
+                </div>
+                <div class="ql-stat-mini" (click)="setActiveTab('products')">
+                    <span class="ql-stat-mini-value" style="color: #F5A623;">{{ summary.mediumVelocityCount }}</span>
+                    <span class="ql-stat-mini-label">Medium Velocity</span>
+                </div>
+                <div class="ql-stat-mini" (click)="setActiveTab('products')">
+                    <span class="ql-stat-mini-value" style="color: #DC2626;">{{ summary.lowVelocityCount }}</span>
+                    <span class="ql-stat-mini-label">Low Velocity</span>
+                </div>
+            </div>
+
+            <!-- Filters Bar -->
+            <div class="ql-filters-bar" [formGroup]="filterForm">
+                <div class="ql-filter-group">
+                    <input type="text" class="ql-search-input" placeholder="Search products..."
+                        (input)="onSearch($event)" [value]="searchTerm">
+                    <i class="fas fa-search ql-search-icon"></i>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" formControlName="branchFilter" (change)="applyFilters()">
+                        <option value="all">All Branches</option>
+                        <option *ngFor="let branch of getUniqueBranches()" [value]="branch.id">
+                            {{ branch.name }}
+                        </option>
+                    </select>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" formControlName="categoryFilter" (change)="applyFilters()">
+                        <option value="all">All Categories</option>
+                        <option *ngFor="let category of getUniqueCategories()" [value]="category">
+                            {{ category }}
+                        </option>
+                    </select>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" formControlName="sortBy" (change)="applyFilters()">
+                        <option value="turnoverRate">Sort by Turnover</option>
+                        <option value="productName">Sort by Name</option>
+                        <option value="daysOfInventory">Sort by Days</option>
+                        <option value="sellThroughRate">Sort by Sell-Through</option>
+                    </select>
+                </div>
+                <button class="ql-clear-filters" (click)="clearFilters()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+
+            <!-- Velocity Filter Chips -->
+            <div class="ql-velocity-chips">
+                <button class="ql-chip" [class.ql-chip--active]="velocityFilter === 'ALL'"
+                    (click)="setVelocityFilter('ALL')">
+                    All ({{ turnoverData.length }})
+                </button>
+                <button class="ql-chip ql-chip--high" [class.ql-chip--active]="velocityFilter === 'HIGH'"
+                    (click)="setVelocityFilter('HIGH')">
+                    <span class="ql-chip-dot" style="background: #2EB270;"></span>
+                    High ({{ summary.highVelocityCount }})
+                </button>
+                <button class="ql-chip ql-chip--medium" [class.ql-chip--active]="velocityFilter === 'MEDIUM'"
+                    (click)="setVelocityFilter('MEDIUM')">
+                    <span class="ql-chip-dot" style="background: #F5A623;"></span>
+                    Medium ({{ summary.mediumVelocityCount }})
+                </button>
+                <button class="ql-chip ql-chip--low" [class.ql-chip--active]="velocityFilter === 'LOW'"
+                    (click)="setVelocityFilter('LOW')">
+                    <span class="ql-chip-dot" style="background: #DC2626;"></span>
+                    Low ({{ summary.lowVelocityCount }})
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'overview'"
+                    (click)="setActiveTab('overview')">
+                    <i class="fas fa-chart-pie"></i> Overview
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'products'"
+                    (click)="setActiveTab('products')">
+                    <i class="fas fa-box"></i> Products
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'categories'"
+                    (click)="setActiveTab('categories')">
+                    <i class="fas fa-tags"></i> Categories
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'insights'"
+                    (click)="setActiveTab('insights')">
+                    <i class="fas fa-lightbulb"></i> Insights
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
+
+                <!-- ========================================================
+                OVERVIEW TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'overview'" class="ql-tab-panel">
+                    <div class="ql-overview-grid">
+                        <div class="ql-overview-left">
+                            <!-- Turnover Gauge -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-rotate"></i> Turnover Rate</h3>
+                                <div class="ql-gauge-container">
+                                    <div class="ql-gauge">
+                                        <svg viewBox="0 0 200 120">
+                                            <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e2e8f0"
+                                                stroke-width="20" stroke-linecap="round" />
+                                            <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none"
+                                                [style.stroke]="getTurnoverColor(summary.overallTurnover)"
+                                                stroke-width="20" stroke-linecap="round"
+                                                [attr.stroke-dasharray]="Math.min((summary.overallTurnover / 5) * 100, 100) / 100 * 251 + ', 251'" />
+                                            <circle cx="100" cy="100" r="8" fill="white"
+                                                [style.stroke]="getTurnoverColor(summary.overallTurnover)"
+                                                stroke-width="4" />
+                                        </svg>
+                                        <div class="ql-gauge-value">{{ summary.overallTurnover.toFixed(1) }}x</div>
+                                        <div class="ql-gauge-label">Turnover Rate</div>
+                                    </div>
+                                    <div class="ql-gauge-legend">
+                                        <span class="ql-gauge-legend-item">
+                                            <span class="ql-gauge-dot" style="background: #2EB270;"></span>
+                                            High (&ge;2x)
+                                        </span>
+                                        <span class="ql-gauge-legend-item">
+                                            <span class="ql-gauge-dot" style="background: #F5A623;"></span>
+                                            Medium (0.5-2x)
+                                        </span>
+                                        <span class="ql-gauge-legend-item">
+                                            <span class="ql-gauge-dot" style="background: #DC2626;"></span>
+                                            Low (&lt;0.5x)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Velocity Distribution -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-chart-bar"></i> Velocity Distribution</h3>
+                                <div class="ql-velocity-distribution">
+                                    <div class="ql-velocity-bar-item">
+                                        <span class="ql-velocity-label">High</span>
+                                        <div class="ql-velocity-bar-wrapper">
+                                            <div class="ql-velocity-bar-fill"
+                                                [style.width.%]="(summary.highVelocityCount / turnoverData.length) * 100"
+                                                style="background: #2EB270;"></div>
+                                        </div>
+                                        <span class="ql-velocity-count">{{ summary.highVelocityCount }}</span>
+                                    </div>
+                                    <div class="ql-velocity-bar-item">
+                                        <span class="ql-velocity-label">Medium</span>
+                                        <div class="ql-velocity-bar-wrapper">
+                                            <div class="ql-velocity-bar-fill"
+                                                [style.width.%]="(summary.mediumVelocityCount / turnoverData.length) * 100"
+                                                style="background: #F5A623;"></div>
+                                        </div>
+                                        <span class="ql-velocity-count">{{ summary.mediumVelocityCount }}</span>
+                                    </div>
+                                    <div class="ql-velocity-bar-item">
+                                        <span class="ql-velocity-label">Low</span>
+                                        <div class="ql-velocity-bar-wrapper">
+                                            <div class="ql-velocity-bar-fill"
+                                                [style.width.%]="(summary.lowVelocityCount / turnoverData.length) * 100"
+                                                style="background: #DC2626;"></div>
+                                        </div>
+                                        <span class="ql-velocity-count">{{ summary.lowVelocityCount }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ql-overview-right">
+                            <!-- Top Performers -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-trophy"></i> Top Performers</h3>
+                                <div class="ql-performer-list">
+                                    <div *ngFor="let product of summary.topPerformers; let i = index"
+                                        class="ql-performer-item" (click)="viewProduct(product.productId)">
+                                        <span class="ql-performer-rank">#{{ i + 1 }}</span>
+                                        <span class="ql-performer-name">{{ product.productName }}</span>
+                                        <span class="ql-performer-rate"
+                                            [style.color]="getTurnoverColor(product.turnoverRate)">
+                                            {{ product.turnoverRate.toFixed(1) }}x
+                                        </span>
+                                        <span class="ql-performer-velocity"
+                                            [style.color]="getVelocityColor(product.velocity)">
+                                            <i class="fas" [class]="getVelocityIcon(product.velocity)"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Low Performers -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-exclamation-triangle"></i> Low Performers
+                                </h3>
+                                <div class="ql-performer-list">
+                                    <div *ngFor="let product of summary.lowPerformers; let i = index"
+                                        class="ql-performer-item" (click)="viewProduct(product.productId)">
+                                        <span class="ql-performer-rank">#{{ i + 1 }}</span>
+                                        <span class="ql-performer-name">{{ product.productName }}</span>
+                                        <span class="ql-performer-rate"
+                                            [style.color]="getTurnoverColor(product.turnoverRate)">
+                                            {{ product.turnoverRate.toFixed(1) }}x
+                                        </span>
+                                        <span class="ql-performer-velocity"
+                                            [style.color]="getVelocityColor(product.velocity)">
+                                            <i class="fas" [class]="getVelocityIcon(product.velocity)"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                PRODUCTS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'products'" class="ql-tab-panel">
+                    <div class="ql-products-container">
+                        <div class="ql-products-header">
+                            <h3><i class="fas fa-box"></i> Product Turnover</h3>
+                            <span class="ql-products-count">{{ filteredData.length }} products</span>
+                        </div>
+
+                        <!-- Products Table -->
+                        <div class="ql-products-table-wrapper">
+                            <table class="ql-products-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Category</th>
+                                        <th>Total Stock</th>
+                                        <th>Turnover Rate</th>
+                                        <th>Days of Inventory</th>
+                                        <th>Sell-Through</th>
+                                        <th>Velocity</th>
+                                        <th>Trend</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let product of filteredData" (click)="viewProduct(product.productId)">
+                                        <td>
+                                            <div class="ql-product-cell">
+                                                <span class="ql-product-name">{{ product.productName }}</span>
+                                                <span class="ql-product-sku">{{ product.sku }}</span>
+                                            </div>
+                                        </td>
+                                        <td>{{ product.category }}</td>
+                                        <td>{{ formatNumber(product.totalStock) }}</td>
+                                        <td>
+                                            <span class="ql-turnover-pill"
+                                                [style.background]="getTurnoverColor(product.turnoverRate) + '20'"
+                                                [style.color]="getTurnoverColor(product.turnoverRate)">
+                                                {{ product.turnoverRate.toFixed(1) }}x
+                                            </span>
+                                        </td>
+                                        <td>{{ product.daysOfInventory.toFixed(0) }} days</td>
+                                        <td>{{ product.sellThroughRate.toFixed(0) }}%</td>
+                                        <td>
+                                            <span class="ql-velocity-pill"
+                                                [style.background]="getVelocityColor(product.velocity) + '20'"
+                                                [style.color]="getVelocityColor(product.velocity)">
+                                                <i class="fas" [class]="getVelocityIcon(product.velocity)"></i>
+                                                {{ getVelocityLabel(product.velocity) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="ql-trend-indicator"
+                                                [style.color]="getTrendColor(product.trend)">
+                                                <i class="fas" [class]="getTrendIcon(product.trend)"></i>
+                                                {{ product.trend }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="filteredData.length === 0">
+                                        <td colspan="8" class="ql-empty-cell">
+                                            <i class="fas fa-box"></i>
+                                            <span>No products match your filters</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                CATEGORIES TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'categories'" class="ql-tab-panel">
+                    <div class="ql-categories-container">
+                        <div class="ql-categories-header">
+                            <h3><i class="fas fa-tags"></i> Category Performance</h3>
+                            <span class="ql-categories-count">{{ summary.categoryBreakdown.length }} categories</span>
+                        </div>
+
+                        <div class="ql-categories-grid">
+                            <div *ngFor="let category of summary.categoryBreakdown; let i = index"
+                                class="ql-category-card">
+                                <div class="ql-category-header">
+                                    <span class="ql-category-name">{{ category.category }}</span>
+                                    <span class="ql-category-count">{{ category.productCount }} products</span>
+                                </div>
+                                <div class="ql-category-body">
+                                    <div class="ql-category-metric">
+                                        <span class="ql-category-metric-value"
+                                            [style.color]="getTurnoverColor(category.turnoverRate)">
+                                            {{ category.turnoverRate.toFixed(1) }}x
+                                        </span>
+                                        <span class="ql-category-metric-label">Avg Turnover</span>
+                                    </div>
+                                    <div class="ql-category-bar">
+                                        <div class="ql-category-bar-fill"
+                                            [style.width.%]="Math.min((category.turnoverRate / getMaxTurnover()) * 100, 100)"
+                                            [style.background]="getColor(i)"></div>
+                                    </div>
+                                    <div class="ql-category-rating">
+                                        {{ getTurnoverRating(category.turnoverRate) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                INSIGHTS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'insights'" class="ql-tab-panel">
+                    <div class="ql-insights-container">
+                        <div class="ql-insights-header">
+                            <h3><i class="fas fa-lightbulb"></i> Turnover Insights</h3>
+                        </div>
+
+                        <div class="ql-insights-grid">
+                            <!-- Summary Card -->
+                            <div class="ql-insight-card ql-insight-card--stats">
+                                <h4>Efficiency Summary</h4>
+                                <div class="ql-insight-stats-grid">
+                                    <div class="ql-insight-stat">
+                                        <span class="ql-insight-stat-value">{{ summary.overallTurnover.toFixed(1)
+                                            }}x</span>
+                                        <span class="ql-insight-stat-label">Avg Turnover</span>
+                                    </div>
+                                    <div class="ql-insight-stat">
+                                        <span class="ql-insight-stat-value">{{ summary.averageDaysOfInventory.toFixed(0)
+                                            }} days</span>
+                                        <span class="ql-insight-stat-label">Avg Days of Inventory</span>
+                                    </div>
+                                    <div class="ql-insight-stat">
+                                        <span class="ql-insight-stat-value">{{ turnoverData.length }}</span>
+                                        <span class="ql-insight-stat-label">Products Tracked</span>
+                                    </div>
+                                    <div class="ql-insight-stat">
+                                        <span class="ql-insight-stat-value"
+                                            [style.color]="getTurnoverColor(summary.overallTurnover)">
+                                            {{ getTurnoverRating(summary.overallTurnover) }}
+                                        </span>
+                                        <span class="ql-insight-stat-label">Overall Rating</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recommendations -->
+                            <div class="ql-insight-card ql-insight-card--recommendations">
+                                <h4>Recommendations</h4>
+                                <div class="ql-recommendation-list">
+                                    <div class="ql-recommendation-item" *ngIf="summary.lowVelocityCount > 5">
+                                        <span class="ql-recommendation-number">1</span>
+                                        <span class="ql-recommendation-text">
+                                            {{ summary.lowVelocityCount }} products have low turnover — consider
+                                            markdowns or promotions
+                                        </span>
+                                    </div>
+                                    <div class="ql-recommendation-item" *ngIf="summary.highVelocityCount > 10">
+                                        <span class="ql-recommendation-number">2</span>
+                                        <span class="ql-recommendation-text">
+                                            High turnover products are performing well — maintain stock levels for these
+                                            items
+                                        </span>
+                                    </div>
+                                    <div class="ql-recommendation-item" *ngIf="summary.averageDaysOfInventory > 60">
+                                        <span class="ql-recommendation-number">3</span>
+                                        <span class="ql-recommendation-text">
+                                            Average days of inventory ({{ summary.averageDaysOfInventory.toFixed(0) }})
+                                            is high — review slow-moving stock
+                                        </span>
+                                    </div>
+                                    <div class="ql-recommendation-item">
+                                        <span class="ql-recommendation-number">4</span>
+                                        <span class="ql-recommendation-text">
+                                            Review category performance — {{ summary.categoryBreakdown[0]?.category ||
+                                            'Top' }} category has highest turnover
+                                        </span>
+                                    </div>
+                                    <div class="ql-recommendation-item"
+                                        *ngIf="summary.lowVelocityCount > summary.highVelocityCount">
+                                        <span class="ql-recommendation-number">5</span>
+                                        <span class="ql-recommendation-text">
+                                            More low-velocity products than high — consider inventory optimization
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Actions -->
+                            <div class="ql-insight-card ql-insight-card--actions">
+                                <h4>Quick Actions</h4>
+                                <div class="ql-insight-actions">
+                                    <button class="ql-action-btn" (click)="setActiveTab('products')">
+                                        <i class="fas fa-box"></i> View All Products
+                                    </button>
+                                    <button class="ql-action-btn" (click)="setActiveTab('categories')">
+                                        <i class="fas fa-tags"></i> View Categories
+                                    </button>
+                                    <button class="ql-action-btn" (click)="exportReport()">
+                                        <i class="fas fa-file-export"></i> Export Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        EXPORT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showExportModal"
+            (click)="$event.target === $event.currentTarget && closeExportModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-file-export"></i> Export Report</h3>
+                    <button class="ql-modal-close" (click)="closeExportModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Export stock turnover report</p>
+                    <div class="ql-export-options">
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="pdf" checked>
+                            <span>PDF Report</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="excel">
+                            <span>Excel Spreadsheet</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="csv">
+                            <span>CSV Data</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeExportModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmExport()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

@@ -1,0 +1,378 @@
+.route-approval {
+  padding: 24px 32px;
+  background: #f7f9fa;
+  min-height: 100%;
+}
+
+// ---------- Tabs (shared pattern with Routing Queue) ----------
+.ra-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+.ra-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+  margin-right: 24px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #71828a;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: #14181b;
+  }
+  &.active {
+    color: #00a191;
+    border-bottom-color: #00a191;
+  }
+}
+.ra-tab-badge {
+  background: #eef2f5;
+  color: #566670;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.ra-empty {
+  padding: 64px 24px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+// ---------- Split layout ----------
+.ra-split {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.ra-queue-list {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+}
+.ra-queue-list-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9aa7ae;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 6px 10px;
+}
+.ra-queue-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  margin-bottom: 6px;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: #f7f9fa;
+  }
+  &.selected {
+    background: rgba(0, 161, 145, 0.06);
+    border-color: #00a191;
+  }
+}
+.ra-batch-code {
+  font-size: 13px;
+  font-weight: 700;
+  color: #14181b;
+}
+.ra-wait-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.12);
+  color: #b3690a;
+}
+
+// ---------- Review panel ----------
+.ra-review {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+.ra-chip {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eef2f5;
+  color: #566670;
+}
+.ra-chip--alert {
+  background: rgba(249, 115, 22, 0.12);
+  color: #f97316;
+}
+.ra-chip--critical {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.ra-review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 900px) {
+  .ra-review-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ra-stop-scroll {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.ra-stop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #eef2f5;
+
+  &:hover {
+    background: #f7f9fa;
+  }
+  &:last-child {
+    border-bottom: none;
+  }
+}
+.ra-stop-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #eef5f7;
+  color: #224957;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ra-map-panel {
+  min-height: 340px;
+  height: 100%;
+}
+
+.ra-reject-panel,
+.ra-review-footer {
+  border-top: 1px solid #eef2f5;
+  padding-top: 16px;
+}
+.ra-review-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ra-note-input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  &:focus {
+    outline: none;
+    border-color: #00a191;
+    box-shadow: 0 0 0 3px rgba(0, 161, 145, 0.12);
+  }
+}
+.ra-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+  }
+}
+
+// ---------- Rider avatar ----------
+.ra-rider-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #eef5f7;
+  color: #224957;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ra-rider-avatar--lg {
+  width: 38px;
+  height: 38px;
+  font-size: 13px;
+}
+
+// ---------- Active routes (rider cards) ----------
+.ra-active-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.ra-rider-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.ra-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #eef2f5;
+  overflow: hidden;
+}
+.ra-progress-fill {
+  height: 100%;
+  background: #00a191;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.ra-stop-pill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.ra-stop-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid #eef2f5;
+  font-size: 12.5px;
+  color: #14181b;
+
+  &:hover {
+    background: #f7f9fa;
+  }
+}
+.ra-stop-pill-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #eef2f5;
+  color: #566670;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ra-status-pill {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+// ---------- Buttons (shared look with Routing Queue) ----------
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+.btn-primary {
+  background: #00a191;
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: #018e80;
+  }
+}
+.btn-outline {
+  background: #fff;
+  color: #00a191;
+  border-color: #00a191;
+  &:hover:not(:disabled) {
+    background: rgba(0, 161, 145, 0.06);
+  }
+}
+.btn-critical {
+  background: #f97316;
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: #ea6a0e;
+  }
+}
+.btn-critical-outline {
+  background: #fff;
+  color: #f97316;
+  border-color: #f97316;
+  &:hover:not(:disabled) {
+    background: rgba(249, 115, 22, 0.06);
+  }
+}
+
+// ---------- Toasts ----------
+.ra-toast-stack {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2000;
+}
+.ra-toast {
+  background: #14181b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}

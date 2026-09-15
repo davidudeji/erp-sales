@@ -1,0 +1,428 @@
+<!-- Action buttons (hidden on print) -->
+<div class="receipt-actions print-hide">
+  <button class="btn-secondary" (click)="print()">
+    <i class="fas fa-print"></i> Print
+  </button>
+  <button class="btn-primary" (click)="download()" [disabled]="isGenerating">
+    <i class="fas" [class.fa-spinner]="isGenerating" [class.fa-spin]="isGenerating" [class.fa-file-pdf]="!isGenerating"></i>
+    <span *ngIf="isGenerating">Generating...</span>
+    <span *ngIf="!isGenerating">Download PDF</span>
+  </button>
+</div>
+
+<!-- The actual printable document -->
+<div id="receipt-document" class="receipt-document">
+
+  <!-- Document Header -->
+  <div class="receipt-header">
+    <div class="company-info">
+      <div class="company-logo">
+        <span class="logo-text">OptimaX</span>
+        <span class="logo-sub">Enterprise Suite</span>
+      </div>
+      <div class="company-details">
+        <div class="company-name">{{ companyName }}</div>
+        <div class="company-address">{{ companyAddress }}</div>
+        <div class="company-contacts">
+          <span><i class="fas fa-phone"></i> {{ companyPhone }}</span>
+          <span><i class="fas fa-envelope"></i> {{ companyEmail }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="document-title-block">
+      <div class="document-title">{{ documentTitle }}</div>
+      <div class="document-number">{{ documentNumber }}</div>
+      <div class="document-date">Date: {{ formatDate(today) }}</div>
+      <div class="paid-stamp" *ngIf="isPaymentReceipt && voucher?.status === 'PAID'">PAID</div>
+    </div>
+  </div>
+
+  <div class="receipt-divider"></div>
+
+  <!-- Parties -->
+  <div class="receipt-parties">
+    <div class="party from-party">
+      <div class="party-label">FROM</div>
+      <div class="party-name">{{ companyName }}</div>
+      <div class="party-detail">{{ companyAddress }}</div>
+    </div>
+    <div class="party-arrow">
+      <i class="fas fa-arrow-right"></i>
+    </div>
+    <div class="party to-party">
+      <div class="party-label">TO (VENDOR)</div>
+      <div class="party-name">{{ vendorName }}</div>
+      <div class="party-detail" *ngIf="isPaymentReceipt && voucher">
+        {{ voucher.vendorAccountName }}<br>
+        {{ voucher.vendorBankName }} &mdash; {{ voucher.vendorAccountNumber }}
+      </div>
+    </div>
+  </div>
+
+  <div class="receipt-divider"></div>
+
+  <!-- Reference Details Row -->
+  <div class="receipt-refs">
+    <div class="ref-item" *ngIf="grn?.lpoNumber || voucher?.lpoNumber || lpo?.lpoNumber">
+      <span class="ref-label">LPO Number</span>
+      <span class="ref-value">{{ grn?.lpoNumber || voucher?.lpoNumber || lpo?.lpoNumber }}</span>
+    </div>
+    <div class="ref-item" *ngIf="grn?.grnNumber || voucher?.grnNumber">
+      <span class="ref-label">GRN Number</span>
+      <span class="ref-value">{{ grn?.grnNumber || voucher?.grnNumber }}</span>
+    </div>
+    <div class="ref-item" *ngIf="voucher?.invoiceNumber || invoice?.invoiceNumber">
+      <span class="ref-label">Invoice Number</span>
+      <span class="ref-value">{{ voucher?.invoiceNumber || invoice?.invoiceNumber }}</span>
+    </div>
+    <div class="ref-item" *ngIf="isPaymentReceipt && voucher?.referenceNumber">
+      <span class="ref-label">Bank Reference</span>
+      <span class="ref-value ref-value--highlight">{{ voucher?.referenceNumber }}</span>
+    </div>
+    <div class="ref-item" *ngIf="isPaymentReceipt && voucher?.paymentMethod">
+      <span class="ref-label">Payment Method</span>
+      <span class="ref-value">{{ replaceUnderscores(voucher?.paymentMethod ?? '') }}</span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       GRN: Items Table
+       ============================================================ -->
+  <ng-container *ngIf="isGrn && grn">
+
+    <h3 class="section-heading">Items Received</h3>
+
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Item Description</th>
+          <th class="text-right">Ordered Qty</th>
+          <th class="text-right">Received Qty</th>
+          <th class="text-right">Accepted Qty</th>
+          <th class="text-right">Unit Price</th>
+          <th class="text-right">Total</th>
+          <th>Condition</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of grn.items; let i = index">
+          <td class="text-center row-num">{{ i + 1 }}</td>
+          <td>
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-desc" *ngIf="item.description">{{ item.description }}</span>
+            <span class="item-batch" *ngIf="item.batchNumber">Batch: {{ item.batchNumber }}</span>
+          </td>
+          <td class="text-right">{{ item.orderedQuantity }} {{ item.unit }}</td>
+          <td class="text-right">{{ item.receivedQuantity }} {{ item.unit }}</td>
+          <td class="text-right">{{ item.acceptedQuantity }} {{ item.unit }}</td>
+          <td class="text-right">{{ formatCurrency(item.unitPrice) }}</td>
+          <td class="text-right amount-cell">{{ formatCurrency(item.acceptedQuantity * item.unitPrice) }}</td>
+          <td>
+            <span class="condition-badge condition--{{ item.condition.toLowerCase().replace('_', '-') }}">
+              {{ replaceUnderscores(item.condition) }}
+            </span>
+          </td>
+        </tr>
+        <tr *ngIf="grn.items.length === 0">
+          <td colspan="8" class="empty-row">No items recorded.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="receipt-totals">
+      <div class="total-row">
+        <span class="total-label">Total Ordered Value</span>
+        <span class="total-value">{{ formatCurrency(grn.totalOrderedValue) }}</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Total Received Value</span>
+        <span class="total-value">{{ formatCurrency(grn.totalReceivedValue) }}</span>
+      </div>
+      <div class="total-row total-variance"
+           [class.variance-positive]="grn.varianceAmount >= 0"
+           [class.variance-negative]="grn.varianceAmount < 0">
+        <span class="total-label">Variance</span>
+        <span class="total-value">{{ formatCurrency(grn.varianceAmount) }}</span>
+      </div>
+      <div class="total-row grand-total">
+        <span class="total-label">Grand Total (Accepted)</span>
+        <span class="total-value">{{ formatCurrency(grn.totalReceivedValue) }}</span>
+      </div>
+    </div>
+
+    <div class="receipt-notes" *ngIf="grn.discrepancyNotes">
+      <span class="notes-label">Discrepancy Notes:</span> {{ grn.discrepancyNotes }}
+    </div>
+
+    <div class="receipt-signatures">
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Received By</div>
+        <div class="sig-name">{{ grn.receivedBy }}</div>
+        <div class="sig-date">Date: {{ formatDate(grn.receivedAt) }}</div>
+      </div>
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Store / Warehouse Officer</div>
+        <div class="sig-name">&nbsp;</div>
+        <div class="sig-date">Date: _______________</div>
+      </div>
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Approved By</div>
+        <div class="sig-name">{{ grn.approvedBy || '_______________' }}</div>
+        <div class="sig-date">Date: {{ grn.approvedAt ? formatDate(grn.approvedAt) : '_______________' }}</div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ============================================================
+       PAYMENT RECEIPT: Amount Block + Meta
+       ============================================================ -->
+  <ng-container *ngIf="isPaymentReceipt && voucher">
+
+    <div class="payment-amount-block">
+      <div class="payment-amount-label">Amount Paid</div>
+      <div class="payment-amount-value">{{ formatCurrency(voucher.amount) }}</div>
+      <div class="payment-amount-words">{{ toWords(voucher.amount) }}</div>
+    </div>
+
+    <div class="receipt-notes">
+      <div class="notes-row">
+        <span class="notes-label">Narration:</span> {{ voucher.narration }}
+      </div>
+      <div class="notes-row" *ngIf="voucher.notes">
+        <span class="notes-label">Additional Notes:</span> {{ voucher.notes }}
+      </div>
+    </div>
+
+    <div class="payment-meta">
+      <div class="meta-row">
+        <span class="meta-label">Payment Date</span>
+        <span class="meta-value">{{ formatDate(voucher.processedAt || voucher.approvedAt || voucher.requestedAt) }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Requested By</span>
+        <span class="meta-value">{{ voucher.requestedBy }}</span>
+      </div>
+      <div class="meta-row" *ngIf="voucher.approvedBy">
+        <span class="meta-label">Approved By</span>
+        <span class="meta-value">{{ voucher.approvedBy }}</span>
+      </div>
+      <div class="meta-row" *ngIf="voucher.financeLedgerRef">
+        <span class="meta-label">Finance Ledger Ref</span>
+        <span class="meta-value ref-value--highlight">{{ voucher.financeLedgerRef }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Voucher Status</span>
+        <span class="meta-value status-badge status--{{ voucher.status.toLowerCase() }}">{{ voucher.status }}</span>
+      </div>
+    </div>
+
+    <div class="receipt-signatures">
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Finance Officer</div>
+        <div class="sig-name">&nbsp;</div>
+        <div class="sig-date">Date: _______________</div>
+      </div>
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Authorising Signatory</div>
+        <div class="sig-name">&nbsp;</div>
+        <div class="sig-date">Date: _______________</div>
+      </div>
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Vendor Acknowledgement</div>
+        <div class="sig-name">{{ vendorName }}</div>
+        <div class="sig-date">Date: _______________</div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ============================================================
+       LPO: Items Table
+       ============================================================ -->
+  <ng-container *ngIf="isLpo && lpo">
+
+    <h3 class="section-heading">Ordered Items</h3>
+
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Item Description</th>
+          <th class="text-right">Qty</th>
+          <th>Unit</th>
+          <th class="text-right">Unit Price</th>
+          <th class="text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of lpo.items; let i = index">
+          <td class="text-center row-num">{{ i + 1 }}</td>
+          <td>
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-desc" *ngIf="item.description">{{ item.description }}</span>
+          </td>
+          <td class="text-right">{{ item.quantity }}</td>
+          <td>{{ item.unit }}</td>
+          <td class="text-right">{{ formatCurrency(item.unitPrice) }}</td>
+          <td class="text-right amount-cell">{{ formatCurrency(item.totalPrice) }}</td>
+        </tr>
+        <tr *ngIf="lpo.items.length === 0">
+          <td colspan="6" class="empty-row">No items found.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="receipt-totals">
+      <div class="total-row">
+        <span class="total-label">Subtotal</span>
+        <span class="total-value">{{ formatCurrency(lpo.subtotal) }}</span>
+      </div>
+      <div class="total-row" *ngIf="lpo.taxAmount > 0">
+        <span class="total-label">Tax ({{ lpo.taxRate ?? 0 }}%)</span>
+        <span class="total-value">{{ formatCurrency(lpo.taxAmount) }}</span>
+      </div>
+      <div class="total-row grand-total">
+        <span class="total-label">Grand Total</span>
+        <span class="total-value">{{ formatCurrency(lpo.totalAmount) }}</span>
+      </div>
+    </div>
+
+    <div class="lpo-terms" *ngIf="lpo.paymentTerms || lpo.specialConditions">
+      <h3 class="section-heading">Terms &amp; Conditions</h3>
+      <div class="terms-body">
+        <p *ngIf="lpo.paymentTerms"><strong>Payment Terms:</strong> {{ lpo.paymentTerms }}</p>
+        <p *ngIf="lpo.specialConditions"><strong>Special Conditions:</strong> {{ lpo.specialConditions }}</p>
+        <p>Delivery Address: {{ lpo.deliveryAddress }}</p>
+        <p>Delivery Deadline: {{ formatDate(lpo.deliveryDeadline) }}</p>
+      </div>
+    </div>
+
+    <div class="receipt-signatures">
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Authorized Signatory</div>
+        <div class="sig-name">{{ companyName }}</div>
+        <div class="sig-date">Date: {{ formatDate(lpo.issuedAt) }}</div>
+      </div>
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Vendor Acknowledgement</div>
+        <div class="sig-name">{{ lpo.vendorName }}</div>
+        <div class="sig-date">Date: _______________</div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ============================================================
+       INVOICE: Items Table
+       ============================================================ -->
+  <ng-container *ngIf="isInvoice && invoice">
+
+    <div class="invoice-meta-row">
+      <div class="invoice-meta-item">
+        <span class="invoice-meta-label">Invoice Date</span>
+        <span class="invoice-meta-value">{{ formatDate(invoice.invoiceDate) }}</span>
+      </div>
+      <div class="invoice-meta-item">
+        <span class="invoice-meta-label">Due Date</span>
+        <span class="invoice-meta-value">{{ formatDate(invoice.dueDate) }}</span>
+      </div>
+      <div class="invoice-meta-item">
+        <span class="invoice-meta-label">Status</span>
+        <span class="invoice-meta-value status-badge status--{{ invoice.status.toLowerCase() }}">{{ invoice.status }}</span>
+      </div>
+    </div>
+
+    <h3 class="section-heading">Billed Items</h3>
+
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Item Description</th>
+          <th class="text-right">Qty</th>
+          <th>Unit</th>
+          <th class="text-right">Unit Price</th>
+          <th class="text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of invoice.items; let i = index">
+          <td class="text-center row-num">{{ i + 1 }}</td>
+          <td>
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-desc" *ngIf="item.description">{{ item.description }}</span>
+          </td>
+          <td class="text-right">{{ item.quantity }}</td>
+          <td>{{ item.unit }}</td>
+          <td class="text-right">{{ formatCurrency(item.unitPrice) }}</td>
+          <td class="text-right amount-cell">{{ formatCurrency(item.totalPrice) }}</td>
+        </tr>
+        <tr *ngIf="invoice.items.length === 0">
+          <td colspan="6" class="empty-row">No line items found.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="receipt-totals">
+      <div class="total-row">
+        <span class="total-label">Subtotal</span>
+        <span class="total-value">{{ formatCurrency(invoice.subtotal) }}</span>
+      </div>
+      <div class="total-row" *ngIf="invoice.taxAmount > 0">
+        <span class="total-label">Tax</span>
+        <span class="total-value">{{ formatCurrency(invoice.taxAmount) }}</span>
+      </div>
+      <div class="total-row grand-total">
+        <span class="total-label">Total Amount</span>
+        <span class="total-value">{{ formatCurrency(invoice.totalAmount) }}</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Amount Paid</span>
+        <span class="total-value paid-amount">{{ formatCurrency(invoice.amountPaid) }}</span>
+      </div>
+      <div class="total-row outstanding-total">
+        <span class="total-label">Amount Outstanding</span>
+        <span class="total-value">{{ formatCurrency(invoice.amountOutstanding) }}</span>
+      </div>
+    </div>
+
+    <div class="receipt-notes" *ngIf="invoice.notes">
+      <span class="notes-label">Notes:</span> {{ invoice.notes }}
+    </div>
+
+    <div class="receipt-signatures">
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Procurement Officer</div>
+        <div class="sig-name">&nbsp;</div>
+        <div class="sig-date">Date: _______________</div>
+      </div>
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Finance Approval</div>
+        <div class="sig-name">{{ invoice.approvedAt ? formatDate(invoice.approvedAt) : '' }}</div>
+        <div class="sig-date">Date: _______________</div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- Document Footer -->
+  <div class="receipt-footer">
+    <div class="footer-watermark">OFFICIAL DOCUMENT</div>
+    <div class="footer-text">
+      This document was generated by OptimaX Enterprise Suite &mdash; {{ formatDate(today) }}
+    </div>
+  </div>
+
+</div>

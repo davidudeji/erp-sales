@@ -1,0 +1,321 @@
+<div class="rfq-detail-container" *ngIf="!isLoading && rfqData">
+  <!-- RFQ Header -->
+  <div class="rfq-header">
+    <div class="header-left">
+      <button class="btn-back" (click)="router.navigate(['/admin/sales/commerce/requests'])">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <div class="header-info">
+        <h1>{{ rfqData!.rfq.title }}</h1>
+        <div class="meta-info">
+          <span class="rfq-id">RFQ #{{ rfqData!.rfq.id }}</span>
+          <span class="rfq-status"
+            [style.background]="rfqData!.rfq.status === 'VENDORS_QUOTING' ? '#3b82f6' : '#22c55e'">
+            {{ rfqData!.rfq.status === 'VENDORS_QUOTING' ? 'Quotes In Progress' : 'Completed' }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-summary" (click)="openVendorSummary()">
+        <i class="fas fa-users"></i>
+        Vendor Responses
+        <span class="badge">{{ rfqData!.summary.responded }}/{{ rfqData!.summary.totalVendors }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- RFQ Summary -->
+  <div class="rfq-summary-grid">
+    <div class="summary-item">
+      <span class="label">Total Budget</span>
+      <span class="value">{{ formatCurrency(rfqData!.rfq.totalBudget, rfqData!.rfq.currency) }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">Delivery Location</span>
+      <span class="value">{{ rfqData!.rfq.deliveryLocation }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">Deadline</span>
+      <span class="value">{{ formatDate(rfqData!.rfq.deliveryDeadline) }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="label">Items</span>
+      <span class="value">{{ rfqData!.rfq.items.length }} items</span>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="detail-tabs">
+    <button class="tab-btn" [class.active]="activeTab === 'quotations'" (click)="activeTab = 'quotations'">
+      <i class="fas fa-file-invoice"></i> Vendor Quotations
+      <span class="tab-count" *ngIf="rfqData?.quotations?.length">{{ rfqData!.quotations.length }}</span>
+    </button>
+    <button class="tab-btn" [class.active]="activeTab === 'messages'" (click)="activeTab = 'messages'">
+      <i class="fas fa-comments"></i> Messages
+    </button>
+  </div>
+
+  <!-- Messaging Tab -->
+  <div *ngIf="activeTab === 'messages' && rfqId" class="tab-panel-messages">
+    <app-procurement-messaging [rfqId]="rfqId"></app-procurement-messaging>
+  </div>
+
+  <!-- Vendor Quotations Summary Cards -->
+  <div class="quotations-summary" *ngIf="activeTab === 'quotations'">
+    <h3>Vendor Quotations</h3>
+    <div class="quotation-cards">
+      <div *ngFor="let quote of rfqData.quotations" class="quotation-card"
+        [class.accepted]="quote.status === 'ACCEPTED'" [class.declined]="quote.status === 'DECLINED'"
+        [class.pending]="quote.status === 'PENDING'" [class.submitted]="quote.status === 'SUBMITTED'"
+        [class.review-requested]="quote.status === 'REVIEW_REQUESTED'">
+        <div class="card-header">
+          <div class="vendor-info">
+            <div class="vendor-avatar">
+              {{ quote.vendorName.charAt(0) }}
+            </div>
+            <div class="vendor-details">
+              <span class="vendor-name">{{ quote.vendorName }}</span>
+              <span class="vendor-code">{{ quote.vendorCode }}</span>
+            </div>
+          </div>
+          <span class="status-badge" [style.background]="getStatusColor(quote.status)">
+            <i class="fas" [class]="getStatusIcon(quote.status)"></i>
+            {{ getStatusLabel(quote.status) }}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="quote-amount" *ngIf="quote.totalAmount > 0">
+            <span class="amount">{{ formatCurrency(quote.totalAmount, quote.currency) }}</span>
+            <span class="submitted-date">Submitted: {{ formatDate(quote.submittedAt) }}</span>
+          </div>
+          <div class="quote-expiry" *ngIf="quote.status === 'PENDING' || quote.status === 'SUBMITTED' || quote.status === 'REVIEW_REQUESTED'">
+            <span class="expiry-label">Expires in:</span>
+            <span class="expiry-days" [class.expired]="getDaysRemaining(quote.expiresAt) <= 0">
+              {{ getDaysRemaining(quote.expiresAt) }} days
+            </span>
+          </div>
+          <div class="decline-reason" *ngIf="quote.status === 'DECLINED' && quote.declineReason">
+            <i class="fas fa-info-circle"></i>
+            {{ quote.declineReason }}
+          </div>
+          <div class="decline-reason" *ngIf="quote.status === 'REVIEW_REQUESTED' && quote.revisionRequestNote" style="color: #ea580c; background: #fff7ed; border: 1px solid rgba(249, 115, 22, 0.2);">
+            <i class="fas fa-reply" style="color: #f97316; margin-right: 0.3rem;"></i>
+            Changes Requested: "{{ quote.revisionRequestNote }}"
+          </div>
+          <div class="pending-message" *ngIf="quote.status === 'PENDING'">
+            <i class="fas fa-clock"></i>
+            Waiting for vendor response...
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="btn-view" (click)="viewQuotationDetail(quote)">
+            <i class="fas fa-arrow-right"></i> View Details
+          </button>
+          <button class="btn-cancel" *ngIf="quote.status === 'PENDING'"
+            (click)="cancelPendingVendor(rfqData!.rfq.id, quote.vendorId, quote.vendorName)">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vendor Summary Modal -->
+  <div class="modal-overlay" *ngIf="showVendorSummaryModal" (click)="closeVendorSummary()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Vendor Response Summary</h2>
+        <button class="modal-close" (click)="closeVendorSummary()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="summary-stats">
+          <div class="stat-item">
+            <span class="stat-value">{{ rfqData!.summary.totalVendors }}</span>
+            <span class="stat-label">Total Vendors</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value text-success">{{ rfqData!.summary.responded }}</span>
+            <span class="stat-label">Responded</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value text-warning">{{ rfqData!.summary.pending }}</span>
+            <span class="stat-label">Pending</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value text-primary">{{ rfqData!.summary.accepted }}</span>
+            <span class="stat-label">Accepted</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value text-danger">{{ rfqData!.summary.declined }}</span>
+            <span class="stat-label">Declined</span>
+          </div>
+        </div>
+
+        <div class="vendor-response-list">
+          <div *ngFor="let quote of rfqData.quotations" class="vendor-response-item"
+            [class.accepted]="quote.status === 'ACCEPTED'" [class.declined]="quote.status === 'DECLINED'"
+            [class.pending]="quote.status === 'PENDING'">
+            <div class="vendor-row">
+              <div class="vendor-avatar-sm">
+                {{ quote.vendorName.charAt(0) }}
+              </div>
+              <div class="vendor-info">
+                <span class="vendor-name">{{ quote.vendorName }}</span>
+                <span class="vendor-code">{{ quote.vendorCode }}</span>
+              </div>
+              <span class="response-status" [style.color]="getStatusColor(quote.status)">
+                <i class="fas" [class]="getStatusIcon(quote.status)"></i>
+                {{ getStatusLabel(quote.status) }}
+              </span>
+              <button class="btn-view-detail" (click)="viewQuotationDetail(quote)" title="View Detailed Quotation">
+                <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+            <div class="response-detail" *ngIf="quote.status === 'DECLINED' && quote.declineReason">
+              <span class="decline-reason">
+                <i class="fas fa-info-circle"></i> {{ quote.declineReason }}
+              </span>
+            </div>
+            <div class="response-detail" *ngIf="quote.status === 'PENDING'">
+              <span class="pending-note">
+                <i class="fas fa-clock"></i> Awaiting response (expires in {{ getDaysRemaining(quote.expiresAt) }} days)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quotation Detail Modal -->
+  <div class="modal-overlay" *ngIf="showQuotationDetailModal" (click)="closeQuotationDetail()">
+    <div class="modal-content large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Quotation Details</h2>
+        <button class="modal-close" (click)="closeQuotationDetail()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body" *ngIf="selectedQuotation">
+        <!-- Vendor Info -->
+        <div class="quotation-vendor-header">
+          <div class="vendor-avatar-lg">
+            {{ selectedQuotation!.vendorName.charAt(0) }}
+          </div>
+          <div class="vendor-details">
+            <h3>{{ selectedQuotation!.vendorName }}</h3>
+            <div class="vendor-meta">
+              <span class="vendor-code">Code: {{ selectedQuotation!.vendorCode }}</span>
+              <span class="vendor-rating">★ {{ selectedQuotation!.vendorRating }}</span>
+              <span class="quotation-status" [style.background]="getStatusColor(selectedQuotation!.status)">
+                {{ getStatusLabel(selectedQuotation!.status) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quotation Summary -->
+        <div class="quotation-summary">
+          <div class="summary-row">
+            <span class="label">Total Amount</span>
+            <span class="value highlight">
+              {{ formatCurrency(selectedQuotation!.totalAmount, selectedQuotation!.currency) }}
+            </span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Delivery Timeline</span>
+            <span class="value">{{ selectedQuotation!.deliveryTimeline || 'N/A' }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Validity</span>
+            <span class="value">{{ selectedQuotation!.validityDays }} days</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Submitted</span>
+            <span class="value">{{ formatDate(selectedQuotation!.submittedAt) }}</span>
+          </div>
+          <div class="summary-row" *ngIf="selectedQuotation!.status === 'DECLINED'">
+            <span class="label">Decline Reason</span>
+            <span class="value text-danger">{{ selectedQuotation!.declineReason }}</span>
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <h4>Items Breakdown</h4>
+        <table class="quotation-items-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Description</th>
+              <th class="text-right">Qty</th>
+              <th class="text-right">Unit Price</th>
+              <th class="text-right">Total</th>
+              <th>Availability</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of selectedQuotation!.items">
+              <td><strong>{{ item.name }}</strong></td>
+              <td>{{ item.description }}</td>
+              <td class="text-right">{{ item.quantity }}</td>
+              <td class="text-right">{{ formatCurrency(item.unitPrice, selectedQuotation!.currency) }}</td>
+              <td class="text-right">{{ formatCurrency(item.totalPrice, selectedQuotation!.currency) }}</td>
+              <td>
+                <span class="availability-badge" [class.available]="item.availability === 'AVAILABLE'">
+                  {{ item.availability }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" class="text-right"><strong>Grand Total</strong></td>
+              <td class="text-right" colspan="2">
+                <strong>{{ formatCurrency(selectedQuotation!.totalAmount, selectedQuotation!.currency) }}</strong>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Terms & Notes -->
+        <div class="quotation-notes" *ngIf="selectedQuotation!.termsAndConditions">
+          <h4>Terms & Conditions</h4>
+          <p>{{ selectedQuotation!.termsAndConditions }}</p>
+        </div>
+        <div class="quotation-notes" *ngIf="selectedQuotation!.notes">
+          <h4>Additional Notes</h4>
+          <p>{{ selectedQuotation!.notes }}</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="quotation-actions" *ngIf="selectedQuotation!.status === 'SUBMITTED'">
+          <button class="btn-accept" (click)="acceptQuotation(selectedQuotation!.id)" [disabled]="isProcessing">
+            <i class="fas fa-check"></i> Accept & Generate LPO
+          </button>
+          <button class="btn-reject" (click)="rejectQuotation(selectedQuotation!.id)" [disabled]="isProcessing">
+            <i class="fas fa-times"></i> Reject
+          </button>
+        </div>
+        <div class="quotation-actions" *ngIf="selectedQuotation!.status === 'ACCEPTED'">
+          <div class="accepted-message">
+            <i class="fas fa-check-circle"></i> This quotation has been accepted. LPO has been generated.
+          </div>
+        </div>
+        <div class="quotation-actions" *ngIf="selectedQuotation!.status === 'DECLINED'">
+          <div class="declined-message">
+            <i class="fas fa-info-circle"></i> This quotation has been declined.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="isLoading">
+  <div class="spinner"></div>
+  <p>Loading RFQ details...</p>
+</div>

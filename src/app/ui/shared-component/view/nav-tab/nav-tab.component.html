@@ -1,0 +1,45 @@
+<div class="sales text-[10px]">
+    <div class="link-wrapper" >
+      <!-- Loop through tabsConfig to render tabs -->
+      <div *ngFor="let tab of tabsConfig" class="relative">
+        <div  *ngIf="!tab.role || tab.role === user_role">
+        <button 
+          class="tab-btn" 
+          [ngClass]="{'active': selectedTab === tab.name}" 
+          (click)="selectTab(tab)">
+          <span *ngIf="tab.icon" class="tab-icon" [ngClass]="tab.icon" aria-hidden="true"></span>
+          <span class="tab-label">{{ tab.name }}</span>
+          <span *ngIf="tab.hasDropdown" class="tab-caret">▼</span>
+        </button>
+
+        <div 
+          class="absolute bg-white p-3 gap-3 shadow-sm text-left" 
+          *ngIf="tab.hasDropdown &&  selectedDropdownTab == tab.name && isDropdownOpen">
+          <button *ngFor="let option of tab.dropdownOptions" class="pb-3" (click)="selectDropdownOption(tab.name, option)">
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+    </div>
+    </div>
+  
+    <div class="tab-content">
+      <!-- Loop through tabsConfig to render tab content -->
+      <div *ngFor="let tab of tabsConfig">
+        <!-- Render content for the selected tab -->
+        <div *ngIf="selectedTab === tab.name">
+          <ng-container *ngComponentOutlet="tab.component"></ng-container>
+  
+          <!-- Render dropdown content if the tab has dropdown options -->
+          <div *ngIf="tab.hasDropdown">
+            <div *ngFor="let option of tab.dropdownOptions">
+              <div *ngIf="selectedSetting === option.action">
+                <ng-container *ngComponentOutlet="getComponentForOption(option.action)"></ng-container>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  

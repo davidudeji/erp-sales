@@ -1,0 +1,746 @@
+<!-- restock-approval.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Restock Approvals</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Approval Stats -->
+        <div class="ql-filter-section" *ngIf="approvalStats">
+            <div class="ql-filter-heading">Overview</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Pending</span>
+                <span class="ql-sidebar-stat-value" style="color: #F5A623;">{{ approvalStats.totalPending }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Approved</span>
+                <span class="ql-sidebar-stat-value" style="color: #3B82F6;">{{ approvalStats.totalApproved }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Rejected</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ approvalStats.totalRejected }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Ordered</span>
+                <span class="ql-sidebar-stat-value" style="color: #8B5CF6;">{{ approvalStats.totalOrdered }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Received</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ approvalStats.totalReceived }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label">Critical</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ approvalStats.criticalCount }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Avg Approval Time</span>
+                <span class="ql-sidebar-stat-value">{{ approvalStats.averageApprovalTime.toFixed(1) }}h</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refreshData()" [disabled]="isRefreshing">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="exportReport()">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading restock requests...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refreshData()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">Restock Approvals</h1>
+                    <span class="ql-total-badge">Approval</span>
+                    <span class="ql-pending-badge" style="background: #F5A62320; color: #F5A623;">
+                        <i class="fas fa-clock"></i>
+                        {{ getPendingCount() }} awaiting review
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refreshData()" [disabled]="isRefreshing">
+                        <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                        {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="ql-filters-bar">
+                <div class="ql-filter-group">
+                    <input type="text" class="ql-search-input" 
+                           placeholder="Search by product, SKU, branch..."
+                           (input)="onSearch($event)"
+                           [value]="searchTerm">
+                    <i class="fas fa-search ql-search-icon"></i>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" (change)="setFilter($any($event.target).value)" [value]="selectedFilter">
+                        <option value="ALL">All Requests</option>
+                        <option value="PENDING">Pending Only</option>
+                        <option value="URGENT">Urgent</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="HIGH_VALUE">High Value</option>
+                    </select>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" (change)="setUrgencyFilter($any($event.target).value)" [value]="selectedUrgencyFilter">
+                        <option value="ALL">All Urgency</option>
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="CRITICAL">Critical</option>
+                    </select>
+                </div>
+                <button class="ql-clear-filters" (click)="clearFilters()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
+                    <i class="fas fa-clock"></i> Pending
+                    <span class="ql-tab-badge" *ngIf="getPendingCount() > 0">{{ getPendingCount() }}</span>
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'history'" (click)="activeTab = 'history'">
+                    <i class="fas fa-history"></i> History
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
+                    <i class="fas fa-chart-bar"></i> Statistics
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
+
+                <!-- ========================================================
+                PENDING TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'pending'" class="ql-tab-panel">
+                    <div class="ql-pending-grid">
+                        <!-- Request List -->
+                        <div class="ql-request-list">
+                            <div *ngFor="let request of filteredRequests" 
+                                 class="ql-request-item"
+                                 [class.ql-request-item--active]="selectedRequest?.id === request.id"
+                                 [class.ql-request-item--critical]="request.urgency === 'CRITICAL'"
+                                 [class.ql-request-item--high]="request.urgency === 'HIGH'"
+                                 (click)="selectRequest(request.id)">
+                                <div class="ql-request-header">
+                                    <div class="ql-request-product">
+                                        <span class="ql-request-product-name">{{ request.productName }}</span>
+                                        <span class="ql-request-sku">{{ request.sku }}</span>
+                                    </div>
+                                    <span class="ql-request-urgency" [style.color]="getUrgencyColor(request.urgency)">
+                                        <i class="fas" [class]="getUrgencyIcon(request.urgency)"></i>
+                                        {{ getUrgencyLabel(request.urgency) }}
+                                    </span>
+                                </div>
+                                <div class="ql-request-body">
+                                    <div class="ql-request-branch">
+                                        <i class="fas fa-store"></i>
+                                        {{ request.branchName }}
+                                    </div>
+                                    <div class="ql-request-details">
+                                        <span class="ql-request-qty">{{ request.requestedQuantity }} units</span>
+                                        <span class="ql-request-cost">{{ formatCurrency(request.costEstimate) }}</span>
+                                    </div>
+                                    <div class="ql-request-stock">
+                                        <span class="ql-request-stock-label">Current Stock:</span>
+                                        <span class="ql-request-stock-value" 
+                                              [style.color]="request.currentStock <= request.safetyStock ? '#DC2626' : request.currentStock <= request.reorderPoint ? '#F5A623' : '#2EB270'">
+                                            {{ request.currentStock }} units
+                                        </span>
+                                        <span class="ql-request-reorder">Reorder Point: {{ request.reorderPoint }}</span>
+                                    </div>
+                                    <div class="ql-request-meta">
+                                        <span class="ql-request-date">{{ getTimeAgo(request.createdAt) }}</span>
+                                        <span class="ql-request-status" [style.color]="getStatusColor(request.status)">
+                                            <i class="fas" [class]="getStatusIcon(request.status)"></i>
+                                            {{ getStatusLabel(request.status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="filteredRequests.length === 0" class="ql-empty-state-small">
+                                <i class="fas fa-check-circle" style="color: #2EB270;"></i>
+                                <span>No restock requests to review</span>
+                            </div>
+                        </div>
+
+                        <!-- Request Detail / Approval -->
+                        <div class="ql-request-detail" *ngIf="selectedRequest">
+                            <!-- Header -->
+                            <div class="ql-detail-header">
+                                <div>
+                                    <h3>{{ selectedRequest.productName }}</h3>
+                                    <span class="ql-detail-id">#{{ selectedRequest.id }}</span>
+                                </div>
+                                <div class="ql-detail-badges">
+                                    <span class="ql-detail-urgency" [style.background]="getUrgencyColor(selectedRequest.urgency) + '20'"
+                                                           [style.color]="getUrgencyColor(selectedRequest.urgency)">
+                                        <i class="fas" [class]="getUrgencyIcon(selectedRequest.urgency)"></i>
+                                        {{ getUrgencyLabel(selectedRequest.urgency) }}
+                                    </span>
+                                    <span class="ql-detail-status" [style.background]="getStatusColor(selectedRequest.status) + '20'"
+                                                           [style.color]="getStatusColor(selectedRequest.status)">
+                                        <i class="fas" [class]="getStatusIcon(selectedRequest.status)"></i>
+                                        {{ getStatusLabel(selectedRequest.status) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Detail Info -->
+                            <div class="ql-detail-section">
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Branch</span>
+                                    <span class="ql-detail-value" (click)="viewBranch(selectedRequest.branchId)" style="cursor: pointer; color: var(--p);">
+                                        {{ selectedRequest.branchName }}
+                                    </span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Product</span>
+                                    <span class="ql-detail-value" (click)="viewProduct(selectedRequest.productId)" style="cursor: pointer; color: var(--p);">
+                                        {{ selectedRequest.productName }}
+                                    </span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">SKU</span>
+                                    <span class="ql-detail-value">{{ selectedRequest.sku }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Current Stock</span>
+                                    <span class="ql-detail-value" [style.color]="selectedRequest.currentStock <= selectedRequest.safetyStock ? '#DC2626' : selectedRequest.currentStock <= selectedRequest.reorderPoint ? '#F5A623' : '#2EB270'">
+                                        {{ selectedRequest.currentStock }} units
+                                    </span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Reorder Point</span>
+                                    <span class="ql-detail-value">{{ selectedRequest.reorderPoint }} units</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Safety Stock</span>
+                                    <span class="ql-detail-value">{{ selectedRequest.safetyStock }} units</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Requested Quantity</span>
+                                    <span class="ql-detail-value" style="font-weight: 800;">{{ selectedRequest.requestedQuantity }} units</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Cost Estimate</span>
+                                    <span class="ql-detail-value" style="font-weight: 800; color: var(--p);">{{ formatCurrency(selectedRequest.costEstimate) }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Preferred Supplier</span>
+                                    <span class="ql-detail-value">{{ selectedRequest.preferredSupplier || 'Not specified' }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Requested By</span>
+                                    <span class="ql-detail-value">{{ selectedRequest.createdByName || 'Unknown' }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Requested On</span>
+                                    <span class="ql-detail-value">{{ formatDateTime(selectedRequest.createdAt) }}</span>
+                                </div>
+                                <div class="ql-detail-row" *ngIf="selectedRequest.notes">
+                                    <span class="ql-detail-label">Notes</span>
+                                    <span class="ql-detail-value">{{ selectedRequest.notes }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Approval Levels -->
+                            <div class="ql-approval-levels">
+                                <h4>Approval Workflow</h4>
+                                <div *ngFor="let level of approvalLevels" class="ql-level-item">
+                                    <div class="ql-level-icon" [style.background]="getLevelStatusColor(level.status) + '20'"
+                                                           [style.color]="getLevelStatusColor(level.status)">
+                                        <i class="fas" [class]="getLevelStatusIcon(level.status)"></i>
+                                    </div>
+                                    <div class="ql-level-info">
+                                        <span class="ql-level-name">{{ level.name }}</span>
+                                        <span class="ql-level-role">{{ level.role }}</span>
+                                    </div>
+                                    <div class="ql-level-status" [style.color]="getLevelStatusColor(level.status)">
+                                        {{ getLevelStatusLabel(level.status) }}
+                                    </div>
+                                    <div class="ql-level-approver" *ngIf="level.approverName">
+                                        <i class="fas fa-user"></i>
+                                        {{ level.approverName }}
+                                    </div>
+                                    <button class="ql-level-assign" (click)="openLevelModal(level.id)" 
+                                            *ngIf="level.status === 'PENDING'">
+                                        <i class="fas fa-user-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Approval Actions -->
+                            <div class="ql-approval-actions" *ngIf="selectedRequest.status === 'PENDING'">
+                                <button class="ql-action-btn ql-action-btn--approve" (click)="openApproveModal()" [disabled]="isSubmitting">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="ql-action-btn ql-action-btn--order" (click)="openOrderModal()" [disabled]="isSubmitting">
+                                    <i class="fas fa-truck"></i> Create PO
+                                </button>
+                                <button class="ql-action-btn ql-action-btn--reject" (click)="openRejectModal()" [disabled]="isSubmitting">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </div>
+
+                            <div class="ql-approval-actions" *ngIf="selectedRequest.status === 'APPROVED'">
+                                <button class="ql-action-btn ql-action-btn--order" (click)="openOrderModal()" [disabled]="isSubmitting">
+                                    <i class="fas fa-truck"></i> Create PO
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="ql-request-detail ql-request-detail--empty" *ngIf="!selectedRequest && filteredRequests.length > 0">
+                            <i class="fas fa-hand-pointer"></i>
+                            <p>Select a request to review</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                HISTORY TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'history'" class="ql-tab-panel">
+                    <div class="ql-history-container">
+                        <div class="ql-history-header">
+                            <h3><i class="fas fa-history"></i> Approval History</h3>
+                            <span class="ql-history-count">{{ requests.length }} records</span>
+                        </div>
+
+                        <div class="ql-timeline">
+                            <div *ngFor="let request of requests" class="ql-timeline-item">
+                                <div class="ql-timeline-icon" [style.background]="getStatusColor(request.status) + '20'"
+                                                      [style.color]="getStatusColor(request.status)">
+                                    <i class="fas" [class]="getStatusIcon(request.status)"></i>
+                                </div>
+                                <div class="ql-timeline-content">
+                                    <div class="ql-timeline-header">
+                                        <span class="ql-timeline-action" [style.color]="getStatusColor(request.status)">
+                                            {{ getStatusLabel(request.status) }}
+                                        </span>
+                                        <span class="ql-timeline-date">{{ formatDateTime(request.approvedAt || request.createdAt) }}</span>
+                                    </div>
+                                    <div class="ql-timeline-body">
+                                        <span class="ql-timeline-product">{{ request.productName }}</span>
+                                        <span class="ql-timeline-branch">{{ request.branchName }}</span>
+                                        <span class="ql-timeline-qty">{{ request.requestedQuantity }} units</span>
+                                    </div>
+                                    <div class="ql-timeline-details">
+                                        <span class="ql-timeline-urgency" [style.color]="getUrgencyColor(request.urgency)">
+                                            <i class="fas" [class]="getUrgencyIcon(request.urgency)"></i>
+                                            {{ getUrgencyLabel(request.urgency) }}
+                                        </span>
+                                        <span class="ql-timeline-cost">{{ formatCurrency(request.costEstimate) }}</span>
+                                        <span *ngIf="request.purchaseOrderId" class="ql-timeline-po">
+                                            PO: {{ request.purchaseOrderId }}
+                                        </span>
+                                    </div>
+                                    <div class="ql-timeline-comments" *ngIf="request.notes">
+                                        <i class="fas fa-quote-left"></i>
+                                        {{ request.notes }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="requests.length === 0" class="ql-empty-state-small">
+                                <i class="fas fa-history"></i>
+                                <span>No approval history available</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                STATISTICS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'stats'" class="ql-tab-panel">
+                    <div class="ql-stats-container">
+                        <div class="ql-stats-header">
+                            <h3><i class="fas fa-chart-bar"></i> Restock Approval Statistics</h3>
+                        </div>
+
+                        <div class="ql-stats-grid" *ngIf="approvalStats">
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #F5A623;">{{ approvalStats.totalPending }}</span>
+                                <span class="ql-stat-card-label">Pending</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #3B82F6;">{{ approvalStats.totalApproved }}</span>
+                                <span class="ql-stat-card-label">Approved</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #DC2626;">{{ approvalStats.totalRejected }}</span>
+                                <span class="ql-stat-card-label">Rejected</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #8B5CF6;">{{ approvalStats.totalOrdered }}</span>
+                                <span class="ql-stat-card-label">Ordered</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #2EB270;">{{ approvalStats.totalReceived }}</span>
+                                <span class="ql-stat-card-label">Received</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #DC2626;">{{ approvalStats.criticalCount }}</span>
+                                <span class="ql-stat-card-label">Critical</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #F5A623;">{{ approvalStats.urgentCount }}</span>
+                                <span class="ql-stat-card-label">Urgent</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #8B5CF6;">{{ approvalStats.highValueCount }}</span>
+                                <span class="ql-stat-card-label">High Value</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #3B82F6;">{{ approvalStats.averageApprovalTime.toFixed(1) }}h</span>
+                                <span class="ql-stat-card-label">Avg Approval Time</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value">{{ requests.length }}</span>
+                                <span class="ql-stat-card-label">Total Requests</span>
+                            </div>
+                        </div>
+
+                        <!-- Status Distribution -->
+                        <div class="ql-info-card">
+                            <h4>Status Distribution</h4>
+                            <div class="ql-distribution-bars">
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Pending</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getPendingCount() / requests.length) * 100"
+                                             style="background: #F5A623;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getPendingCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Approved</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getApprovedCount() / requests.length) * 100"
+                                             style="background: #3B82F6;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getApprovedCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Rejected</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getRejectedCount() / requests.length) * 100"
+                                             style="background: #DC2626;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getRejectedCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Ordered</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getOrderedCount() / requests.length) * 100"
+                                             style="background: #8B5CF6;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getOrderedCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Received</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getReceivedCount() / requests.length) * 100"
+                                             style="background: #2EB270;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getReceivedCount() }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Urgency Breakdown -->
+                        <div class="ql-info-card">
+                            <h4>Urgency Breakdown</h4>
+                            <div class="ql-type-grid">
+                                <div *ngFor="let urgency of urgencyList" class="ql-type-item">
+                                    <span class="ql-type-label" [style.color]="getUrgencyColor(urgency)">
+                                        <i class="fas" [class]="getUrgencyIcon(urgency)"></i>
+                                        {{ getUrgencyLabel(urgency) }}
+                                    </span>
+                                    <span class="ql-type-count">{{ getUrgencyCount(urgency) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Branch Breakdown -->
+                        <div class="ql-info-card">
+                            <h4>Requests by Branch</h4>
+                            <div class="ql-branch-breakdown">
+                                <div *ngFor="let branch of branches.slice(0, 6)" class="ql-branch-item">
+                                    <span class="ql-branch-name">{{ branch.name }}</span>
+                                    <div class="ql-branch-bar">
+                                        <div class="ql-branch-fill"
+                                             [style.width.%]="(getBranchRequestCount(branch.id) / requests.length) * 100"
+                                             style="background: var(--p);"></div>
+                                    </div>
+                                    <span class="ql-branch-count">{{ getBranchRequestCount(branch.id) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        APPROVE MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showApproveModal"
+             (click)="$event.target === $event.currentTarget && closeApproveModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-check-circle" style="color: #2EB270;"></i> Approve Request</h3>
+                    <button class="ql-modal-close" (click)="closeApproveModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Approve restock request for <strong>{{ selectedRequest?.productName }}</strong></p>
+                    <div class="ql-confirm-details">
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Branch</span>
+                            <span class="ql-confirm-value">{{ selectedRequest?.branchName }}</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Quantity</span>
+                            <span class="ql-confirm-value">{{ selectedRequest?.requestedQuantity }} units</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Cost Estimate</span>
+                            <span class="ql-confirm-value">{{ formatCurrency(selectedRequest?.costEstimate || 0) }}</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Urgency</span>
+                            <span class="ql-confirm-value" [style.color]="getUrgencyColor(selectedRequest?.urgency || RestockUrgency.LOW)">
+                                {{ getUrgencyLabel(selectedRequest?.urgency || RestockUrgency.LOW) }}
+                            </span>
+                        </div>
+                    </div>
+                    <form [formGroup]="approveForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">
+                                <input type="checkbox" formControlName="approveAllLevels">
+                                Approve all approval levels
+                            </label>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Comments</label>
+                            <textarea class="ql-input" formControlName="comments" rows="3" 
+                                      placeholder="Add any comments..."></textarea>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">
+                                <input type="checkbox" formControlName="notifyRequester">
+                                Notify requester of approval
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeApproveModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="submitApproval()" [disabled]="isSubmitting">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-check]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Processing...' : 'Confirm Approval' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        REJECT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showRejectModal"
+             (click)="$event.target === $event.currentTarget && closeRejectModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-times-circle" style="color: #DC2626;"></i> Reject Request</h3>
+                    <button class="ql-modal-close" (click)="closeRejectModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Reject restock request for <strong>{{ selectedRequest?.productName }}</strong></p>
+                    <form [formGroup]="rejectForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Reason <span class="ql-required">*</span></label>
+                            <textarea class="ql-input" formControlName="reason" rows="4" 
+                                      placeholder="Explain why this request is being rejected..."></textarea>
+                            <span class="ql-field-error" *ngIf="rejectForm.get('reason')?.invalid && rejectForm.get('reason')?.touched">
+                                Reason is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">
+                                <input type="checkbox" formControlName="notifyRequester">
+                                Notify requester of rejection
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeRejectModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="submitRejection()" [disabled]="isSubmitting || rejectForm.invalid">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-times]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Processing...' : 'Confirm Rejection' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ORDER MODAL - CREATE PO
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showOrderModal"
+             (click)="$event.target === $event.currentTarget && closeOrderModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-truck" style="color: #8B5CF6;"></i> Create Purchase Order</h3>
+                    <button class="ql-modal-close" (click)="closeOrderModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Create purchase order for <strong>{{ selectedRequest?.productName }}</strong></p>
+                    <form [formGroup]="orderForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Supplier <span class="ql-required">*</span></label>
+                            <input type="text" class="ql-input" formControlName="supplier" placeholder="Supplier name">
+                            <span class="ql-field-error" *ngIf="orderForm.get('supplier')?.invalid && orderForm.get('supplier')?.touched">
+                                Supplier is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Quantity <span class="ql-required">*</span></label>
+                            <input type="number" class="ql-input" formControlName="quantity" placeholder="Quantity to order">
+                            <span class="ql-field-error" *ngIf="orderForm.get('quantity')?.invalid && orderForm.get('quantity')?.touched">
+                                Valid quantity is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Unit Price <span class="ql-required">*</span></label>
+                            <input type="number" class="ql-input" formControlName="unitPrice" placeholder="Cost per unit">
+                            <span class="ql-field-error" *ngIf="orderForm.get('unitPrice')?.invalid && orderForm.get('unitPrice')?.touched">
+                                Valid unit price is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Expected Delivery <span class="ql-required">*</span></label>
+                            <input type="date" class="ql-input" formControlName="expectedDelivery">
+                            <span class="ql-field-error" *ngIf="orderForm.get('expectedDelivery')?.invalid && orderForm.get('expectedDelivery')?.touched">
+                                Expected delivery date is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Notes</label>
+                            <textarea class="ql-input" formControlName="notes" rows="3" 
+                                      placeholder="Additional order notes..."></textarea>
+                        </div>
+                    </form>
+                    <div class="ql-order-summary">
+                        <span class="ql-order-total">Total: {{ formatCurrency((orderForm.get('quantity')?.value || 0) * (orderForm.get('unitPrice')?.value || 0)) }}</span>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeOrderModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="submitOrder()" [disabled]="isSubmitting || orderForm.invalid">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-file-invoice]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Creating...' : 'Create Purchase Order' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ASSIGN APPROVER MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showLevelModal"
+             (click)="$event.target === $event.currentTarget && closeLevelModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-user-plus" style="color: #3B82F6;"></i> Assign Approver</h3>
+                    <button class="ql-modal-close" (click)="closeLevelModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Assign an approver for this approval level</p>
+                    <form [formGroup]="levelForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Approver <span class="ql-required">*</span></label>
+                            <select class="ql-input" formControlName="approverId">
+                                <option value="">Select Approver</option>
+                                <option *ngFor="let approver of approvers" [value]="approver.id">
+                                    {{ approver.name }} - {{ approver.role }}
+                                </option>
+                            </select>
+                            <span class="ql-field-error" *ngIf="levelForm.get('approverId')?.invalid && levelForm.get('approverId')?.touched">
+                                Please select an approver
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Comments</label>
+                            <textarea class="ql-input" formControlName="comments" rows="3" 
+                                      placeholder="Add any comments..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeLevelModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="assignApprover()" [disabled]="levelForm.invalid">
+                        <i class="fas fa-user-check"></i> Assign
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

@@ -1,0 +1,337 @@
+<!-- src/app/ui/view/sales-module/customer-detail/customer-detail.component.html -->
+<div class="customer-detail-container">
+  <div class="detail-wrapper">
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner-glow"></div>
+      <p>Loading customer details...</p>
+    </div>
+
+    <!-- Content -->
+    <ng-container *ngIf="!isLoading && customer">
+
+      <!-- Clean Header - Matching Quote Detail Style -->
+      <div class="detail-header">
+        <div class="header-back-title-group">
+          <app-back-button (click)="goBack()"></app-back-button>
+          <div class="header-content">
+            <div class="header-badge">
+              <i class="fas fa-user"></i>
+              <span>Customer Details</span>
+            </div>
+            <h1 class="header-title">{{ customer.name }}</h1>
+            <p class="header-subtitle">
+              <span class="meta-item">
+                <i class="fas fa-id-card"></i>
+                ID: {{ customer.id }}
+              </span>
+              <span class="meta-divider"></span>
+              <span class="meta-item">
+                <i class="fas fa-calendar-alt"></i>
+                Since {{ formatDate(customer.createdAt) }}
+              </span>
+              <span class="meta-divider"></span>
+              <span class="meta-item">
+                <span class="status-badge-large" [class]="'status-' + getStatusClass(customer.status)">
+                  <span class="status-dot"></span>
+                  {{ getStatusLabel(customer.status) | titlecase }}
+                </span>
+              </span>
+            </p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button (click)="editCustomer()" class="btn-save-header">
+            <i class="fas fa-pencil-alt"></i> Edit
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Bar - Matching Quote Detail -->
+      <div class="action-bar glass">
+        <div class="action-bar-left">
+          <div class="meta-info">
+            <span><i class="fas fa-envelope"></i> {{ customer.email }}</span>
+            <span class="meta-divider"></span>
+            <span><i class="fas fa-phone"></i> {{ customer.phone }}</span>
+            <span class="meta-divider"></span>
+            <span><i class="fas fa-map-marker-alt"></i> {{ customer.address }}</span>
+          </div>
+        </div>
+        <div class="action-bar-right">
+          <button (click)="createQuote()" class="btn-action send">
+            <i class="fas fa-file-invoice"></i> New Quote
+          </button>
+          <button (click)="createInvoice()" class="btn-action accept">
+            <i class="fas fa-file-invoice-dollar"></i> New Invoice
+          </button>
+          <button (click)="deleteCustomer()" class="btn-action delete">
+            <i class="fas fa-trash-alt"></i> Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Cards - Matching Quote Detail -->
+      <div class="stats-grid">
+        <div class="stat-card total" (click)="viewOrderHistory()">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-naira-sign"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ formatCurrency(customer.totalSpent) }}</div>
+            <div class="stat-label">Total Spent</div>
+          </div>
+          <div class="stat-trend up">
+            <i class="fas fa-arrow-up"></i>
+            <span>18%</span>
+          </div>
+        </div>
+
+        <div class="stat-card orders" (click)="viewOrderHistory()">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-shopping-bag"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ customer.totalOrders }}</div>
+            <div class="stat-label">Total Orders</div>
+          </div>
+          <div class="stat-trend up">
+            <i class="fas fa-arrow-up"></i>
+            <span>12%</span>
+          </div>
+        </div>
+
+        <div class="stat-card average">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ formatCurrency(getAverageOrderValue()) }}</div>
+            <div class="stat-label">Avg. Order Value</div>
+          </div>
+          <div class="stat-trend up">
+            <i class="fas fa-arrow-up"></i>
+            <span>8%</span>
+          </div>
+        </div>
+
+        <div class="stat-card lifetime">
+          <div class="stat-icon-wrapper">
+            <i class="fas fa-star"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ formatCurrency(getCustomerLifetimeValue()) }}</div>
+            <div class="stat-label">Lifetime Value</div>
+          </div>
+          <div class="stat-trend up">
+            <i class="fas fa-arrow-up"></i>
+            <span>22%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Column Layout - Matching Quote Detail -->
+      <div class="detail-grid">
+
+        <!-- LEFT COLUMN -->
+        <div class="detail-main">
+
+          <!-- Customer Information Card -->
+          <div class="info-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-info-circle"></i>
+              </div>
+              <h3>Customer Information</h3>
+            </div>
+            <div class="card-body">
+              <div class="details-list">
+                <div class="detail-row">
+                  <span class="detail-label">Full Name</span>
+                  <span class="detail-value">{{ customer.name }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Email</span>
+                  <span class="detail-value">
+                    <a href="mailto:{{ customer.email }}" class="contact-link">{{ customer.email }}</a>
+                  </span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Phone</span>
+                  <span class="detail-value">
+                    <a href="tel:{{ customer.phone }}" class="contact-link">{{ customer.phone }}</a>
+                  </span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Address</span>
+                  <span class="detail-value">{{ customer.address }}</span>
+                </div>
+                <div class="detail-row" *ngIf="customer.taxId">
+                  <span class="detail-label">Tax ID / VAT</span>
+                  <span class="detail-value">{{ customer.taxId }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Status</span>
+                  <span class="detail-value">
+                    <span class="status-badge" [class]="'status-' + getStatusClass(customer.status)">
+                      <span class="status-dot"></span>
+                      {{ getStatusLabel(customer.status) | titlecase }}
+                    </span>
+                  </span>
+                </div>
+                <div class="detail-row" *ngIf="getCustomerNotes()">
+                  <span class="detail-label">Notes</span>
+                  <span class="detail-value notes-text">{{ getCustomerNotes() }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="info-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-bolt"></i>
+              </div>
+              <h3>Quick Actions</h3>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                <button (click)="createQuote()" class="ql-btn ql-btn--primary">
+                  <i class="fas fa-file-invoice"></i> Create Quote
+                </button>
+                <button (click)="createInvoice()" class="ql-btn" style="background:#8b5cf6;color:#fff;">
+                  <i class="fas fa-file-invoice-dollar"></i> Create Invoice
+                </button>
+                <button (click)="editCustomer()" class="ql-btn" style="background:var(--p);color:#fff;">
+                  <i class="fas fa-pencil-alt"></i> Edit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN - Sidebar -->
+        <div class="detail-sidebar">
+
+          <!-- Summary Card -->
+          <div class="info-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-calculator"></i>
+              </div>
+              <h3>Summary</h3>
+            </div>
+            <div class="card-body">
+              <div class="summary-mini">
+                <div class="summary-mini-row">
+                  <span>Total Spent</span>
+                  <span>{{ formatCurrency(customer.totalSpent) }}</span>
+                </div>
+                <div class="summary-mini-row">
+                  <span>Total Orders</span>
+                  <span>{{ customer.totalOrders }}</span>
+                </div>
+                <div class="summary-mini-row">
+                  <span>Avg. Order Value</span>
+                  <span>{{ formatCurrency(getAverageOrderValue()) }}</span>
+                </div>
+                <div class="summary-mini-row total">
+                  <span>Lifetime Value</span>
+                  <span>{{ formatCurrency(getCustomerLifetimeValue()) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Order History Card -->
+          <div class="info-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-history"></i>
+              </div>
+              <h3>Recent Orders</h3>
+              <span class="badge-count">{{ orderHistory.length }}</span>
+            </div>
+            <div class="card-body">
+              <div *ngIf="isLoadingOrders" class="loading-small">
+                <div class="spinner-small"></div>
+                <span>Loading orders...</span>
+              </div>
+
+              <div *ngIf="!isLoadingOrders && orderHistory.length === 0" class="empty-state-small">
+                <i class="fas fa-inbox"></i>
+                <p>No orders yet</p>
+                <span>This customer hasn't placed any orders</span>
+              </div>
+
+              <div *ngFor="let order of orderHistory.slice(0, 5)" class="order-item" (click)="viewOrder(order.id)">
+                <div class="order-header">
+                  <span class="order-id">#{{ order.id }}</span>
+                  <span class="order-date">{{ formatDateShort(order.date || order.createdAt) }}</span>
+                </div>
+                <div class="order-details">
+                  <span class="order-items"><i class="fas fa-box"></i> {{ order.items || 0 }} items</span>
+                  <span class="order-amount">{{ formatCurrency(order.total || order.totalAmount) }}</span>
+                  <span class="order-status-badge" [class]="'status-' + getOrderStatusClass(order.status)">
+                    {{ getOrderStatusLabel(order.status) | titlecase }}
+                  </span>
+                </div>
+              </div>
+
+              <button class="view-all-btn" (click)="viewOrderHistory()" *ngIf="orderHistory.length > 0">
+                View All Orders <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Error State -->
+    <div *ngIf="!isLoading && !customer" class="error-state">
+      <div class="error-content">
+        <i class="fas fa-user-slash fa-4x"></i>
+        <h2>Customer Not Found</h2>
+        <p>The customer you're looking for doesn't exist or has been removed.</p>
+        <button class="btn-primary" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i> Back to Customers
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal - Matching Quote Detail -->
+<div class="custom-modal-backdrop" *ngIf="showDeleteConfirm" (click)="showDeleteConfirm = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width:440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background:rgba(239,68,68,0.12);color:#ef4444;">
+          <i class="fas fa-trash-alt"></i>
+        </div>
+        <h3>Delete Customer</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showDeleteConfirm = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding:1.5rem;text-align:center;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.1);color:#ef4444;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 1rem auto;">
+        <i class="fas fa-trash-alt"></i>
+      </div>
+      <h4 style="margin:0 0 0.5rem 0;font-size:1.15rem;font-weight:700;color:#0f172a;">Delete Customer?</h4>
+      <p style="margin:0;color:#64748b;font-size:0.95rem;line-height:1.5;">
+        Are you sure you want to delete <strong>{{ customer?.name }}</strong>?<br>
+        This action cannot be undone. All associated data will be removed.
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding:1rem 1.5rem;background:#f8fafc;border-top:1px solid #f1f5f9;display:flex;gap:0.75rem;justify-content:flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showDeleteConfirm = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="confirmDelete()" style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);box-shadow:0 4px 12px rgba(239,68,68,0.25);">
+        <i class="fas fa-trash-alt"></i> Delete Customer
+      </button>
+    </div>
+  </div>
+</div>

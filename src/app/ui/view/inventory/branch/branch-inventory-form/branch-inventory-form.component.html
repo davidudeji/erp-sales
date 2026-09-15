@@ -1,0 +1,451 @@
+<!-- branch-inventory-form.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <button type="button" class="ql-back-btn" (click)="cancel()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h1 class="ql-title">
+                    {{ mode === 'create' ? 'Add Product' :
+                    mode === 'batch' ? 'Batch Add' :
+                    'Edit Stock' }}
+                </h1>
+                <app-branch-selector *ngIf="branch && mode !== 'edit'" [branches]="branches"
+                    [selectedBranchId]="branchId" (branchChange)="onBranchChange($event)"></app-branch-selector>
+                <span class="ql-branch-badge" *ngIf="branch && mode === 'edit'">
+                    <i class="fas fa-store"></i>
+                    {{ branch.name }}
+                </span>
+            </div>
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="save()" [disabled]="isSaving">
+                    <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving"
+                        [class.ql-spinning]="isSaving"></i>
+                    {{ isSaving ? 'Saving...' : 'Save' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Error banner -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading...</span>
+        </div>
+
+        <!-- ============================================================
+        FORM CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Mode Selector -->
+            <div class="ql-mode-selector" *ngIf="!inventoryItemId && !inventoryItem">
+                <button class="ql-mode-btn" [class.ql-mode-btn--active]="mode === 'create'"
+                    (click)="mode = 'create'; resetForms()">
+                    <i class="fas fa-plus-circle"></i>
+                    Single Product
+                </button>
+                <button class="ql-mode-btn" [class.ql-mode-btn--active]="mode === 'batch'"
+                    (click)="mode = 'batch'; resetForms()">
+                    <i class="fas fa-layer-group"></i>
+                    Batch Add
+                </button>
+            </div>
+
+            <!-- Single Product Form -->
+            <div *ngIf="mode === 'create' || mode === 'edit'" class="ql-form-container">
+
+                <!-- Step Indicator -->
+                <div class="ql-stepper" *ngIf="mode === 'create'">
+                    <div class="ql-step" [class.ql-step--complete]="currentStep > 1"
+                        [class.ql-step--active]="currentStep === 1">
+                        <span class="ql-step-number">1</span>
+                        <span class="ql-step-label">Product</span>
+                    </div>
+                    <div class="ql-step-line" [class.ql-step-line--complete]="currentStep > 2"></div>
+                    <div class="ql-step" [class.ql-step--complete]="currentStep > 2"
+                        [class.ql-step--active]="currentStep === 2">
+                        <span class="ql-step-number">2</span>
+                        <span class="ql-step-label">Stock Details</span>
+                    </div>
+                    <div class="ql-step-line" [class.ql-step-line--complete]="currentStep > 3"></div>
+                    <div class="ql-step" [class.ql-step--active]="currentStep === 3">
+                        <span class="ql-step-number">3</span>
+                        <span class="ql-step-label">Review</span>
+                    </div>
+                </div>
+
+                <form [formGroup]="inventoryForm" (ngSubmit)="save()">
+
+                    <!-- Step 1: Product Selection -->
+                    <div *ngIf="currentStep === 1 || mode === 'edit'" class="ql-form-section">
+                        <h3 class="ql-section-title"><i class="fas fa-box"></i> Product Selection</h3>
+
+                        <div class="ql-field" *ngIf="mode === 'create'">
+                            <label class="ql-flabel">Search Product <span class="ql-required">*</span></label>
+                            <div class="ql-search-wrap">
+                                <i class="fas fa-search ql-search-icon"></i>
+                                <input type="text" class="ql-search-input" placeholder="Type product name or SKU..."
+                                    [(ngModel)]="productSearchTerm" [ngModelOptions]="{standalone: true}"
+                                    (input)="onProductSearch(productSearchTerm)" (focus)="showProductDropdown = true"
+                                    (blur)="onProductBlur()" autocomplete="off">
+                                <div class="ql-product-dropdown"
+                                    *ngIf="showProductDropdown && filteredProducts.length > 0">
+                                    <div *ngFor="let product of filteredProducts" class="ql-product-option"
+                                        (mousedown)="selectProduct(product)">
+                                        <span class="ql-product-name">{{ product.name }}</span>
+                                        <span class="ql-product-sku">{{ product.sku }}</span>
+                                        <span class="ql-product-price">{{ formatCurrency(product.sellingPrice ||
+                                            product.price || 0) }}</span>
+                                    </div>
+                                </div>
+                                <div class="ql-product-dropdown ql-product-dropdown--empty"
+                                    *ngIf="showProductDropdown && filteredProducts.length === 0 && productSearchTerm.length > 0">
+                                    <span>No products found</span>
+                                </div>
+                            </div>
+                            <span class="ql-field-error" *ngIf="isFieldInvalid('productId')">
+                                Please select a product
+                            </span>
+                        </div>
+
+                        <!-- Selected Product Display -->
+                        <div class="ql-selected-product" *ngIf="selectedProduct || inventoryItem">
+                            <div class="ql-selected-info">
+                                <div class="ql-product-avatar">
+                                    {{ (selectedProduct?.name || inventoryItem?.productName ||
+                                    '?').charAt(0).toUpperCase() }}
+                                </div>
+                                <div>
+                                    <div class="ql-product-name">{{ selectedProduct?.name || inventoryItem?.productName
+                                        }}</div>
+                                    <div class="ql-product-sku">{{ selectedProduct?.sku || inventoryItem?.sku }}</div>
+                                </div>
+                            </div>
+                            <button type="button" class="ql-btn ql-btn--ghost-sm" *ngIf="mode === 'create'"
+                                (click)="selectedProduct = null; productSearchTerm = ''; inventoryForm.patchValue({ productId: '' })">
+                                <i class="fas fa-exchange-alt"></i> Change
+                            </button>
+                        </div>
+
+                        <input type="hidden" formControlName="productId">
+                    </div>
+
+                    <!-- Step 2: Stock Details -->
+                    <div *ngIf="currentStep === 2 || mode === 'edit'" class="ql-form-section">
+                        <h3 class="ql-section-title"><i class="fas fa-sliders-h"></i> Stock Details</h3>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel" for="quantity">Stock Quantity <span
+                                        class="ql-required">*</span></label>
+                                <input type="number" id="quantity" formControlName="quantity" class="ql-input"
+                                    placeholder="0" min="0" [class.ql-input--error]="isFieldInvalid('quantity')">
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('quantity')">
+                                    {{ getFieldError('quantity') }}
+                                </span>
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel" for="sellingPrice">Selling Price <span
+                                        class="ql-required">*</span></label>
+                                <input type="number" id="sellingPrice" formControlName="sellingPrice" class="ql-input"
+                                    placeholder="0.00" min="0" step="0.01"
+                                    [class.ql-input--error]="isFieldInvalid('sellingPrice')">
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('sellingPrice')">
+                                    {{ getFieldError('sellingPrice') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel" for="reorderPoint">Reorder Point <span
+                                        class="ql-required">*</span></label>
+                                <input type="number" id="reorderPoint" formControlName="reorderPoint" class="ql-input"
+                                    placeholder="0" min="0" [class.ql-input--error]="isFieldInvalid('reorderPoint')">
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('reorderPoint')">
+                                    {{ getFieldError('reorderPoint') }}
+                                </span>
+                                <span class="ql-hint">Stock level that triggers reordering</span>
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel" for="safetyStock">Safety Stock <span
+                                        class="ql-required">*</span></label>
+                                <input type="number" id="safetyStock" formControlName="safetyStock" class="ql-input"
+                                    placeholder="0" min="0" [class.ql-input--error]="isFieldInvalid('safetyStock')">
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('safetyStock')">
+                                    {{ getFieldError('safetyStock') }}
+                                </span>
+                                <span class="ql-hint">Minimum stock to keep as buffer</span>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel" for="costPrice">Cost Price</label>
+                                <input type="number" id="costPrice" formControlName="costPrice" class="ql-input"
+                                    placeholder="0.00" min="0" step="0.01">
+                                <span class="ql-hint">Purchase cost (used for profit calculation)</span>
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel" for="notes">Notes</label>
+                                <input type="text" id="notes" formControlName="notes" class="ql-input"
+                                    placeholder="Additional notes...">
+                            </div>
+                        </div>
+
+                        <!-- Stock Status Preview -->
+                        <div class="ql-stock-preview" *ngIf="inventoryForm.get('quantity')?.value !== ''">
+                            <div class="ql-stock-preview-label">Stock Status Preview</div>
+                            <div class="ql-stock-preview-status">
+                                <span class="ql-status-badge" [style.background]="getStockStatusColor(getStockStatus(
+                                        parseInt(inventoryForm.get('quantity')?.value || 0),
+                                        parseInt(inventoryForm.get('reorderPoint')?.value || 0),
+                                        parseInt(inventoryForm.get('safetyStock')?.value || 0)
+                                      )) + '20'" [style.color]="getStockStatusColor(getStockStatus(
+                                        parseInt(inventoryForm.get('quantity')?.value || 0),
+                                        parseInt(inventoryForm.get('reorderPoint')?.value || 0),
+                                        parseInt(inventoryForm.get('safetyStock')?.value || 0)
+                                      ))">
+                                    {{ getStockStatusLabel(getStockStatus(
+                                    parseInt(inventoryForm.get('quantity')?.value || 0),
+                                    parseInt(inventoryForm.get('reorderPoint')?.value || 0),
+                                    parseInt(inventoryForm.get('safetyStock')?.value || 0)
+                                    )) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Review -->
+                    <div *ngIf="currentStep === 3" class="ql-form-section">
+                        <h3 class="ql-section-title"><i class="fas fa-clipboard-check"></i> Review & Confirm</h3>
+
+                        <div class="ql-review-card">
+                            <div class="ql-review-section">
+                                <h4 class="ql-review-heading">Product Information</h4>
+                                <div class="ql-review-grid">
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Product</span>
+                                        <span class="ql-review-value">{{ selectedProduct?.name ||
+                                            inventoryItem?.productName }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">SKU</span>
+                                        <span class="ql-review-value">{{ selectedProduct?.sku || inventoryItem?.sku
+                                            }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Branch</span>
+                                        <span class="ql-review-value">{{ branch?.name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ql-review-section">
+                                <h4 class="ql-review-heading">Stock Details</h4>
+                                <div class="ql-review-grid">
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Quantity</span>
+                                        <span class="ql-review-value">{{ inventoryForm.get('quantity')?.value }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Selling Price</span>
+                                        <span class="ql-review-value">{{
+                                            formatCurrency(inventoryForm.get('sellingPrice')?.value) }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Reorder Point</span>
+                                        <span class="ql-review-value">{{ inventoryForm.get('reorderPoint')?.value
+                                            }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Safety Stock</span>
+                                        <span class="ql-review-value">{{ inventoryForm.get('safetyStock')?.value
+                                            }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Cost Price</span>
+                                        <span class="ql-review-value">{{
+                                            formatCurrency(inventoryForm.get('costPrice')?.value) }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Status</span>
+                                        <span class="ql-review-value">
+                                            <span class="ql-status-badge" [style.background]="getStockStatusColor(getStockStatus(
+                                                    parseInt(inventoryForm.get('quantity')?.value || 0),
+                                                    parseInt(inventoryForm.get('reorderPoint')?.value || 0),
+                                                    parseInt(inventoryForm.get('safetyStock')?.value || 0)
+                                                  )) + '20'" [style.color]="getStockStatusColor(getStockStatus(
+                                                    parseInt(inventoryForm.get('quantity')?.value || 0),
+                                                    parseInt(inventoryForm.get('reorderPoint')?.value || 0),
+                                                    parseInt(inventoryForm.get('safetyStock')?.value || 0)
+                                                  ))">
+                                                {{ getStockStatusLabel(getStockStatus(
+                                                parseInt(inventoryForm.get('quantity')?.value || 0),
+                                                parseInt(inventoryForm.get('reorderPoint')?.value || 0),
+                                                parseInt(inventoryForm.get('safetyStock')?.value || 0)
+                                                )) }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="ql-form-actions">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--ghost" *ngIf="currentStep > 1 && mode === 'create'"
+                            (click)="prevStep()">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--primary"
+                            *ngIf="currentStep < 3 && mode === 'create'" (click)="nextStep()">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button type="submit" class="ql-btn ql-btn--success"
+                            *ngIf="currentStep === 3 || mode === 'edit'" [disabled]="isSaving">
+                            <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving"
+                                [class.ql-spinning]="isSaving"></i>
+                            {{ isSaving ? 'Saving...' : 'Save Inventory' }}
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- Batch Add Form -->
+            <div *ngIf="mode === 'batch'" class="ql-form-container">
+                <div class="ql-form-section">
+                    <div class="ql-batch-header">
+                        <h3 class="ql-section-title"><i class="fas fa-layer-group"></i> Batch Add Products</h3>
+                        <button type="button" class="ql-btn ql-btn--ghost-sm" (click)="addBatchItem()">
+                            <i class="fas fa-plus"></i> Add Row
+                        </button>
+                    </div>
+
+                    <div class="ql-batch-items">
+                        <div *ngFor="let item of batchItemsArray.controls; let i = index" class="ql-batch-item"
+                            [formGroup]="$any(item)">
+                            <div class="ql-batch-item-header">
+                                <span class="ql-batch-number">#{{ i + 1 }}</span>
+                                <button type="button" class="ql-btn ql-btn--danger-sm" (click)="removeBatchItem(i)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel" [for]="'batch-product-' + i">Product</label>
+                                    <select [id]="'batch-product-' + i" formControlName="productId" class="ql-input">
+                                        <option value="">Select Product</option>
+                                        <option *ngFor="let product of products" [value]="product.id">
+                                            {{ product.name }} ({{ product.sku }})
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel" [for]="'batch-qty-' + i">Quantity</label>
+                                    <input type="number" [id]="'batch-qty-' + i" formControlName="quantity"
+                                        class="ql-input" placeholder="0" min="0">
+                                </div>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel" [for]="'batch-price-' + i">Selling Price</label>
+                                    <input type="number" [id]="'batch-price-' + i" formControlName="sellingPrice"
+                                        class="ql-input" placeholder="0.00" min="0" step="0.01">
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel" [for]="'batch-reorder-' + i">Reorder Point</label>
+                                    <input type="number" [id]="'batch-reorder-' + i" formControlName="reorderPoint"
+                                        class="ql-input" placeholder="0" min="0">
+                                </div>
+                            </div>
+
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel" [for]="'batch-safety-' + i">Safety Stock</label>
+                                    <input type="number" [id]="'batch-safety-' + i" formControlName="safetyStock"
+                                        class="ql-input" placeholder="0" min="0">
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel" [for]="'batch-cost-' + i">Cost Price</label>
+                                    <input type="number" [id]="'batch-cost-' + i" formControlName="costPrice"
+                                        class="ql-input" placeholder="0.00" min="0" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div *ngIf="batchItemsArray.length === 0" class="ql-batch-empty">
+                            <i class="fas fa-plus-circle"></i>
+                            <p>No products added yet</p>
+                            <button type="button" class="ql-btn ql-btn--primary" (click)="addBatchItem()">Add First
+                                Product</button>
+                        </div>
+                    </div>
+
+                    <div class="ql-form-actions">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--success" (click)="save()"
+                            [disabled]="isSaving || batchItemsArray.length === 0">
+                            <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving"
+                                [class.ql-spinning]="isSaving"></i>
+                            {{ isSaving ? 'Saving...' : 'Save All (' + batchItemsArray.length + ')' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        CONFIRM DIALOG
+        ============================================================ -->
+        <div class="ql-confirm-backdrop" *ngIf="showConfirmDialog"
+            (click)="$event.target === $event.currentTarget && cancelConfirmDialog()">
+            <div class="ql-confirm-modal">
+                <div class="ql-confirm-icon" style="color:#f59e0b"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="ql-confirm-title">Discard Changes?</div>
+                <div class="ql-confirm-sub">{{ confirmMessage }}</div>
+                <div class="ql-confirm-actions">
+                    <button type="button" class="ql-btn ql-btn--ghost-sm" style="padding:8px 16px;font-size:13px"
+                        (click)="cancelConfirmDialog()">Continue Editing</button>
+                    <button type="button" class="ql-btn"
+                        style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer"
+                        (click)="confirmCancel()">
+                        <i class="fas fa-trash"></i> Discard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

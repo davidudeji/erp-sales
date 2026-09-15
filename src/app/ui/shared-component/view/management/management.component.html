@@ -1,0 +1,40 @@
+<div class="management">
+    <div class="management-heading">
+      <p class="management-title">Management</p>
+    </div>
+    <div class="management-content">
+        <div class="management-content-container" *ngFor="let title of titles; let i = index">
+          <p class='management-content-title'>{{ title }}</p>
+          <div class="profile-card-container">
+
+
+
+
+
+
+
+
+            <ng-container *ngIf="i === 0; else projectManagerProfilesSection">
+              <app-profile-card *ngFor="let profile of managementLeadProfiles" [profiles]="[profile]" class="profile-card"></app-profile-card>
+          </ng-container>
+          <ng-template #projectManagerProfilesSection>
+              <app-profile-card *ngFor="let profile of projectManagerProfiles" [profiles]="[profile]" class="profile-card"></app-profile-card>
+          </ng-template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+            <!-- <app-profile-card  [profiles]="[profiles[i]]" class="profile-card"></app-profile-card> -->
+          </div>
+        </div>
+      </div>
+  </div>

@@ -1,0 +1,502 @@
+<!-- stock-movement-form.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <button type="button" class="ql-back-btn" (click)="cancel()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h1 class="ql-title">
+                    {{ mode === 'view' ? 'Movement Details' :
+                    mode === 'edit' ? 'Edit Movement' :
+                    'Create Movement' }}
+                </h1>
+                <span class="ql-badge ql-badge--{{ mode === 'view' ? 'info' : 'primary' }}">
+                    {{ mode === 'view' ? 'View Only' : mode === 'edit' ? 'Editing' : 'New' }}
+                </span>
+            </div>
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="save()"
+                    [disabled]="isSaving || mode === 'view'">
+                    <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving"
+                        [class.ql-spinning]="isSaving"></i>
+                    {{ isSaving ? 'Saving...' : (mode === 'edit' ? 'Update' : 'Create') }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Error banner -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading...</span>
+        </div>
+
+        <!-- ============================================================
+        FORM CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Step Indicator -->
+            <div class="ql-stepper" *ngIf="mode !== 'view'">
+                <div class="ql-step" [class.ql-step--complete]="currentStep > 1"
+                    [class.ql-step--active]="currentStep === 1">
+                    <span class="ql-step-number">1</span>
+                    <span class="ql-step-label">Movement Details</span>
+                </div>
+                <div class="ql-step-line" [class.ql-step-line--complete]="currentStep > 2"></div>
+                <div class="ql-step" [class.ql-step--complete]="currentStep > 2"
+                    [class.ql-step--active]="currentStep === 2">
+                    <span class="ql-step-number">2</span>
+                    <span class="ql-step-label">Items</span>
+                </div>
+                <div class="ql-step-line" [class.ql-step-line--complete]="currentStep > 3"></div>
+                <div class="ql-step" [class.ql-step--active]="currentStep === 3">
+                    <span class="ql-step-number">3</span>
+                    <span class="ql-step-label">Review</span>
+                </div>
+            </div>
+
+            <form [formGroup]="movementForm" (ngSubmit)="save()">
+
+                <!-- Step 1: Movement Details -->
+                <div *ngIf="currentStep === 1 || mode === 'view'" class="ql-form-container">
+                    <div class="ql-form-section">
+                        <h3 class="ql-section-title"><i class="fas fa-truck"></i> Movement Details</h3>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Movement Type <span class="ql-required">*</span></label>
+                                <select formControlName="movementType" class="ql-input" [disabled]="mode === 'view'"
+                                        (change)="onMovementTypeChange($event)">
+                                    <option value="">Select Type</option>
+                                    <option *ngFor="let type of movementTypes" [value]="type">
+                                        {{ getMovementTypeLabel(type) }}
+                                    </option>
+                                    <option value="__add_movement_type__">+ Add Movement Type</option>
+                                </select>
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('movementType')">
+                                    {{ getFieldError('movementType') }}
+                                </span>
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel">Priority</label>
+                                <select formControlName="priority" class="ql-input" [disabled]="mode === 'view'">
+                                    <option value="LOW">Low</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="URGENT">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">From Location <span class="ql-required">*</span></label>
+                                <select formControlName="fromLocationType" class="ql-input"
+                                    (change)="onLocationTypeChange('from', $event)"
+                                    [disabled]="mode === 'view'">
+                                    <option value="">Select Location Type</option>
+                                    <option *ngFor="let type of locationTypes" [value]="type">{{ type }}</option>
+                                    <option value="__add_location_type__">+ Add Location Type</option>
+                                </select>
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel">From Location ID <span class="ql-required">*</span></label>
+                                <select formControlName="fromLocationId" class="ql-input" [disabled]="mode === 'view'"
+                                    (change)="onLocationIdChange('from', $event)">
+                                    <option value="">Select Location</option>
+                                    <option *ngFor="let location of fromLocationOptions" [value]="location.id">
+                                        {{ location.name || location.id }}
+                                    </option>
+                                    <option value="__add_location__" *ngIf="!isAddLocationDisabled('from')">+ Add Location</option>
+                                </select>
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('fromLocationId')">
+                                    {{ getFieldError('fromLocationId') }}
+                                </span>
+                                <span class="ql-hint" *ngIf="isAddLocationDisabled('from')">
+                                    Add new branches from Branch Inventory.
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">To Location <span class="ql-required">*</span></label>
+                                <select formControlName="toLocationType" class="ql-input"
+                                    (change)="onLocationTypeChange('to', $event)"
+                                    [disabled]="mode === 'view'">
+                                    <option value="">Select Location Type</option>
+                                    <option *ngFor="let type of locationTypes" [value]="type">{{ type }}</option>
+                                    <option value="__add_location_type__">+ Add Location Type</option>
+                                </select>
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel">To Location ID <span class="ql-required">*</span></label>
+                                <select formControlName="toLocationId" class="ql-input" [disabled]="mode === 'view'"
+                                    (change)="onLocationIdChange('to', $event)">
+                                    <option value="">Select Location</option>
+                                    <option *ngFor="let location of toLocationOptions" [value]="location.id">
+                                        {{ location.name || location.id }}
+                                    </option>
+                                    <option value="__add_location__" *ngIf="!isAddLocationDisabled('to')">+ Add Location</option>
+                                </select>
+                                <span class="ql-field-error" *ngIf="isFieldInvalid('toLocationId')">
+                                    {{ getFieldError('toLocationId') }}
+                                </span>
+                                <span class="ql-hint" *ngIf="isAddLocationDisabled('to')">
+                                    Add new branches from Branch Inventory.
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Scheduled Date</label>
+                                <input type="datetime-local" formControlName="scheduledDate" class="ql-input"
+                                    [disabled]="mode === 'view'">
+                            </div>
+
+                            <div class="ql-field">
+                                <label class="ql-flabel">Notes</label>
+                                <input type="text" formControlName="notes" class="ql-input"
+                                    placeholder="Additional notes..." [disabled]="mode === 'view'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="ql-form-actions" *ngIf="mode !== 'view'">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--primary" (click)="nextStep()">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="ql-form-actions" *ngIf="mode === 'view'">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Items -->
+                <div *ngIf="currentStep === 2" class="ql-form-container">
+                    <div class="ql-form-section">
+                        <div class="ql-items-header">
+                            <h3 class="ql-section-title"><i class="fas fa-boxes"></i> Items</h3>
+                            <button type="button" class="ql-btn ql-btn--ghost-sm"
+                                (click)="productSearchInput.focus()">
+                                <i class="fas fa-plus"></i> Add Product
+                            </button>
+                        </div>
+
+                        <!-- Product Search -->
+                        <div class="ql-field">
+                            <div class="ql-search-wrap">
+                                <i class="fas fa-search ql-search-icon"></i>
+                                <input #productSearchInput id="productSearch" type="text" class="ql-search-input"
+                                    placeholder="Search product by name or SKU..." (input)="onProductSearch($event)"
+                                    (focus)="showProductSearch = true"
+                                    (blur)="onProductSearchBlur()" autocomplete="off">
+                                <div class="ql-product-dropdown"
+                                    *ngIf="showProductSearch && filteredProducts.length > 0">
+                                    <div *ngFor="let product of filteredProducts" class="ql-product-option"
+                                        (mousedown)="selectProduct(product)">
+                                        <span class="ql-product-name">{{ product.name }}</span>
+                                        <span class="ql-product-sku">{{ product.sku }}</span>
+                                        <span class="ql-product-price">{{ formatCurrency(product.sellingPrice ||
+                                            product.price || 0) }}</span>
+                                    </div>
+                                </div>
+                                <div class="ql-product-dropdown ql-product-dropdown--empty"
+                                    *ngIf="showProductSearch && filteredProducts.length === 0">
+                                    <span>No products found</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Items List -->
+                        <div class="ql-items-list">
+                            <div *ngFor="let item of items.controls; let i = index" class="ql-item"
+                                [formGroup]="$any(item)">
+                                <div class="ql-item-header">
+                                    <span class="ql-item-number">#{{ i + 1 }}</span>
+                                    <button type="button" class="ql-btn ql-btn--danger-sm" (click)="removeItem(i)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                <div class="ql-form-row">
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Product</label>
+                                        <input type="text" formControlName="productName" class="ql-input"
+                                            placeholder="Product name" [disabled]="true">
+                                    </div>
+
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">SKU</label>
+                                        <input type="text" formControlName="sku" class="ql-input" placeholder="SKU"
+                                            [disabled]="true">
+                                    </div>
+                                </div>
+
+                                <div class="ql-form-row">
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Quantity <span class="ql-required">*</span></label>
+                                        <input type="number" formControlName="quantity" class="ql-input" placeholder="0"
+                                            min="1">
+                                        <span class="ql-field-error"
+                                            *ngIf="item.get('quantity')?.invalid && item.get('quantity')?.touched">
+                                            Please enter a valid quantity
+                                        </span>
+                                    </div>
+
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Unit</label>
+                                        <select formControlName="unit" class="ql-input">
+                                            <option value="EACH">Each</option>
+                                            <option value="BOX">Box</option>
+                                            <option value="KG">KG</option>
+                                            <option value="LITER">Liter</option>
+                                            <option value="METER">Meter</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="items.length === 0" class="ql-empty-items">
+                                <i class="fas fa-box"></i>
+                                <p>No items added yet</p>
+                                <span>Search and add products above</span>
+                            </div>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="ql-items-summary" *ngIf="items.length > 0">
+                            <span>Total Items: <strong>{{ items.length }}</strong></span>
+                            <span>Total Quantity: <strong>{{ getTotalItems() }}</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="ql-form-actions">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="prevStep()">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--primary" (click)="nextStep()">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Review -->
+                <div *ngIf="currentStep === 3" class="ql-form-container">
+                    <div class="ql-form-section">
+                        <h3 class="ql-section-title"><i class="fas fa-clipboard-check"></i> Review & Confirm</h3>
+
+                        <div class="ql-review-card">
+                            <div class="ql-review-section">
+                                <h4 class="ql-review-heading">Movement Details</h4>
+                                <div class="ql-review-grid">
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Type</span>
+                                        <span class="ql-review-value">{{
+                                            getMovementTypeLabel(movementForm.get('movementType')?.value) }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Priority</span>
+                                        <span class="ql-review-value">{{ movementForm.get('priority')?.value }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">From</span>
+                                        <span class="ql-review-value">{{ movementForm.get('fromLocationId')?.value
+                                            }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">To</span>
+                                        <span class="ql-review-value">{{ movementForm.get('toLocationId')?.value
+                                            }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Scheduled</span>
+                                        <span class="ql-review-value">{{ movementForm.get('scheduledDate')?.value ||
+                                            'Now' }}</span>
+                                    </div>
+                                    <div class="ql-review-item">
+                                        <span class="ql-review-label">Notes</span>
+                                        <span class="ql-review-value">{{ movementForm.get('notes')?.value || '—'
+                                            }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ql-review-section">
+                                <h4 class="ql-review-heading">Items</h4>
+                                <div class="ql-review-items">
+                                    <div *ngFor="let item of items.controls; let i = index" class="ql-review-item-row">
+                                        <span class="ql-review-item-number">#{{ i + 1 }}</span>
+                                        <span class="ql-review-item-name">{{ item.get('productName')?.value }}</span>
+                                        <span class="ql-review-item-sku">{{ item.get('sku')?.value }}</span>
+                                        <span class="ql-review-item-qty">{{ item.get('quantity')?.value }} {{
+                                            item.get('unit')?.value }}</span>
+                                    </div>
+                                </div>
+                                <div class="ql-review-total">
+                                    <span>Total Items: <strong>{{ items.length }}</strong></span>
+                                    <span>Total Quantity: <strong>{{ getTotalItems() }}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="ql-form-actions">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="prevStep()">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="cancel()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="ql-btn ql-btn--success" [disabled]="isSaving">
+                            <i class="fas" [class.fa-spinner]="isSaving" [class.fa-check]="!isSaving"
+                                [class.ql-spinning]="isSaving"></i>
+                            {{ isSaving ? 'Processing...' : (mode === 'edit' ? 'Update Movement' : 'Create Movement') }}
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+
+        </ng-container>
+
+        <!-- ============================================================
+        CONFIRM DIALOG
+        ============================================================ -->
+        <div class="ql-confirm-backdrop" *ngIf="showConfirmDialog"
+            (click)="$event.target === $event.currentTarget && cancelConfirmDialog()">
+            <div class="ql-confirm-modal">
+                <div class="ql-confirm-icon" style="color:#f59e0b"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="ql-confirm-title">Discard Changes?</div>
+                <div class="ql-confirm-sub">{{ confirmMessage }}</div>
+                <div class="ql-confirm-actions">
+                    <button type="button" class="ql-btn ql-btn--ghost-sm" style="padding:8px 16px;font-size:13px"
+                        (click)="cancelConfirmDialog()">Continue Editing</button>
+                    <button type="button" class="ql-btn"
+                        style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer"
+                        (click)="confirmCancel()">
+                        <i class="fas fa-trash"></i> Discard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD MOVEMENT TYPE MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddMovementTypeModal"
+             (click)="$event.target === $event.currentTarget && closeAddMovementTypeModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-truck" style="color: var(--p);"></i> Add Movement Type</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddMovementTypeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Movement Type Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newMovementTypeName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Consignment">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddMovementTypeModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newMovementTypeName.trim()"
+                            (click)="saveCustomMovementType()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD LOCATION TYPE MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddLocationTypeModal"
+             (click)="$event.target === $event.currentTarget && closeAddLocationTypeModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-map-marker-alt" style="color: var(--p);"></i> Add Location Type</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddLocationTypeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Location Type Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newLocationTypeName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. Distribution Center">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddLocationTypeModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newLocationTypeName.trim()"
+                            (click)="saveCustomLocationType()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        ADD LOCATION MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showAddLocationModal"
+             (click)="$event.target === $event.currentTarget && closeAddLocationModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-map-pin" style="color: var(--p);"></i> Add Location</h3>
+                    <button type="button" class="ql-modal-close" (click)="closeAddLocationModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Location Name <span class="ql-required">*</span></label>
+                        <input type="text" class="ql-input" [(ngModel)]="newLocationName"
+                               [ngModelOptions]="{standalone: true}"
+                               placeholder="e.g. North Warehouse">
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeAddLocationModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" [disabled]="!newLocationName.trim()"
+                            (click)="saveCustomLocation()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

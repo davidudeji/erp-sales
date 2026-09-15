@@ -1,0 +1,250 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+
+.header{
+    width: 100%;
+    height: auto;
+    // background-color: #224957;
+    border-bottom: 1px solid lightgrey;
+    padding: 0.5em;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+
+    
+
+    .header-center{
+        width: 40%;
+        display: flex;
+        justify-self: center;
+        align-self: center;
+
+        .searchbar-container{
+            width: 100%;
+        }
+
+    }
+
+    .header-end{
+        display: flex;
+        align-items: center;
+
+        .items{
+            margin-right: 1em;
+            box-sizing: border-box;
+            cursor: pointer;
+            word-wrap: break-word;
+
+            p{
+                font-weight: 400;
+                // color: white;
+                text-decoration: none;
+                margin: 0;
+            }
+
+            .fa-message{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                cursor: pointer;
+                background-color: red;
+                border-radius: 50%;
+                padding: 1.5rem;
+                width: 20px;
+                height: 20px;
+                font-size: 1.2em;
+                // cursor: pointer;
+                background-color: #DEEEE6;
+                color: #224957;
+            }
+        }
+        .profile-item{
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+
+            .profile-img-container{
+                width: auto;
+                margin-right: 0.5rem;
+
+                .profile-img{
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 50%;
+                }
+            }
+
+            .profile-name{
+                .name{
+                    // color: white;
+                    font-weight: 400;
+                    font-size: 1em;
+                    text-transform: capitalize;
+                }
+                
+                .status{
+                    color: #B3B3B3;
+                    font-weight: 400;
+                    font-size: 1em;
+                    text-transform: capitalize;
+                }
+            }
+        }
+
+        .fa-bell{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            width: 20px;
+            font-size: 1.5em;
+            height: 20px;
+            padding: 1.5rem;
+            border-radius: 50%;
+            background-color: #DEEEE6;
+            transition-duration: .3s;
+            color: #224957;
+        }
+          
+        .fa-bell:hover {
+        animation: bellRing 0.9s both;
+        }
+        
+        /* bell ringing animation keyframes*/
+        @keyframes bellRing {
+        0%,
+        100% {
+            transform-origin: top;
+        }
+        
+        15% {
+            transform: rotateZ(10deg);
+        }
+        
+        30% {
+            transform: rotateZ(-10deg);
+        }
+        
+        45% {
+            transform: rotateZ(5deg);
+        }
+        
+        60% {
+            transform: rotateZ(-5deg);
+        }
+        
+        75% {
+            transform: rotateZ(2deg);
+        }
+        }
+        
+        .humburger,
+        .items:active {
+        transform: scale(0.8);
+        }
+          
+        
+    }
+    .hamburger{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .pi-bars, .pi-times{
+            color: var(--blue-green);
+            cursor: pointer;
+            padding: 0.2rem 0.7rem;
+            font-size: var(--xl-font);
+        }
+        button{
+            background: none;
+            border: none;
+            outline: none;
+        }
+    }
+}
+
+.name-2{
+    font-size: 2.3em;
+    font-family: "Roboto Slab", serif;
+    text-transform: capitalize;
+    font-weight: bold;
+}
+.status-2{
+    // font-size: 1em;
+    font-family: "Roboto Slab", serif;
+
+}
+
+h1, h2, h3, h4, h5, h6 {
+    padding: 0;
+    margin: 0;
+}
+
+.logout{
+    font-family: "Roboto Slab", serif;
+    margin-top: 1rem;
+    cursor: pointer;
+    align-items: center;
+}
+
+.panel-container{
+    width: 250px;
+
+    .settings{
+        font-family: "Roboto Slab", serif;
+        margin-top: 1rem;
+        cursor: pointer;
+        align-items: center;
+    }
+
+    .pi-sign-out, .pi-cog{
+        font-size: .9em;
+        font-weight: bold;
+        margin-right: 1rem !important;
+    }
+}
+
+
+
+
+
+
+// @media only screen and (max-width: 1200px) {
+//     .header{
+//         .hamburger{
+//             display: contents;
+//         }
+//     }
+// }
+
+
+
+// @media only screen and (max-width: 767px) {
+//     .header{
+
+//         .header-center{
+//             display: none;
+//         }
+//         .header-end{
+//             .items{
+//                 .profile-name{
+//                     .name{
+//                         font-size: 0.8em;
+//                     }
+//                     .status{
+//                         font-size: 0.8em;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
+
+
+
+
+
+

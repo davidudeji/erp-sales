@@ -1,0 +1,135 @@
+.lpo-preview-container {
+  padding: 2rem;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.preview-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.preview-header {
+  margin-bottom: 2rem;
+
+  .header-back-title-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .header-content {
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: rgba(24, 68, 64, 0.08);
+      color: #184440;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #0f1a2e;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .header-subtitle {
+      font-size: 0.95rem;
+      color: #6b7280;
+      margin: 0;
+    }
+  }
+}
+
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+
+  &.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+  }
+
+  .action-bar-left {
+    .meta-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.9rem;
+      color: #4b5563;
+
+      .meta-divider {
+        width: 1px;
+        height: 16px;
+        background-color: #cbd5e1;
+      }
+    }
+  }
+
+  .action-bar-right {
+    display: flex;
+    gap: 0.75rem;
+  }
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &.edit-btn-bar {
+    background-color: white;
+    color: #0f1a2e;
+    border: 1px solid #dce3ec;
+
+    &:hover {
+      background-color: #f8fafc;
+      border-color: #cbd5e1;
+    }
+  }
+
+  &.success {
+    background-color: #184440;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #0f2c29;
+      transform: translateY(-1px);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.success-message {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

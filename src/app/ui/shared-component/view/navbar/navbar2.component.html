@@ -1,0 +1,41 @@
+<div class="header">
+  <div class="header-center">
+    <div class="searchbar-container">
+      <img src="/assets/Logo-green.png" alt="" width="15%" />
+    </div>
+  </div>
+
+  <div class="header-end">
+    <div (click)="op.toggle($event)" class="items profile-item">
+      <div class="profile-img-container">
+        <img src="/assets/profile.jpg" alt="" class="profile-img" />
+      </div>
+      <div class="profile-name">
+        <p class="name">{{ userRegData.username }}</p>
+      </div>
+    </div>
+    <p-overlayPanel #op>
+      <div class="panel-container">
+        <div class="profile-name">
+          <h3 class="name-2">{{ userRegData.username }}</h3>
+          <h5 class="my-2"><strong>ID: </strong>{{ userRegData.accountId }}</h5>
+        </div>
+        <p-divider></p-divider>
+        <div>
+          <h4 routerLink="/settings" class="settings">
+            <i class="pi pi-cog"></i>Settings
+          </h4>
+          <h4 (click)="logout()" class="logout">
+            <i class="pi pi-sign-out"></i> Sign Out
+          </h4>
+        </div>
+      </div>
+    </p-overlayPanel>
+  </div>
+
+  <!-- <div class="items hamburger" >
+      <button class="hamburger-icon" (click)="onToggleSidebar()">
+      &#9776;
+      </button>
+    </div> -->
+</div>

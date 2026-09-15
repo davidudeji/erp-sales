@@ -1,0 +1,597 @@
+<!-- affordability-dashboard.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Affordability</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Branch Selector -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Branch</div>
+            <div class="ql-branch-list">
+                <button *ngFor="let data of affordabilityData" class="ql-branch-item"
+                    [class.ql-branch-item--active]="selectedBranchData?.branchId === data.branchId"
+                    (click)="selectBranch(data.branchId)">
+                    <span class="ql-branch-name">{{ data.branchName }}</span>
+                    <span class="ql-branch-score" [style.color]="getAffordabilityColor(data.affordabilityLevel)">
+                        {{ data.affordabilityScore }}%
+                    </span>
+                    <span class="ql-branch-dot"
+                        [style.background]="getAffordabilityColor(data.affordabilityLevel)"></span>
+                </button>
+                <div *ngIf="affordabilityData.length === 0" class="ql-empty-small">
+                    <i class="fas fa-store"></i>
+                    <span>No branches available</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="ql-filter-section" *ngIf="selectedBranchData">
+            <div class="ql-filter-heading">Branch Summary</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Products</span>
+                <span class="ql-sidebar-stat-value">{{ formatNumber(selectedBranchData.totalProducts) }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Avg Price</span>
+                <span class="ql-sidebar-stat-value">{{ formatCurrency(selectedBranchData.averageProductPrice) }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Value</span>
+                <span class="ql-sidebar-stat-value">{{ formatCurrency(selectedBranchData.totalStockValue) }}</span>
+            </div>
+            <div class="ql-sidebar-stat"
+                style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label" style="font-size: 10px; color: var(--muted);">Last Updated</span>
+                <span class="ql-sidebar-stat-value" style="font-size: 12px;">{{
+                    formatDate(selectedBranchData.lastCalculated) }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refreshData()" [disabled]="isRefreshing">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                {{ isRefreshing ? 'Refreshing...' : 'Refresh Data' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="viewBranch(selectedBranchData?.branchId || '')"
+                *ngIf="selectedBranchData">
+                <i class="fas fa-store"></i> View Branch
+            </button>
+            <button class="ql-sidebar-action" (click)="exportReport()" *ngIf="selectedBranchData">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading affordability data...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refreshData()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading && selectedBranchData">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">{{ selectedBranchData.branchName }}</h1>
+                    <span class="ql-total-badge">Affordability</span>
+                    <span class="ql-affordability-badge"
+                        [style.background]="getAffordabilityColor(selectedBranchData.affordabilityLevel) + '20'"
+                        [style.color]="getAffordabilityColor(selectedBranchData.affordabilityLevel)">
+                        <i class="fas" [class]="getAffordabilityIcon(selectedBranchData.affordabilityLevel)"></i>
+                        {{ getAffordabilityLabel(selectedBranchData.affordabilityLevel) }}
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <div class="ql-score-badge">
+                        <i class="fas fa-chart-simple" style="color: #3B82F6;"></i>
+                        Score: {{ selectedBranchData.affordabilityScore }}%
+                    </div>
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refreshData()"
+                        [disabled]="isRefreshing">
+                        <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                        {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="exportReport()">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="ql-stats-row">
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #184440;">{{
+                        formatNumber(selectedBranchData.totalProducts) }}</span>
+                    <span class="ql-stat-mini-label">Total Products</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #2EB270;">{{
+                        formatCurrency(selectedBranchData.averageProductPrice) }}</span>
+                    <span class="ql-stat-mini-label">Avg Price</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #3B82F6;">{{
+                        formatCurrency(selectedBranchData.medianProductPrice) }}</span>
+                    <span class="ql-stat-mini-label">Median Price</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #8B5CF6;">{{
+                        formatCurrency(selectedBranchData.totalStockValue) }}</span>
+                    <span class="ql-stat-mini-label">Total Value</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #F59E0B;">
+                        {{ formatCurrency(selectedBranchData.priceRange.min) }} - {{
+                        formatCurrency(selectedBranchData.priceRange.max) }}
+                    </span>
+                    <span class="ql-stat-mini-label">Price Range</span>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'overview'"
+                    (click)="setActiveTab('overview')">
+                    <i class="fas fa-chart-pie"></i> Overview
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'branches'"
+                    (click)="setActiveTab('branches')">
+                    <i class="fas fa-store"></i> Branches
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'comparison'"
+                    (click)="setActiveTab('comparison')">
+                    <i class="fas fa-chart-bar"></i> Comparison
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'insights'"
+                    (click)="setActiveTab('insights')">
+                    <i class="fas fa-lightbulb"></i> Insights
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
+
+                <!-- ========================================================
+                OVERVIEW TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'overview'" class="ql-tab-panel">
+                    <div class="ql-overview-grid">
+                        <div class="ql-overview-left">
+                            <!-- Affordability Score -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-chart-simple"></i> Affordability Score</h3>
+                                <div class="ql-score-display">
+                                    <div class="ql-score-circle"
+                                        [style.border-color]="getAffordabilityColor(selectedBranchData.affordabilityLevel)">
+                                        <span class="ql-score-value">{{ selectedBranchData.affordabilityScore }}</span>
+                                        <span class="ql-score-label">%</span>
+                                    </div>
+                                    <div class="ql-score-details">
+                                        <div class="ql-score-detail">
+                                            <span class="ql-score-detail-label">Level</span>
+                                            <span class="ql-score-detail-value"
+                                                [style.color]="getAffordabilityColor(selectedBranchData.affordabilityLevel)">
+                                                <i class="fas"
+                                                    [class]="getAffordabilityIcon(selectedBranchData.affordabilityLevel)"></i>
+                                                {{ getAffordabilityLabel(selectedBranchData.affordabilityLevel) }}
+                                            </span>
+                                        </div>
+                                        <div class="ql-score-detail">
+                                            <span class="ql-score-detail-label">Average Price</span>
+                                            <span class="ql-score-detail-value">{{
+                                                formatCurrency(selectedBranchData.averageProductPrice) }}</span>
+                                        </div>
+                                        <div class="ql-score-detail">
+                                            <span class="ql-score-detail-label">Total Products</span>
+                                            <span class="ql-score-detail-value">{{
+                                                formatNumber(selectedBranchData.totalProducts) }}</span>
+                                        </div>
+                                        <div class="ql-score-detail">
+                                            <span class="ql-score-detail-label">Price Range</span>
+                                            <span class="ql-score-detail-value">
+                                                {{ formatCurrency(selectedBranchData.priceRange.min) }} - {{
+                                                formatCurrency(selectedBranchData.priceRange.max) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Product Distribution -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-layer-group"></i> Product Distribution by
+                                    Price Tier</h3>
+                                <div class="ql-distribution-tiers">
+                                    <div class="ql-tier-item">
+                                        <span class="ql-tier-label">Affordable</span>
+                                        <div class="ql-tier-bar">
+                                            <div class="ql-tier-fill"
+                                                [style.width.%]="(selectedBranchData.productsCount.affordable / selectedBranchData.totalProducts) * 100"
+                                                style="background: #2EB270;"></div>
+                                        </div>
+                                        <span class="ql-tier-count">{{ selectedBranchData.productsCount.affordable
+                                            }}</span>
+                                    </div>
+                                    <div class="ql-tier-item">
+                                        <span class="ql-tier-label">Moderate</span>
+                                        <div class="ql-tier-bar">
+                                            <div class="ql-tier-fill"
+                                                [style.width.%]="(selectedBranchData.productsCount.moderate / selectedBranchData.totalProducts) * 100"
+                                                style="background: #F5A623;"></div>
+                                        </div>
+                                        <span class="ql-tier-count">{{ selectedBranchData.productsCount.moderate
+                                            }}</span>
+                                    </div>
+                                    <div class="ql-tier-item">
+                                        <span class="ql-tier-label">Premium</span>
+                                        <div class="ql-tier-bar">
+                                            <div class="ql-tier-fill"
+                                                [style.width.%]="(selectedBranchData.productsCount.premium / selectedBranchData.totalProducts) * 100"
+                                                style="background: #DC2626;"></div>
+                                        </div>
+                                        <span class="ql-tier-count">{{ selectedBranchData.productsCount.premium
+                                            }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ql-overview-right">
+                            <!-- Price Distribution Chart -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-chart-bar"></i> Price Distribution</h3>
+                                <div class="ql-distribution-chart">
+                                    <div *ngFor="let item of selectedBranchData.priceDistribution; let i = index"
+                                        class="ql-distribution-bar-item">
+                                        <div class="ql-distribution-bar-wrapper">
+                                            <div class="ql-distribution-bar-fill"
+                                                [style.height.%]="(item.count / getMaxPrice()) * 100"
+                                                [style.background]="getColor(i)"></div>
+                                        </div>
+                                        <span class="ql-distribution-price">{{ formatCurrency(item.price) }}</span>
+                                    </div>
+                                    <div *ngIf="selectedBranchData.priceDistribution.length === 0"
+                                        class="ql-empty-small">
+                                        <span>No price data available</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Top Selling Products -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-fire"></i> Top Selling Products</h3>
+                                <div class="ql-top-products">
+                                    <div *ngFor="let product of selectedBranchData.topSellingProducts"
+                                        class="ql-top-product">
+                                        <span class="ql-top-product-name">{{ product.productName }}</span>
+                                        <span class="ql-top-product-qty">{{ product.quantity }} units</span>
+                                        <span class="ql-top-product-price">{{ formatCurrency(product.price) }}</span>
+                                    </div>
+                                    <div *ngIf="selectedBranchData.topSellingProducts.length === 0"
+                                        class="ql-empty-small">
+                                        <span>No sales data available</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                BRANCHES TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'branches'" class="ql-tab-panel">
+                    <div class="ql-branches-container">
+                        <div class="ql-branches-header">
+                            <h3><i class="fas fa-store"></i> All Branches Affordability</h3>
+                            <span class="ql-branches-count">{{ affordabilityData.length }} branches</span>
+                        </div>
+
+                        <div class="ql-branches-grid">
+                            <div *ngFor="let data of affordabilityData" class="ql-branch-card"
+                                [class.ql-branch-card--active]="selectedBranchData?.branchId === data.branchId"
+                                (click)="selectBranch(data.branchId)">
+                                <div class="ql-branch-card-header">
+                                    <span class="ql-branch-card-name">{{ data.branchName }}</span>
+                                    <span class="ql-branch-card-location">{{ data.location }}</span>
+                                </div>
+                                <div class="ql-branch-card-body">
+                                    <div class="ql-branch-card-score">
+                                        <span class="ql-branch-card-score-value"
+                                            [style.color]="getAffordabilityColor(data.affordabilityLevel)">
+                                            {{ data.affordabilityScore }}%
+                                        </span>
+                                        <span class="ql-branch-card-score-label">Score</span>
+                                    </div>
+                                    <div class="ql-branch-card-stats">
+                                        <div class="ql-branch-card-stat">
+                                            <span class="ql-branch-card-stat-value">{{
+                                                formatCurrency(data.averageProductPrice) }}</span>
+                                            <span class="ql-branch-card-stat-label">Avg Price</span>
+                                        </div>
+                                        <div class="ql-branch-card-stat">
+                                            <span class="ql-branch-card-stat-value">{{ formatNumber(data.totalProducts)
+                                                }}</span>
+                                            <span class="ql-branch-card-stat-label">Products</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ql-branch-card-footer">
+                                    <span class="ql-branch-card-level"
+                                        [style.color]="getAffordabilityColor(data.affordabilityLevel)">
+                                        <i class="fas" [class]="getAffordabilityIcon(data.affordabilityLevel)"></i>
+                                        {{ getAffordabilityLabel(data.affordabilityLevel) }}
+                                    </span>
+                                    <span class="ql-branch-card-value">{{ formatCurrency(data.totalStockValue) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                COMPARISON TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'comparison'" class="ql-tab-panel">
+                    <div class="ql-comparison-container">
+                        <div class="ql-comparison-header">
+                            <h3><i class="fas fa-chart-bar"></i> Branch Comparison</h3>
+                            <div class="ql-comparison-controls">
+                                <button class="ql-view-btn" [class.active]="selectedView === 'chart'"
+                                    (click)="toggleView()">
+                                    <i class="fas fa-chart-bar"></i> Chart
+                                </button>
+                                <button class="ql-view-btn" [class.active]="selectedView === 'table'"
+                                    (click)="toggleView()">
+                                    <i class="fas fa-table"></i> Table
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Chart View -->
+                        <div *ngIf="selectedView === 'chart'" class="ql-comparison-chart">
+                            <div class="ql-comparison-bars">
+                                <div *ngFor="let data of comparisonData" class="ql-comparison-bar-item">
+                                    <div class="ql-comparison-bar-wrapper">
+                                        <div class="ql-comparison-bar" [style.height.%]="data.affordabilityScore"
+                                            [style.background]="getAffordabilityColor(data.affordabilityLevel)">
+                                            <span class="ql-comparison-bar-value">{{ data.affordabilityScore }}%</span>
+                                        </div>
+                                    </div>
+                                    <span class="ql-comparison-bar-label">{{ data.branchName }}</span>
+                                    <span class="ql-comparison-bar-level"
+                                        [style.color]="getAffordabilityColor(data.affordabilityLevel)">
+                                        {{ getAffordabilityLabel(data.affordabilityLevel) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Table View -->
+                        <div *ngIf="selectedView === 'table'" class="ql-comparison-table-wrapper">
+                            <table class="ql-comparison-table">
+                                <thead>
+                                    <tr>
+                                        <th>Branch</th>
+                                        <th>Score</th>
+                                        <th>Level</th>
+                                        <th>Avg Price</th>
+                                        <th>Total Value</th>
+                                        <th>Products</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let data of comparisonData"
+                                        [class.ql-row--active]="selectedBranchData?.branchId === data.branchId"
+                                        (click)="selectBranch(data.branchId)">
+                                        <td><strong>{{ data.branchName }}</strong></td>
+                                        <td>
+                                            <span class="ql-score-pill"
+                                                [style.background]="getAffordabilityColor(data.affordabilityLevel) + '20'"
+                                                [style.color]="getAffordabilityColor(data.affordabilityLevel)">
+                                                {{ data.affordabilityScore }}%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span [style.color]="getAffordabilityColor(data.affordabilityLevel)">
+                                                <i class="fas"
+                                                    [class]="getAffordabilityIcon(data.affordabilityLevel)"></i>
+                                                {{ getAffordabilityLabel(data.affordabilityLevel) }}
+                                            </span>
+                                        </td>
+                                        <td>{{ formatCurrency(data.avgPrice) }}</td>
+                                        <td>{{ formatCurrency(data.totalValue) }}</td>
+                                        <td>{{ formatNumber(data.totalValue / (data.avgPrice || 1)) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                INSIGHTS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'insights'" class="ql-tab-panel">
+                    <div class="ql-insights-container">
+                        <div class="ql-insights-header">
+                            <h3><i class="fas fa-lightbulb"></i> Actionable Insights</h3>
+                            <span class="ql-insights-count">{{ selectedBranchData.recommendations.length }}
+                                recommendations</span>
+                        </div>
+
+                        <div class="ql-insights-grid">
+                            <!-- Overview Stats -->
+                            <div class="ql-insight-card ql-insight-card--stats">
+                                <h4>Branch Overview</h4>
+                                <div class="ql-insight-stats-grid">
+                                    <div class="ql-insight-stat">
+                                        <span class="ql-insight-stat-value">{{
+                                            formatCurrency(selectedBranchData.averageProductPrice) }}</span>
+                                        <span class="ql-insight-stat-label">Average Price</span>
+                                    </div>
+                                    <div class="ql-insight-stat">
+                                        <span class="ql-insight-stat-value">{{
+                                            formatCurrency(selectedBranchData.medianProductPrice) }}</span>
+                                        <span class="ql-insight-stat-label">Median Price</span>
+                                    </div>
+                                    <div class="ql-insight-stat">
+                                        <span class="ql-insight-stat-value">{{
+                                            formatNumber(selectedBranchData.totalProducts) }}</span>
+                                        <span class="ql-insight-stat-label">Total Products</span>
+                                    </div>
+                                    <div class="ql-insight-stat">
+                                        <span class="ql-insight-stat-value">{{
+                                            formatCurrency(selectedBranchData.totalStockValue) }}</span>
+                                        <span class="ql-insight-stat-label">Total Value</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recommendations -->
+                            <div class="ql-insight-card ql-insight-card--recommendations">
+                                <h4>Recommendations</h4>
+                                <div class="ql-recommendation-list">
+                                    <div *ngFor="let rec of selectedBranchData.recommendations; let i = index"
+                                        class="ql-recommendation-item" [class.ql-recommendation-item--high]="i < 2"
+                                        [class.ql-recommendation-item--medium]="i >= 2 && i < 4">
+                                        <span class="ql-recommendation-number">{{ i + 1 }}</span>
+                                        <span class="ql-recommendation-text">{{ rec }}</span>
+                                    </div>
+                                    <div *ngIf="selectedBranchData.recommendations.length === 0" class="ql-empty-small">
+                                        <span>No recommendations available</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Price Tier Breakdown -->
+                            <div class="ql-insight-card ql-insight-card--tiers">
+                                <h4>Price Tier Breakdown</h4>
+                                <div class="ql-tier-breakdown">
+                                    <div class="ql-tier-breakdown-item">
+                                        <div class="ql-tier-breakdown-header">
+                                            <span class="ql-tier-breakdown-label">Affordable</span>
+                                            <span class="ql-tier-breakdown-value">{{
+                                                selectedBranchData.productsCount.affordable }}</span>
+                                        </div>
+                                        <div class="ql-tier-breakdown-bar">
+                                            <div class="ql-tier-breakdown-fill"
+                                                [style.width.%]="(selectedBranchData.productsCount.affordable / selectedBranchData.totalProducts) * 100"
+                                                style="background: #2EB270;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="ql-tier-breakdown-item">
+                                        <div class="ql-tier-breakdown-header">
+                                            <span class="ql-tier-breakdown-label">Moderate</span>
+                                            <span class="ql-tier-breakdown-value">{{
+                                                selectedBranchData.productsCount.moderate }}</span>
+                                        </div>
+                                        <div class="ql-tier-breakdown-bar">
+                                            <div class="ql-tier-breakdown-fill"
+                                                [style.width.%]="(selectedBranchData.productsCount.moderate / selectedBranchData.totalProducts) * 100"
+                                                style="background: #F5A623;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="ql-tier-breakdown-item">
+                                        <div class="ql-tier-breakdown-header">
+                                            <span class="ql-tier-breakdown-label">Premium</span>
+                                            <span class="ql-tier-breakdown-value">{{
+                                                selectedBranchData.productsCount.premium }}</span>
+                                        </div>
+                                        <div class="ql-tier-breakdown-bar">
+                                            <div class="ql-tier-breakdown-fill"
+                                                [style.width.%]="(selectedBranchData.productsCount.premium / selectedBranchData.totalProducts) * 100"
+                                                style="background: #DC2626;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Actions -->
+                            <div class="ql-insight-card ql-insight-card--actions">
+                                <h4>Quick Actions</h4>
+                                <div class="ql-insight-actions">
+                                    <button class="ql-action-btn" (click)="viewBranch(selectedBranchData.branchId)">
+                                        <i class="fas fa-store"></i> View Branch
+                                    </button>
+                                    <button class="ql-action-btn" (click)="exportReport()">
+                                        <i class="fas fa-file-export"></i> Export Report
+                                    </button>
+                                    <button class="ql-action-btn" (click)="refreshData()">
+                                        <i class="fas fa-sync-alt"></i> Refresh Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        EXPORT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showExportModal"
+            (click)="$event.target === $event.currentTarget && closeExportModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-file-export"></i> Export Report</h3>
+                    <button class="ql-modal-close" (click)="closeExportModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Export affordability report for <strong>{{ selectedBranchData?.branchName }}</strong></p>
+                    <div class="ql-export-options">
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="pdf" checked>
+                            <span>PDF Report</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="excel">
+                            <span>Excel Spreadsheet</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="csv">
+                            <span>CSV Data</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeExportModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmExport()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

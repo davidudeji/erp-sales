@@ -1,0 +1,281 @@
+<!-- risk.component.html -->
+<div class="risk-container">
+
+    <!-- Risk Score Card -->
+    <div class="risk-overview" *ngIf="vendor">
+        <div class="risk-score-card" 
+             [class.low]="vendor.riskLevel === RiskLevel.LOW"
+             [class.medium]="vendor.riskLevel === RiskLevel.MEDIUM"
+             [class.high]="vendor.riskLevel === RiskLevel.HIGH">
+            
+            <div class="risk-score-circle">
+                <span class="risk-score">{{ vendor.riskLevel }}</span>
+                <span class="risk-label">Risk Level</span>
+                <div class="risk-indicator" 
+                     [style.background]="getRiskLevelColor(vendor.riskLevel)"></div>
+            </div>
+
+            <div class="risk-details">
+                <div class="risk-detail-item">
+                    <span class="label">Compliance Status</span>
+                    <span class="value" [class.compliant]="vendor.complianceStatus?.isCompliant">
+                        <i class="fas" [class.fa-check-circle]="vendor.complianceStatus?.isCompliant" 
+                                   [class.fa-exclamation-triangle]="!vendor.complianceStatus?.isCompliant"></i>
+                        {{ vendor.complianceStatus?.isCompliant ? '✓ Compliant' : '⚠️ Review Needed' }}
+                    </span>
+                </div>
+                <div class="risk-detail-item">
+                    <span class="label">Documents Verified</span>
+                    <span class="value">
+                        {{ docsVerified }}/{{ totalRequiredDocs }}
+                        <span class="progress-bar-mini">
+                            <span class="progress-fill" 
+                                  [style.width.%]="documentsVerifiedPercentage"></span>
+                        </span>
+                    </span>
+                </div>
+                <div class="risk-detail-item">
+                    <span class="label">Sanctions Clear</span>
+                    <span class="value" [class.compliant]="vendor.complianceStatus?.sanctionsClear">
+                        <i class="fas" [class.fa-check-circle]="vendor.complianceStatus?.sanctionsClear" 
+                                   [class.fa-clock]="!vendor.complianceStatus?.sanctionsClear"></i>
+                        {{ vendor.complianceStatus?.sanctionsClear ? '✓ Clear' : '⏳ Pending' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Alerts Summary -->
+    <div class="alerts-summary" *ngIf="openAlertsBySeverity.length > 0">
+        <div class="alerts-summary-header">
+            <h3><i class="fas fa-bell"></i> Risk Alerts</h3>
+            <span class="alerts-count">{{ openRiskAlertsCount }} open</span>
+        </div>
+        <div class="alerts-severity-chips">
+            <span *ngFor="let alert of openAlertsBySeverity" 
+                  class="severity-chip" 
+                  [style.background]="alert.color + '20'"
+                  [style.color]="alert.color">
+                <span class="severity-dot" [style.background]="alert.color"></span>
+                {{ alert.severity }}: {{ alert.count }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Risk Alerts List -->
+    <div class="alerts-section">
+        <div class="alerts-list">
+            <!-- Critical Alerts -->
+            <div *ngIf="criticalRiskAlerts.length > 0" class="alert-group">
+                <div class="alert-group-header critical">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Critical Alerts ({{ criticalRiskAlerts.length }})
+                </div>
+                <div *ngFor="let alert of criticalRiskAlerts" 
+                     class="alert-item critical"
+                     [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <span class="alert-title">{{ alert.title }}</span>
+                        <span class="alert-description">{{ alert.description }}</span>
+                        <div class="alert-meta">
+                            <span class="alert-date">
+                                <i class="fas fa-clock"></i> {{ formatDateTime(alert.detectedAt) }}
+                            </span>
+                            <span class="alert-status" [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                                {{ getStatusLabel(alert.status) }}
+                            </span>
+                            <span class="alert-assignee" *ngIf="alert.assignedTo">
+                                <i class="fas fa-user"></i> {{ alert.assignedTo }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning Alerts -->
+            <div *ngIf="warningRiskAlerts.length > 0" class="alert-group">
+                <div class="alert-group-header warning">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Warning Alerts ({{ warningRiskAlerts.length }})
+                </div>
+                <div *ngFor="let alert of warningRiskAlerts" 
+                     class="alert-item warning"
+                     [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <span class="alert-title">{{ alert.title }}</span>
+                        <span class="alert-description">{{ alert.description }}</span>
+                        <div class="alert-meta">
+                            <span class="alert-date">
+                                <i class="fas fa-clock"></i> {{ formatDateTime(alert.detectedAt) }}
+                            </span>
+                            <span class="alert-status" [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                                {{ getStatusLabel(alert.status) }}
+                            </span>
+                            <span class="alert-assignee" *ngIf="alert.assignedTo">
+                                <i class="fas fa-user"></i> {{ alert.assignedTo }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- High Alerts -->
+            <div *ngIf="highRiskAlerts.length > 0" class="alert-group">
+                <div class="alert-group-header high">
+                    <i class="fas fa-exclamation-circle"></i>
+                    High Alerts ({{ highRiskAlerts.length }})
+                </div>
+                <div *ngFor="let alert of highRiskAlerts" 
+                     class="alert-item high"
+                     [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <span class="alert-title">{{ alert.title }}</span>
+                        <span class="alert-description">{{ alert.description }}</span>
+                        <div class="alert-meta">
+                            <span class="alert-date">
+                                <i class="fas fa-clock"></i> {{ formatDateTime(alert.detectedAt) }}
+                            </span>
+                            <span class="alert-status" [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                                {{ getStatusLabel(alert.status) }}
+                            </span>
+                            <span class="alert-assignee" *ngIf="alert.assignedTo">
+                                <i class="fas fa-user"></i> {{ alert.assignedTo }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medium Alerts -->
+            <div *ngIf="mediumRiskAlerts.length > 0" class="alert-group">
+                <div class="alert-group-header medium">
+                    <i class="fas fa-exclamation"></i>
+                    Medium Alerts ({{ mediumRiskAlerts.length }})
+                </div>
+                <div *ngFor="let alert of mediumRiskAlerts" 
+                     class="alert-item medium"
+                     [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation"></i>
+                    </div>
+                    <div class="alert-content">
+                        <span class="alert-title">{{ alert.title }}</span>
+                        <span class="alert-description">{{ alert.description }}</span>
+                        <div class="alert-meta">
+                            <span class="alert-date">
+                                <i class="fas fa-clock"></i> {{ formatDateTime(alert.detectedAt) }}
+                            </span>
+                            <span class="alert-status" [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                                {{ getStatusLabel(alert.status) }}
+                            </span>
+                            <span class="alert-assignee" *ngIf="alert.assignedTo">
+                                <i class="fas fa-user"></i> {{ alert.assignedTo }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Alerts -->
+            <div *ngIf="lowRiskAlerts.length > 0" class="alert-group">
+                <div class="alert-group-header low">
+                    <i class="fas fa-info-circle"></i>
+                    Low Alerts ({{ lowRiskAlerts.length }})
+                </div>
+                <div *ngFor="let alert of lowRiskAlerts" 
+                     class="alert-item low"
+                     [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                    <div class="alert-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <span class="alert-title">{{ alert.title }}</span>
+                        <span class="alert-description">{{ alert.description }}</span>
+                        <div class="alert-meta">
+                            <span class="alert-date">
+                                <i class="fas fa-clock"></i> {{ formatDateTime(alert.detectedAt) }}
+                            </span>
+                            <span class="alert-status" [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                                {{ getStatusLabel(alert.status) }}
+                            </span>
+                            <span class="alert-assignee" *ngIf="alert.assignedTo">
+                                <i class="fas fa-user"></i> {{ alert.assignedTo }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Alerts -->
+            <div *ngIf="infoRiskAlerts.length > 0" class="alert-group">
+                <div class="alert-group-header info">
+                    <i class="fas fa-info"></i>
+                    Info Alerts ({{ infoRiskAlerts.length }})
+                </div>
+                <div *ngFor="let alert of infoRiskAlerts" 
+                     class="alert-item info"
+                     [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                    <div class="alert-icon">
+                        <i class="fas fa-info"></i>
+                    </div>
+                    <div class="alert-content">
+                        <span class="alert-title">{{ alert.title }}</span>
+                        <span class="alert-description">{{ alert.description }}</span>
+                        <div class="alert-meta">
+                            <span class="alert-date">
+                                <i class="fas fa-clock"></i> {{ formatDateTime(alert.detectedAt) }}
+                            </span>
+                            <span class="alert-status" [class.resolved]="alert.status === 'RESOLVED' || alert.status === 'DISMISSED'">
+                                {{ getStatusLabel(alert.status) }}
+                            </span>
+                            <span class="alert-assignee" *ngIf="alert.assignedTo">
+                                <i class="fas fa-user"></i> {{ alert.assignedTo }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No Alerts -->
+            <div *ngIf="riskAlerts.length === 0" class="no-alerts">
+                <i class="fas fa-check-circle"></i>
+                <p>No risk alerts found</p>
+                <span class="no-alerts-sub">All vendor compliance checks are up to date</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compliance Quick Stats -->
+    <div class="compliance-stats" *ngIf="hasComplianceStatus">
+        <div class="compliance-stat-item">
+            <span class="stat-value">{{ docsVerified }}</span>
+            <span class="stat-label">Documents Verified</span>
+        </div>
+        <div class="compliance-stat-divider"></div>
+        <div class="compliance-stat-item">
+            <span class="stat-value">{{ expiredDocs }}</span>
+            <span class="stat-label">Expired Documents</span>
+        </div>
+        <div class="compliance-stat-divider"></div>
+        <div class="compliance-stat-item">
+            <span class="stat-value">{{ expiringDocs }}</span>
+            <span class="stat-label">Expiring Soon</span>
+        </div>
+        <div class="compliance-stat-divider"></div>
+        <div class="compliance-stat-item">
+            <span class="stat-value">{{ formatDateTime(lastComplianceCheck) }}</span>
+            <span class="stat-label">Last Check</span>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,96 @@
+<!-- vendor-performance.component.html -->
+<div class="performance-container" *ngIf="performance">
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-card" *ngFor="let kpi of [
+            { label: 'Overall Score', value: performance.overallScore.toFixed(0) + '%', color: getPerformanceColor(performance.overallScore) },
+            { label: 'On-Time Delivery', value: performance.onTimeDeliveryRate.toFixed(0) + '%', color: performance.onTimeDeliveryRate >= 80 ? '#2EB270' : '#F5A623' },
+            { label: 'Quality Score', value: performance.qualityScore.toFixed(0) + '%', color: performance.qualityScore >= 80 ? '#2EB270' : '#F5A623' },
+            { label: 'Cost Competitiveness', value: performance.costCompetitiveness.toFixed(0) + '%', color: performance.costCompetitiveness >= 80 ? '#2EB270' : '#F5A623' },
+            { label: 'Compliance Score', value: performance.complianceScore.toFixed(0) + '%', color: performance.complianceScore >= 80 ? '#2EB270' : '#F5A623' },
+            { label: 'Rating Score', value: performance.ratingScore.toFixed(0) + '%', color: performance.ratingScore >= 80 ? '#2EB270' : '#F5A623' },
+            { label: 'Win Rate', value: performance.winRate.toFixed(0) + '%', color: performance.winRate >= 60 ? '#2EB270' : '#F5A623' },
+            { label: 'Total Projects', value: performance.totalProjects, color: '#184440' }
+        ]">
+            <div class="kpi-value" [style.color]="kpi.color">{{ kpi.value }}</div>
+            <div class="kpi-label">{{ kpi.label }}</div>
+            <div class="kpi-bar" *ngIf="kpi.label !== 'Total Projects'">
+                <div class="kpi-fill" [style.width.%]="parseKpiValue(kpi.value)"
+                    [style.background]="kpi.color"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="chart-card" *ngIf="performance.trendData && performance.trendData.length > 0">
+        <div class="chart-header">
+            <h3><i class="fas fa-chart-area"></i> Performance Trend</h3>
+            <span class="chart-subtitle">Last 6 months</span>
+        </div>
+        <div class="line-chart">
+            <svg viewBox="0 0 500 280" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#184440;stop-opacity:0.3" />
+                        <stop offset="100%" style="stop-color:#184440;stop-opacity:0.0" />
+                    </linearGradient>
+                </defs>
+
+                <!-- Grid lines -->
+                <line *ngFor="let i of [0, 50, 100, 150, 200, 250]" x1="20" [attr.y1]="20 + i"
+                    x2="480" [attr.y2]="20 + i" class="chart-grid" />
+
+                <!-- Area under line -->
+                <polygon
+                    [attr.points]="getPerformanceChartAreaPath(getPerformanceScores(), getMaxPerformance())"
+                    class="chart-area" />
+
+                <!-- Main line -->
+                <polyline
+                    [attr.points]="getPerformanceChartPath(getPerformanceScores(), getMaxPerformance())"
+                    class="chart-line" />
+
+                <!-- Data points -->
+                <circle *ngFor="let d of performance.trendData; let idx = index"
+                    [attr.cx]="getPointX(idx, performance.trendData.length)"
+                    [attr.cy]="getPointY(d.score, getMaxPerformance())" r="5" class="chart-dot">
+                    <title>{{ d.period }}: {{ d.score.toFixed(0) }}%</title>
+                </circle>
+
+                <!-- X-axis labels -->
+                <text *ngFor="let d of performance.trendData; let idx = index"
+                    [attr.x]="getPointX(idx, performance.trendData.length)" y="270"
+                    class="chart-label">
+                    {{ d.period }}
+                </text>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="summary-stats" *ngIf="performance">
+        <div class="summary-item">
+            <span class="summary-label">Last Updated</span>
+            <span class="summary-value">{{ formatDate(performance.lastUpdated) }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Total Revenue</span>
+            <span class="summary-value">{{ formatCurrency(performance.totalRevenue) }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Average Order Value</span>
+            <span class="summary-value">{{ formatCurrency(performance.averageOrderValue) }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Total Projects</span>
+            <span class="summary-value">{{ performance.totalProjects }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Empty State -->
+<div *ngIf="!performance" class="empty-state-small">
+    <i class="fas fa-chart-line"></i>
+    <p>No performance data available</p>
+</div>

@@ -1,0 +1,279 @@
+<div class="ai-page">
+
+  <!-- Header -->
+  <div class="ai-header">
+    <div class="ai-header-left">
+      <h2 class="ai-title">Approval Inbox</h2>
+      <p class="ai-subtitle">Procurement requests awaiting your review via the central workflow engine</p>
+    </div>
+    <div class="ai-header-stats">
+      <div class="ai-stat">
+        <span class="ai-stat-num">{{ pendingCount }}</span>
+        <span class="ai-stat-label">Awaiting Review</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="ai-filters">
+    <input class="ai-search" type="text" placeholder="Search by title or ID…"
+      [(ngModel)]="searchTerm" (input)="applyFilters()" />
+    <div class="ai-type-tabs">
+      <button class="ai-type-btn" [class.active]="filterType === 'ALL'"     (click)="filterType='ALL';     applyFilters()">All</button>
+      <button class="ai-type-btn" [class.active]="filterType === 'PRODUCT'" (click)="filterType='PRODUCT'; applyFilters()">Product</button>
+      <button class="ai-type-btn" [class.active]="filterType === 'SERVICE'" (click)="filterType='SERVICE'; applyFilters()">Service</button>
+    </div>
+  </div>
+
+  <!-- Split panel -->
+  <div class="ai-body">
+
+    <!-- LEFT: list -->
+    <div class="ai-list">
+
+      <div class="ai-loading" *ngIf="isLoading">
+        <span class="ai-spinner"></span> Loading…
+      </div>
+
+      <div class="ai-empty" *ngIf="!isLoading && filtered.length === 0">
+        <i class="fas fa-inbox"></i>
+        <p>No requests awaiting approval</p>
+      </div>
+
+      <div *ngFor="let req of filtered"
+           class="ai-card"
+           [class.active]="selected?.id === req.id"
+           (click)="select(req)">
+        <div class="ai-card-top">
+          <span class="ai-card-id">#{{ req.id }}</span>
+          <span class="ai-urgency urgency-normal">Pending</span>
+        </div>
+        <div class="ai-card-title">{{ req.title }}</div>
+        <div class="ai-card-meta">
+          <span><i class="fas fa-tag"></i> {{ req.procurementType }}</span>
+          <span><i class="fas fa-calendar-alt"></i> {{ formatDate(req.createdAt) }}</span>
+        </div>
+        <div class="ai-card-footer">
+          <span class="ai-budget">{{ formatBudget(req) }}</span>
+          <span class="ai-date">{{ formatDate(req.deliveryDeadline) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: detail panel -->
+    <div class="ai-detail" *ngIf="selected; else noSelection">
+
+      <div class="ai-detail-header">
+        <div>
+          <span class="ai-detail-id">#{{ selected.id }}</span>
+          <h3 class="ai-detail-title">{{ selected.title }}</h3>
+        </div>
+        <span class="ai-status-badge pending">Pending Approval</span>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="ai-summary-row">
+        <div class="ai-summary-card">
+          <span class="ai-summary-label">Budget</span>
+          <span class="ai-summary-val">{{ formatBudget(selected) }}</span>
+        </div>
+        <div class="ai-summary-card">
+          <span class="ai-summary-label">Type</span>
+          <span class="ai-summary-val">{{ selected.procurementType }}</span>
+        </div>
+        <div class="ai-summary-card">
+          <span class="ai-summary-label">Created</span>
+          <span class="ai-summary-val">{{ formatDate(selected.createdAt) }}</span>
+        </div>
+        <div class="ai-summary-card">
+          <span class="ai-summary-label">Deadline</span>
+          <span class="ai-summary-val">{{ formatDate(selected.deliveryDeadline) }}</span>
+        </div>
+      </div>
+
+      <!-- ── Approval Workflow Stages ──────────────────── -->
+      <div class="ai-section">
+        <div class="ai-section-title">
+          Approval Workflow
+          <span class="ai-stage-badge" *ngIf="wfStages.length > 0">
+            {{ wfStages.length }} Stage{{ wfStages.length !== 1 ? 's' : '' }}
+          </span>
+        </div>
+
+        <!-- Loading instance -->
+        <div class="ai-no-stages" *ngIf="isLoadingInstance">
+          <span class="ai-spinner"></span> Loading workflow…
+        </div>
+
+        <!-- No instance ID yet -->
+        <div class="ai-no-stages" *ngIf="!isLoadingInstance && !workflowInstance">
+          <i class="fas fa-info-circle"></i>
+          <span>Workflow instance not found. Ensure the approval was triggered correctly.</span>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="ai-progress-bar" *ngIf="!isLoadingInstance && wfStages.length > 1">
+          <div class="ai-progress-fill" [style.width.%]="progressPct()"></div>
+        </div>
+
+        <!-- Stages list -->
+        <div class="ai-stages" *ngIf="!isLoadingInstance && wfStages.length > 0">
+          <div *ngFor="let stage of wfStages"
+               class="ai-stage-item"
+               [ngClass]="getStageStatus(stage)">
+            <div class="ai-stage-icon">
+              <i *ngIf="getStageActionStatus(stage) === 'APPROVED'"  class="fas fa-check-circle stage-icon-approved"></i>
+              <i *ngIf="getStageActionStatus(stage) === 'REJECTED'"  class="fas fa-times-circle stage-icon-rejected"></i>
+              <i *ngIf="getStageActionStatus(stage) === 'AWAITING'"  class="fas fa-circle-notch fa-spin stage-icon-active"></i>
+              <i *ngIf="getStageActionStatus(stage) === 'PENDING'"   class="far fa-circle stage-icon-waiting"></i>
+            </div>
+            <div class="ai-stage-body">
+              <div class="ai-stage-name">
+                <strong>Stage {{ stage.orderIndex }}:</strong>
+                {{ stage.name }}
+                <span class="ai-stage-role" *ngIf="stage.approvalType">{{ stage.approvalType }}</span>
+              </div>
+              <div class="ai-stage-meta" *ngIf="getStageActionAt(stage)">
+                <span>{{ getStageActionAt(stage) }}</span>
+                <span *ngIf="getStageComment(stage)" class="ai-stage-comment">"{{ getStageComment(stage) }}"</span>
+              </div>
+              <div class="ai-stage-status-chip"
+                   [ngClass]="'chip-' + getStageActionStatus(stage).toLowerCase()">
+                {{ getStageActionStatus(stage) === 'AWAITING' ? 'Awaiting Action' : getStageActionStatus(stage) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current stage highlight -->
+      <div class="ai-current-approver"
+           *ngIf="workflowInstance?.currentStage as stage">
+        <div class="ai-approver-label">Current Stage</div>
+        <div class="ai-approver-name">
+          <i class="fas fa-user-shield"></i>
+          {{ stage.name }}
+          <span class="ai-approver-role" *ngIf="stage.approvalType">
+            · {{ stage.approvalType }} approval
+          </span>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="ai-section" *ngIf="selected.description">
+        <div class="ai-section-title">Scope Description</div>
+        <p class="ai-description">{{ selected.description }}</p>
+      </div>
+
+      <!-- Line items -->
+      <div class="ai-section" *ngIf="selected.items && selected.items.length > 0">
+        <div class="ai-section-title">Line Items ({{ selected.items.length }})</div>
+        <table class="ai-items-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="text-right">Qty</th>
+              <th class="text-right">Unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of selected.items">
+              <td>{{ item.name || '—' }}</td>
+              <td class="text-right">{{ item.quantity }}</td>
+              <td class="text-right">{{ item.unit || 'Units' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Request details -->
+      <div class="ai-section">
+        <div class="ai-section-title">Request Details</div>
+        <div class="ai-info-grid">
+          <div class="ai-info-row">
+            <span class="ai-info-label">Delivery Location</span>
+            <span class="ai-info-val">{{ selected.deliveryLocation || '—' }}</span>
+          </div>
+          <div class="ai-info-row">
+            <span class="ai-info-label">Currency</span>
+            <span class="ai-info-val">{{ selected.currency || 'NGN' }}</span>
+          </div>
+          <div class="ai-info-row">
+            <span class="ai-info-label">Workflow Instance</span>
+            <span class="ai-info-val">{{ workflowInstance ? '#' + workflowInstance.id : '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="ai-actions">
+        <button class="ai-btn-reject" (click)="openReject()"
+          [disabled]="!workflowInstance || isActioning">
+          <i class="fas fa-times-circle"></i> Reject
+        </button>
+        <button class="ai-btn-approve" (click)="openApprove()"
+          [disabled]="!workflowInstance || isActioning">
+          <i class="fas fa-check-circle"></i> Approve Stage
+        </button>
+      </div>
+    </div>
+
+    <ng-template #noSelection>
+      <div class="ai-no-selection">
+        <i class="fas fa-hand-pointer"></i>
+        <p>Select a request from the list to review it</p>
+      </div>
+    </ng-template>
+  </div>
+</div>
+
+<!-- Approve Modal -->
+<div class="ai-modal-overlay" *ngIf="showApproveModal" (click)="showApproveModal = false">
+  <div class="ai-modal" (click)="$event.stopPropagation()">
+    <div class="ai-modal-header approve">
+      <i class="fas fa-check-circle"></i>
+      <h3>Approve Stage</h3>
+    </div>
+    <div class="ai-modal-body">
+      <p>Approving current stage for <strong>{{ selected?.title }}</strong>.</p>
+      <p class="ai-modal-note" *ngIf="workflowInstance?.currentStage">
+        Current stage: <strong>{{ workflowInstance?.currentStage?.name }}</strong>
+        ({{ workflowInstance?.currentStage?.approvalType }} approval)
+      </p>
+      <label class="ai-modal-label">Comments <span class="optional">(optional)</span></label>
+      <textarea class="ai-modal-textarea" [(ngModel)]="approveComment" rows="3"
+        placeholder="Add approval notes…"></textarea>
+    </div>
+    <div class="ai-modal-footer">
+      <button class="ai-modal-cancel" (click)="showApproveModal = false" [disabled]="isActioning">Cancel</button>
+      <button class="ai-modal-confirm approve" (click)="confirmApprove()" [disabled]="isActioning">
+        <i class="fas" [class.fa-check]="!isActioning" [class.fa-spinner]="isActioning" [class.fa-spin]="isActioning"></i>
+        {{ isActioning ? 'Approving…' : 'Confirm Approve' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="ai-modal-overlay" *ngIf="showRejectModal" (click)="showRejectModal = false">
+  <div class="ai-modal" (click)="$event.stopPropagation()">
+    <div class="ai-modal-header reject">
+      <i class="fas fa-times-circle"></i>
+      <h3>Reject Request</h3>
+    </div>
+    <div class="ai-modal-body">
+      <p>You are about to reject <strong>{{ selected?.title }}</strong>.</p>
+      <label class="ai-modal-label">Reason for Rejection <span class="required">*</span></label>
+      <textarea class="ai-modal-textarea" [(ngModel)]="rejectReason" rows="3"
+        placeholder="Provide a clear reason for rejection…"></textarea>
+    </div>
+    <div class="ai-modal-footer">
+      <button class="ai-modal-cancel" (click)="showRejectModal = false" [disabled]="isActioning">Cancel</button>
+      <button class="ai-modal-confirm reject" (click)="confirmReject()"
+        [disabled]="isActioning || !rejectReason.trim()">
+        <i class="fas" [class.fa-times]="!isActioning" [class.fa-spinner]="isActioning" [class.fa-spin]="isActioning"></i>
+        {{ isActioning ? 'Rejecting…' : 'Confirm Reject' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,10 @@
+<div class="modal-overlay" (click)="closeModal()"></div>
+<div class="modal text-xl">
+  <div *ngIf="header.length > 0" class="modal-header py-4">
+    <h2 class="capitalize text-2xl">{{ header }}</h2>
+    <button class="close-button" (click)="closeModal()">&times;</button>
+  </div>
+  <div class="modal-body">
+    <ng-content></ng-content>
+  </div>
+</div>

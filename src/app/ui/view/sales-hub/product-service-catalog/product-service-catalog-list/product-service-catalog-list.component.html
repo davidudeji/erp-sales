@@ -1,0 +1,689 @@
+<!-- product-service-catalog-list.component.html -->
+<div class="il-layout">
+
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="il-sidebar">
+
+    <div class="il-sidebar-title">
+      <span>Filters</span>
+      <button class="il-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <!-- Quick search -->
+    <div class="il-filter-section">
+      <div class="il-search-wrap">
+        <i class="fas fa-search il-search-icon"></i>
+        <input type="text" class="il-search-input" placeholder="Search products…"
+               [(ngModel)]="filters.searchTerm" (input)="applyFilters()">
+      </div>
+    </div>
+
+    <!-- Status filters -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Status</div>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'ALL'"
+              (click)="filters.status = 'ALL'; applyFilters()">
+        <i class="fas fa-layer-group"></i>
+        <span>All Products</span>
+        <span class="il-count-pill">{{ stats.total }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'ACTIVE'"
+              (click)="filters.status = 'ACTIVE'; applyFilters()">
+        <i class="fas fa-check-circle"></i>
+        <span>Active</span>
+        <span class="il-count-pill il-count-pill--green">{{ stats.active }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'OUT_OF_STOCK'"
+              (click)="filters.status = 'OUT_OF_STOCK'; applyFilters()">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Out of Stock</span>
+        <span class="il-count-pill il-count-pill--orange">{{ stats.outOfStock }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'DISCONTINUED'"
+              (click)="filters.status = 'DISCONTINUED'; applyFilters()">
+        <i class="fas fa-ban"></i>
+        <span>Discontinued</span>
+        <span class="il-count-pill il-count-pill--red">{{ stats.discontinued }}</span>
+      </button>
+    </div>
+
+    <!-- Category filter -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Category</div>
+      <div class="il-field">
+        <select class="il-date-input" [(ngModel)]="filters.category" (change)="applyFilters()" style="appearance:auto;padding:6px 8px;">
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat === 'ALL' ? 'All Categories' : cat }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Price range -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Price Range</div>
+      <div class="il-field">
+        <label class="il-flabel">Min Price</label>
+        <input type="number" class="il-date-input" [(ngModel)]="filters.minPrice" (input)="applyFilters()" placeholder="0" style="padding:6px 8px;">
+      </div>
+      <div class="il-field">
+        <label class="il-flabel">Max Price</label>
+        <input type="number" class="il-date-input" [(ngModel)]="filters.maxPrice" (input)="applyFilters()" placeholder="100000" style="padding:6px 8px;">
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN AREA ══════════════════════════════════════════════════════════ -->
+  <main class="il-main">
+
+    <!-- Top bar -->
+    <div class="il-top-bar">
+      <div class="il-top-bar-left">
+        <h1 class="il-title">Product Catalog</h1>
+        <span class="il-total-badge">{{ totalElements }}</span>
+      </div>
+      <div class="il-top-bar-right">
+        <div class="il-view-switcher">
+          <button type="button" class="il-view-btn" [class.il-view-btn--active]="viewMode === 'list'" (click)="setViewMode('list')" title="List View">
+            <i class="fas fa-th-list"></i>
+          </button>
+          <button type="button" class="il-view-btn" [class.il-view-btn--active]="viewMode === 'icon'" (click)="setViewMode('icon')" title="Grid View">
+            <i class="fas fa-th"></i>
+          </button>
+        </div>
+        <div class="il-page-size-wrap">
+          <span class="il-page-size-label">Per page</span>
+          <select class="il-page-size-select" [(ngModel)]="filters.size" (change)="onPageSizeChange(filters.size)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Insight Banner -->
+    <div class="il-ai-banner" *ngIf="!aiDismissed && stats.outOfStock > 0">
+      <div class="il-ai-icon"><i class="fas fa-robot"></i></div>
+      <div class="il-ai-body">
+        <div class="il-ai-title">AI Insight</div>
+        <div class="il-ai-text">
+          <strong>{{ stats.outOfStock }}</strong> product{{ stats.outOfStock > 1 ? 's are' : ' is' }} out of stock. Consider restocking these items to meet demand.
+        </div>
+      </div>
+      <button type="button" class="il-ai-dismiss" (click)="aiDismissed = true"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Bulk action bar -->
+    <div class="il-bulk-bar" *ngIf="selectedProductIds.length > 0">
+      <i class="fas fa-check-square"></i>
+      <span><strong>{{ selectedProductIds.length }}</strong> product{{ selectedProductIds.length > 1 ? 's' : '' }} selected</span>
+      <button type="button" class="il-btn il-btn--ghost-sm" (click)="selectedProductIds = []">
+        Clear
+      </button>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div class="il-table-wrap" *ngIf="isLoading">
+      <table class="il-table">
+        <thead>
+          <tr>
+            <th class="il-th-chk"><input type="checkbox" disabled></th>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th class="il-th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="il-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="8"><div class="il-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ══ LIST VIEW ════════════════════════════════════════════════════════ -->
+    <div class="il-table-wrap" *ngIf="!isLoading && viewMode === 'list'">
+      <table class="il-table">
+        <thead>
+          <tr>
+            <th class="il-th-chk">
+              <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)">
+            </th>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th class="il-th-actions">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Empty state -->
+        <tbody *ngIf="products.length === 0">
+          <tr>
+            <td colspan="8">
+              <div class="il-empty">
+                <i class="fas fa-boxes il-empty-icon"></i>
+                <p class="il-empty-title">No products found</p>
+                <p class="il-empty-sub">Adjust your filters or add products in Inventory Management</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="products.length > 0">
+          <tr *ngFor="let product of products"
+              [class.il-row--out-of-stock]="product.stockQuantity === 0"
+              [class.il-row--low-stock]="product.stockQuantity > 0 && product.stockQuantity <= 5">
+
+            <td class="il-td-chk">
+              <input type="checkbox" [checked]="isSelected(product.id)" (change)="toggleSelection(product.id, $event)">
+            </td>
+
+            <td>
+              <div class="il-product-info">
+                <div class="il-product-avatar" [class.il-product-avatar--photo]="product.images && product.images.length > 0">
+                  <img *ngIf="product.images && product.images.length > 0; else listNoImage"
+                       [src]="product.images[0]"
+                       [alt]="product.name"
+                       class="il-product-image">
+                  <ng-template #listNoImage>
+                    <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+                  </ng-template>
+                </div>
+                <div>
+                  <div class="il-product-name">{{ product.name }}</div>
+                  <div class="il-product-desc">{{ product.description | slice:0:50 }}{{ product.description.length > 50 ? '...' : '' }}</div>
+                </div>
+              </div>
+            </td>
+
+            <td class="il-td-sku">{{ product.sku }}</td>
+
+            <td>
+              <span class="il-category-badge">{{ getCategoryName(product) }}</span>
+            </td>
+
+            <td class="il-td-amount">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</td>
+
+            <td>
+              <div class="il-stock-info">
+                <span class="il-stock-badge"
+                      [class.il-stock-badge--good]="product.stockQuantity > 5"
+                      [class.il-stock-badge--low]="product.stockQuantity > 0 && product.stockQuantity <= 5"
+                      [class.il-stock-badge--out]="product.stockQuantity === 0">
+                  {{ product.stockQuantity }}
+                </span>
+                <span class="il-stock-label">{{ getStockStatusLabel(product.stockQuantity) }}</span>
+              </div>
+            </td>
+
+            <td>
+              <span class="il-status-badge"
+                    [class.il-status-badge--active]="product.status === 'ACTIVE'"
+                    [class.il-status-badge--out-of-stock]="product.status === 'OUT_OF_STOCK'"
+                    [class.il-status-badge--discontinued]="product.status === 'DISCONTINUED'">
+                {{ getStatusLabel(product.status) }}
+              </span>
+            </td>
+
+            <td class="il-td-actions">
+              <div class="il-row-actions">
+                <button type="button" class="il-action-btn il-action-btn--quote" (click)="generateQuoteFromProduct(product)" title="Create Quote">
+                  <i class="fas fa-file-invoice"></i> Quote
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--invoice" (click)="createInvoiceFromProduct(product)" title="Create Invoice">
+                  <i class="fas fa-file-invoice-dollar"></i> Invoice
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ══ GRID VIEW ════════════════════════════════════════════════════════ -->
+    <div *ngIf="!isLoading && viewMode === 'icon'">
+      <div class="il-grid-container">
+        <div *ngFor="let product of products" class="il-product-grid-card"
+             [class.il-product-grid-card--out-of-stock]="product.stockQuantity === 0"
+             [class.il-product-grid-card--low-stock]="product.stockQuantity > 0 && product.stockQuantity <= 5">
+
+          <div class="il-grid-card-top">
+            <input type="checkbox" [checked]="isSelected(product.id)" (change)="toggleSelection(product.id, $event)" class="il-grid-checkbox">
+            <span class="il-grid-number">#{{ getProductIndex(product) }}</span>
+          </div>
+
+          <div class="il-grid-card-image" [class.il-grid-card-image--photo]="product.images && product.images.length > 0">
+            <img *ngIf="product.images && product.images.length > 0; else gridNoImage"
+                 [src]="product.images[0]"
+                 [alt]="product.name"
+                 class="il-grid-product-image">
+            <ng-template #gridNoImage>
+              <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+            </ng-template>
+          </div>
+
+          <div class="il-grid-card-body">
+            <h4 class="il-grid-card-title" [title]="product.name">{{ product.name }}</h4>
+            <div class="il-grid-card-sku">{{ product.sku }}</div>
+            <p class="il-grid-card-desc">{{ product.description | slice:0:60 }}{{ product.description.length > 60 ? '...' : '' }}</p>
+
+            <div class="il-grid-card-meta">
+              <span class="il-category-badge">{{ getCategoryName(product) }}</span>
+              <span class="il-status-badge"
+                    [class.il-status-badge--active]="product.status === 'ACTIVE'"
+                    [class.il-status-badge--out-of-stock]="product.status === 'OUT_OF_STOCK'"
+                    [class.il-status-badge--discontinued]="product.status === 'DISCONTINUED'">
+                {{ getStatusLabel(product.status) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="il-grid-card-footer">
+            <div class="il-grid-card-price">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</div>
+            <div class="il-grid-card-stock">
+              <span class="il-stock-badge"
+                    [class.il-stock-badge--good]="product.stockQuantity > 5"
+                    [class.il-stock-badge--low]="product.stockQuantity > 0 && product.stockQuantity <= 5"
+                    [class.il-stock-badge--out]="product.stockQuantity === 0">
+                {{ product.stockQuantity }}
+              </span>
+              <span class="il-stock-label">{{ getStockStatusLabel(product.stockQuantity) }}</span>
+            </div>
+            <div class="il-grid-card-actions">
+              <button type="button" class="il-action-btn il-action-btn--quote" (click)="generateQuoteFromProduct(product)" title="Create Quote">
+                <i class="fas fa-file-invoice"></i>
+              </button>
+              <button type="button" class="il-action-btn il-action-btn--invoice" (click)="createInvoiceFromProduct(product)" title="Create Invoice">
+                <i class="fas fa-file-invoice-dollar"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty grid state -->
+        <div *ngIf="products.length === 0" class="il-empty" style="grid-column:1/-1;">
+          <i class="fas fa-boxes il-empty-icon"></i>
+          <p class="il-empty-title">No products found</p>
+          <p class="il-empty-sub">Adjust your filters or add products in Inventory Management</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="il-pagination" *ngIf="totalPages > 0">
+      <span>
+        Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }}
+      </span>
+      <div class="il-page-btns">
+        <button type="button" class="il-page-btn" [disabled]="currentPage === 0" (click)="onPageChange(currentPage - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="il-page-btn"
+                *ngFor="let p of getPageNumbers()"
+                [class.il-page-btn--active]="p === currentPage"
+                (click)="onPageChange(p)">{{ p + 1 }}</button>
+        <button type="button" class="il-page-btn" [disabled]="currentPage >= totalPages - 1" (click)="onPageChange(currentPage + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div><!-- product-service-catalog-list.component.html -->
+<div class="il-layout">
+
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="il-sidebar">
+
+    <div class="il-sidebar-title">
+      <span>Filters</span>
+      <button class="il-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <!-- Quick search -->
+    <div class="il-filter-section">
+      <div class="il-search-wrap">
+        <i class="fas fa-search il-search-icon"></i>
+        <input type="text" class="il-search-input" placeholder="Search products…"
+               [(ngModel)]="filters.searchTerm" (input)="applyFilters()">
+      </div>
+    </div>
+
+    <!-- Status filters -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Status</div>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'ALL'"
+              (click)="filters.status = 'ALL'; applyFilters()">
+        <i class="fas fa-layer-group"></i>
+        <span>All Products</span>
+        <span class="il-count-pill">{{ stats.total }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'ACTIVE'"
+              (click)="filters.status = 'ACTIVE'; applyFilters()">
+        <i class="fas fa-check-circle"></i>
+        <span>Active</span>
+        <span class="il-count-pill il-count-pill--green">{{ stats.active }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'OUT_OF_STOCK'"
+              (click)="filters.status = 'OUT_OF_STOCK'; applyFilters()">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Out of Stock</span>
+        <span class="il-count-pill il-count-pill--orange">{{ stats.outOfStock }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'DISCONTINUED'"
+              (click)="filters.status = 'DISCONTINUED'; applyFilters()">
+        <i class="fas fa-ban"></i>
+        <span>Discontinued</span>
+        <span class="il-count-pill il-count-pill--red">{{ stats.discontinued }}</span>
+      </button>
+    </div>
+
+    <!-- Category filter -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Category</div>
+      <div class="il-field">
+        <select class="il-date-input" [(ngModel)]="filters.category" (change)="applyFilters()" style="appearance:auto;padding:6px 8px;">
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat === 'ALL' ? 'All Categories' : cat }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Price range -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Price Range</div>
+      <div class="il-field">
+        <label class="il-flabel">Min Price</label>
+        <input type="number" class="il-date-input" [(ngModel)]="filters.minPrice" (input)="applyFilters()" placeholder="0" style="padding:6px 8px;">
+      </div>
+      <div class="il-field">
+        <label class="il-flabel">Max Price</label>
+        <input type="number" class="il-date-input" [(ngModel)]="filters.maxPrice" (input)="applyFilters()" placeholder="100000" style="padding:6px 8px;">
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN AREA ══════════════════════════════════════════════════════════ -->
+  <main class="il-main">
+
+    <!-- Top bar -->
+    <div class="il-top-bar">
+      <div class="il-top-bar-left">
+        <h1 class="il-title">Product Catalog</h1>
+        <span class="il-total-badge">{{ totalElements }}</span>
+      </div>
+      <div class="il-top-bar-right">
+        <div class="il-view-switcher">
+          <button type="button" class="il-view-btn" [class.il-view-btn--active]="viewMode === 'list'" (click)="setViewMode('list')" title="List View">
+            <i class="fas fa-th-list"></i>
+          </button>
+          <button type="button" class="il-view-btn" [class.il-view-btn--active]="viewMode === 'icon'" (click)="setViewMode('icon')" title="Grid View">
+            <i class="fas fa-th"></i>
+          </button>
+        </div>
+        <div class="il-page-size-wrap">
+          <span class="il-page-size-label">Per page</span>
+          <select class="il-page-size-select" [(ngModel)]="filters.size" (change)="onPageSizeChange(filters.size)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Insight Banner -->
+    <div class="il-ai-banner" *ngIf="!aiDismissed && stats.outOfStock > 0">
+      <div class="il-ai-icon"><i class="fas fa-robot"></i></div>
+      <div class="il-ai-body">
+        <div class="il-ai-title">AI Insight</div>
+        <div class="il-ai-text">
+          <strong>{{ stats.outOfStock }}</strong> product{{ stats.outOfStock > 1 ? 's are' : ' is' }} out of stock. Consider restocking these items to meet demand.
+        </div>
+      </div>
+      <button type="button" class="il-ai-dismiss" (click)="aiDismissed = true"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Bulk action bar -->
+    <div class="il-bulk-bar" *ngIf="selectedProductIds.length > 0">
+      <i class="fas fa-check-square"></i>
+      <span><strong>{{ selectedProductIds.length }}</strong> product{{ selectedProductIds.length > 1 ? 's' : '' }} selected</span>
+      <button type="button" class="il-btn il-btn--ghost-sm" (click)="selectedProductIds = []">
+        Clear
+      </button>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div class="il-table-wrap" *ngIf="isLoading">
+      <table class="il-table">
+        <thead>
+          <tr>
+            <th class="il-th-chk"><input type="checkbox" disabled></th>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th class="il-th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="il-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="8"><div class="il-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ══ LIST VIEW ════════════════════════════════════════════════════════ -->
+    <div class="il-table-wrap" *ngIf="!isLoading && viewMode === 'list'">
+      <table class="il-table">
+        <thead>
+          <tr>
+            <th class="il-th-chk">
+              <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)">
+            </th>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th class="il-th-actions">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Empty state -->
+        <tbody *ngIf="products.length === 0">
+          <tr>
+            <td colspan="8">
+              <div class="il-empty">
+                <i class="fas fa-boxes il-empty-icon"></i>
+                <p class="il-empty-title">No products found</p>
+                <p class="il-empty-sub">Adjust your filters or add products in Inventory Management</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="products.length > 0">
+          <tr *ngFor="let product of products"
+              [class.il-row--out-of-stock]="product.stockQuantity === 0"
+              [class.il-row--low-stock]="product.stockQuantity > 0 && product.stockQuantity <= 5">
+
+            <td class="il-td-chk">
+              <input type="checkbox" [checked]="isSelected(product.id)" (change)="toggleSelection(product.id, $event)">
+            </td>
+
+            <td>
+              <div class="il-product-info">
+                <div class="il-product-avatar" [class.il-product-avatar--photo]="product.images && product.images.length > 0">
+                  <img *ngIf="product.images && product.images.length > 0; else listNoImage"
+                       [src]="product.images[0]"
+                       [alt]="product.name"
+                       class="il-product-image">
+                  <ng-template #listNoImage>
+                    <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+                  </ng-template>
+                </div>
+                <div>
+                  <div class="il-product-name">{{ product.name }}</div>
+                  <div class="il-product-desc">{{ product.description | slice:0:50 }}{{ product.description.length > 50 ? '...' : '' }}</div>
+                </div>
+              </div>
+            </td>
+
+            <td class="il-td-sku">{{ product.sku }}</td>
+
+            <td>
+              <span class="il-category-badge">{{ getCategoryName(product) }}</span>
+            </td>
+
+            <td class="il-td-amount">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</td>
+
+            <td>
+              <div class="il-stock-info">
+                <span class="il-stock-badge"
+                      [class.il-stock-badge--good]="product.stockQuantity > 5"
+                      [class.il-stock-badge--low]="product.stockQuantity > 0 && product.stockQuantity <= 5"
+                      [class.il-stock-badge--out]="product.stockQuantity === 0">
+                  {{ product.stockQuantity }}
+                </span>
+                <span class="il-stock-label">{{ getStockStatusLabel(product.stockQuantity) }}</span>
+              </div>
+            </td>
+
+            <td>
+              <span class="il-status-badge"
+                    [class.il-status-badge--active]="product.status === 'ACTIVE'"
+                    [class.il-status-badge--out-of-stock]="product.status === 'OUT_OF_STOCK'"
+                    [class.il-status-badge--discontinued]="product.status === 'DISCONTINUED'">
+                {{ getStatusLabel(product.status) }}
+              </span>
+            </td>
+
+            <td class="il-td-actions">
+              <div class="il-row-actions">
+                <button type="button" class="il-action-btn il-action-btn--quote" (click)="generateQuoteFromProduct(product)" title="Create Quote">
+                  <i class="fas fa-file-invoice"></i> Quote
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--invoice" (click)="createInvoiceFromProduct(product)" title="Create Invoice">
+                  <i class="fas fa-file-invoice-dollar"></i> Invoice
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ══ GRID VIEW ════════════════════════════════════════════════════════ -->
+    <div *ngIf="!isLoading && viewMode === 'icon'">
+      <div class="il-grid-container">
+        <div *ngFor="let product of products" class="il-product-grid-card"
+             [class.il-product-grid-card--out-of-stock]="product.stockQuantity === 0"
+             [class.il-product-grid-card--low-stock]="product.stockQuantity > 0 && product.stockQuantity <= 5">
+
+          <div class="il-grid-card-top">
+            <input type="checkbox" [checked]="isSelected(product.id)" (change)="toggleSelection(product.id, $event)" class="il-grid-checkbox">
+            <span class="il-grid-number">#{{ getProductIndex(product) }}</span>
+          </div>
+
+          <div class="il-grid-card-image" [class.il-grid-card-image--photo]="product.images && product.images.length > 0">
+            <img *ngIf="product.images && product.images.length > 0; else gridNoImage"
+                 [src]="product.images[0]"
+                 [alt]="product.name"
+                 class="il-grid-product-image">
+            <ng-template #gridNoImage>
+              <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+            </ng-template>
+          </div>
+
+          <div class="il-grid-card-body">
+            <h4 class="il-grid-card-title" [title]="product.name">{{ product.name }}</h4>
+            <div class="il-grid-card-sku">{{ product.sku }}</div>
+            <p class="il-grid-card-desc">{{ product.description | slice:0:60 }}{{ product.description.length > 60 ? '...' : '' }}</p>
+
+            <div class="il-grid-card-meta">
+              <span class="il-category-badge">{{ getCategoryName(product) }}</span>
+              <span class="il-status-badge"
+                    [class.il-status-badge--active]="product.status === 'ACTIVE'"
+                    [class.il-status-badge--out-of-stock]="product.status === 'OUT_OF_STOCK'"
+                    [class.il-status-badge--discontinued]="product.status === 'DISCONTINUED'">
+                {{ getStatusLabel(product.status) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="il-grid-card-footer">
+            <div class="il-grid-card-price">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</div>
+            <div class="il-grid-card-stock">
+              <span class="il-stock-badge"
+                    [class.il-stock-badge--good]="product.stockQuantity > 5"
+                    [class.il-stock-badge--low]="product.stockQuantity > 0 && product.stockQuantity <= 5"
+                    [class.il-stock-badge--out]="product.stockQuantity === 0">
+                {{ product.stockQuantity }}
+              </span>
+              <span class="il-stock-label">{{ getStockStatusLabel(product.stockQuantity) }}</span>
+            </div>
+            <div class="il-grid-card-actions">
+              <button type="button" class="il-action-btn il-action-btn--quote" (click)="generateQuoteFromProduct(product)" title="Create Quote">
+                <i class="fas fa-file-invoice"></i>
+              </button>
+              <button type="button" class="il-action-btn il-action-btn--invoice" (click)="createInvoiceFromProduct(product)" title="Create Invoice">
+                <i class="fas fa-file-invoice-dollar"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty grid state -->
+        <div *ngIf="products.length === 0" class="il-empty" style="grid-column:1/-1;">
+          <i class="fas fa-boxes il-empty-icon"></i>
+          <p class="il-empty-title">No products found</p>
+          <p class="il-empty-sub">Adjust your filters or add products in Inventory Management</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="il-pagination" *ngIf="totalPages > 0">
+      <span>
+        Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }}
+      </span>
+      <div class="il-page-btns">
+        <button type="button" class="il-page-btn" [disabled]="currentPage === 0" (click)="onPageChange(currentPage - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="il-page-btn"
+                *ngFor="let p of getPageNumbers()"
+                [class.il-page-btn--active]="p === currentPage"
+                (click)="onPageChange(p)">{{ p + 1 }}</button>
+        <button type="button" class="il-page-btn" [disabled]="currentPage >= totalPages - 1" (click)="onPageChange(currentPage + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>

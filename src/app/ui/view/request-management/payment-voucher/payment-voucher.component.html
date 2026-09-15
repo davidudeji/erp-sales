@@ -1,0 +1,429 @@
+<div class="pv-wrapper">
+
+  <!-- Tab Bar -->
+  <div class="pv-tabs">
+    <button class="pv-tab" [class.active]="activeTab === 'voucher'" (click)="activeTab = 'voucher'">
+      <i class="fas fa-file-invoice-dollar"></i> Payment Voucher
+    </button>
+    <button class="pv-tab" [class.active]="activeTab === 'finance'" (click)="activeTab = 'finance'">
+      <i class="fas fa-book-open"></i> Finance Ledger
+      <span class="entry-count" *ngIf="financeEntries.length > 0">{{ financeEntries.length }}</span>
+    </button>
+    <button class="pv-tab" [class.active]="activeTab === 'receipt'" (click)="activeTab = 'receipt'">
+      <i class="fas fa-receipt"></i> Receipt
+    </button>
+  </div>
+
+  <!-- ═══════════════ TAB: VOUCHER ═══════════════ -->
+  <div class="pv-tab-content" *ngIf="activeTab === 'voucher'">
+
+    <!-- Payment Summary Header -->
+    <div class="payment-summary-header">
+      <div class="summary-amount">
+        <span class="summary-label">Total Payable</span>
+        <span class="summary-value">{{ formatCurrency(totalAmount) }}</span>
+      </div>
+      <div class="summary-meta">
+        <div class="meta-pill">
+          <i class="fas fa-building"></i>
+          <span>{{ grn?.vendorName || '—' }}</span>
+        </div>
+        <div class="meta-pill">
+          <i class="fas fa-file-alt"></i>
+          <span>{{ lpoNumber || '—' }}</span>
+        </div>
+        <div class="meta-pill" *ngIf="grn?.grnNumber">
+          <i class="fas fa-clipboard-check"></i>
+          <span>{{ grn.grnNumber }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── CREATE FORM (no voucher yet) ─── -->
+    <ng-container *ngIf="!existingVoucher">
+      <form [formGroup]="voucherForm" class="pv-form" (ngSubmit)="createVoucher()">
+
+        <!-- Payment Method -->
+        <div class="form-section">
+          <h4 class="section-title"><i class="fas fa-credit-card"></i> Payment Method</h4>
+          <div class="method-options">
+            <label
+              *ngFor="let m of paymentMethods"
+              class="method-radio"
+              [class.selected]="voucherForm.get('paymentMethod')?.value === m.value">
+              <input type="radio" formControlName="paymentMethod" [value]="m.value" />
+              <span class="method-icon">
+                <i class="fas"
+                   [class.fa-university]="m.value === 'BANK_TRANSFER'"
+                   [class.fa-money-check]="m.value === 'CHEQUE'"
+                   [class.fa-wifi]="m.value === 'ONLINE'"></i>
+              </span>
+              <span>{{ m.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Bank Details -->
+        <div class="form-section">
+          <h4 class="section-title"><i class="fas fa-university"></i> Vendor Bank Details</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Bank Name <span class="req">*</span></label>
+              <input type="text" formControlName="bankName" placeholder="e.g. First Bank of Nigeria" />
+              <span class="field-error" *ngIf="voucherForm.get('bankName')?.invalid && voucherForm.get('bankName')?.touched">
+                Bank name is required.
+              </span>
+            </div>
+            <div class="form-field">
+              <label>Account Number <span class="req">*</span></label>
+              <input type="text" formControlName="accountNumber" placeholder="10-digit NUBAN" maxlength="10" />
+              <span class="field-error" *ngIf="voucherForm.get('accountNumber')?.invalid && voucherForm.get('accountNumber')?.touched">
+                Account number is required.
+              </span>
+            </div>
+            <div class="form-field full-width">
+              <label>Account Name <span class="req">*</span></label>
+              <input type="text" formControlName="accountName" placeholder="Registered account name" />
+              <span class="field-error" *ngIf="voucherForm.get('accountName')?.invalid && voucherForm.get('accountName')?.touched">
+                Account name is required.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Narration -->
+        <div class="form-section">
+          <h4 class="section-title"><i class="fas fa-align-left"></i> Payment Narration</h4>
+          <div class="form-field">
+            <label>Narration <span class="req">*</span></label>
+            <textarea formControlName="narration" rows="2" placeholder="Describe the purpose of this payment..."></textarea>
+            <span class="field-error" *ngIf="voucherForm.get('narration')?.invalid && voucherForm.get('narration')?.touched">
+              Narration must be at least 10 characters.
+            </span>
+          </div>
+        </div>
+
+        <!-- Requester + Notes -->
+        <div class="form-section">
+          <h4 class="section-title"><i class="fas fa-user-check"></i> Authorization</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Requested By <span class="req">*</span></label>
+              <input type="text" formControlName="requestedBy" placeholder="Full name of requesting officer" />
+              <span class="field-error" *ngIf="voucherForm.get('requestedBy')?.invalid && voucherForm.get('requestedBy')?.touched">
+                Requester name is required.
+              </span>
+            </div>
+            <div class="form-field">
+              <label>Internal Notes</label>
+              <textarea formControlName="notes" rows="2" placeholder="Any internal remarks for finance team..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="pv-actions">
+          <button type="submit" class="btn-primary" [disabled]="isCreating">
+            <span *ngIf="!isCreating"><i class="fas fa-paper-plane"></i> Create Payment Voucher</span>
+            <span *ngIf="isCreating"><i class="fas fa-spinner fa-spin"></i> Creating...</span>
+          </button>
+        </div>
+
+      </form>
+    </ng-container>
+
+    <!-- ─── EXISTING VOUCHER VIEW ─── -->
+    <ng-container *ngIf="existingVoucher">
+      <div class="voucher-card">
+
+        <!-- Voucher Card Header -->
+        <div class="voucher-card-header">
+          <div class="voucher-id-block">
+            <div class="voucher-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+            <div>
+              <h3>{{ existingVoucher.voucherNumber }}</h3>
+              <span class="voucher-date">Created {{ formatDate(existingVoucher.requestedAt) }}</span>
+            </div>
+          </div>
+          <span class="status-badge" [ngClass]="existingVoucher.status.toLowerCase().replace('_', '-')">
+            {{ existingVoucher.status.replace('_', ' ') }}
+          </span>
+        </div>
+
+        <!-- Voucher Details Grid -->
+        <div class="voucher-details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Amount</span>
+            <span class="detail-value amount-highlight">{{ formatCurrency(existingVoucher.amount) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Payment Method</span>
+            <span class="detail-value">{{ existingVoucher.paymentMethod.replace('_', ' ') }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Vendor</span>
+            <span class="detail-value">{{ existingVoucher.vendorName }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Bank</span>
+            <span class="detail-value">{{ existingVoucher.vendorBankName }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Account Number</span>
+            <span class="detail-value monospace">{{ existingVoucher.vendorAccountNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Account Name</span>
+            <span class="detail-value">{{ existingVoucher.vendorAccountName }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">LPO Reference</span>
+            <span class="detail-value monospace">{{ existingVoucher.lpoNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">GRN Reference</span>
+            <span class="detail-value monospace">{{ existingVoucher.grnNumber }}</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="detail-label">Narration</span>
+            <span class="detail-value">{{ existingVoucher.narration }}</span>
+          </div>
+          <div class="detail-item" *ngIf="existingVoucher.requestedBy">
+            <span class="detail-label">Requested By</span>
+            <span class="detail-value">{{ existingVoucher.requestedBy }}</span>
+          </div>
+          <div class="detail-item" *ngIf="existingVoucher.approvedBy">
+            <span class="detail-label">Approved By</span>
+            <span class="detail-value">{{ existingVoucher.approvedBy }}</span>
+          </div>
+        </div>
+
+        <!-- Finance Posting Result -->
+        <div class="finance-result-alert" *ngIf="financeResult" [class.success]="financeResult.success" [class.failed]="!financeResult.success">
+          <i class="fas" [class.fa-check-circle]="financeResult.success" [class.fa-exclamation-triangle]="!financeResult.success"></i>
+          <div class="alert-body">
+            <strong>{{ financeResult.success ? 'Finance Posting Confirmed' : 'Finance Posting Failed' }}</strong>
+            <p>{{ financeResult.message }}</p>
+            <span class="ref-tag" *ngIf="financeResult.reference">Ref: {{ financeResult.reference }}</span>
+          </div>
+        </div>
+
+        <!-- Approve & Post Action -->
+        <div class="pv-actions" *ngIf="existingVoucher.status === 'PENDING_APPROVAL' && !financeResult?.success">
+          <button class="btn-finance" [disabled]="isApproving" (click)="approveAndPostToFinance()">
+            <span *ngIf="!isApproving"><i class="fas fa-paper-plane"></i> Approve &amp; Post to Finance</span>
+            <span *ngIf="isApproving"><i class="fas fa-spinner fa-spin"></i> Posting to Finance...</span>
+          </button>
+        </div>
+
+        <!-- Timeline -->
+        <div class="voucher-timeline">
+          <h5 class="timeline-heading">Voucher Timeline</h5>
+          <div class="timeline-track">
+            <div class="timeline-step" [class.done]="true">
+              <div class="step-dot done"><i class="fas fa-plus"></i></div>
+              <div class="step-body">
+                <span class="step-label">Created</span>
+                <span class="step-date">{{ formatDate(existingVoucher.requestedAt) }}</span>
+              </div>
+            </div>
+            <div class="timeline-step" [class.done]="existingVoucher.status === 'APPROVED' || existingVoucher.status === 'PROCESSING' || existingVoucher.status === 'PAID'">
+              <div class="step-dot" [class.done]="existingVoucher.status === 'APPROVED' || existingVoucher.status === 'PROCESSING' || existingVoucher.status === 'PAID'">
+                <i class="fas fa-check"></i>
+              </div>
+              <div class="step-body">
+                <span class="step-label">Approved</span>
+                <span class="step-date">{{ existingVoucher.approvedAt ? formatDate(existingVoucher.approvedAt) : 'Pending' }}</span>
+              </div>
+            </div>
+            <div class="timeline-step" [class.done]="!!financeResult?.success || !!existingVoucher.financeLedgerRef">
+              <div class="step-dot" [class.done]="!!financeResult?.success || !!existingVoucher.financeLedgerRef">
+                <i class="fas fa-book"></i>
+              </div>
+              <div class="step-body">
+                <span class="step-label">Posted to Finance</span>
+                <span class="step-date">{{ financeResult?.postedAt ? formatDate(financeResult!.postedAt!) : 'Pending' }}</span>
+              </div>
+            </div>
+            <div class="timeline-step" [class.done]="existingVoucher.status === 'PAID'">
+              <div class="step-dot" [class.done]="existingVoucher.status === 'PAID'">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <div class="step-body">
+                <span class="step-label">Payment Sent</span>
+                <span class="step-date">{{ existingVoucher.processedAt ? formatDate(existingVoucher.processedAt) : 'Pending' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- ═══════════════ TAB: FINANCE LEDGER ═══════════════ -->
+  <div class="pv-tab-content" *ngIf="activeTab === 'finance'">
+    <div class="ledger-header">
+      <h4><i class="fas fa-book-open"></i> Finance Journal Entries</h4>
+      <p class="ledger-sub">All accounting entries posted for LPO <strong>{{ lpoNumber }}</strong></p>
+    </div>
+
+    <div class="ledger-loading" *ngIf="isLoadingFinance">
+      <i class="fas fa-spinner fa-spin"></i> Loading ledger entries...
+    </div>
+
+    <div class="ledger-empty" *ngIf="!isLoadingFinance && financeEntries.length === 0">
+      <div class="empty-icon"><i class="fas fa-book-open"></i></div>
+      <p>No journal entries posted yet for this LPO.</p>
+      <small>Entries will appear here once the GRN is approved and the payment voucher is posted to Finance.</small>
+    </div>
+
+    <div class="ledger-table-wrapper" *ngIf="!isLoadingFinance && financeEntries.length > 0">
+      <table class="ledger-table">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Debit Account</th>
+            <th>Credit Account</th>
+            <th class="text-right">Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let entry of financeEntries">
+            <td class="monospace ref-col">{{ entry.reference }}</td>
+            <td class="date-col">{{ formatDate(entry.date) }}</td>
+            <td class="desc-col">{{ entry.description }}</td>
+            <td class="account-col">
+              <span class="account-tag debit">{{ entry.debitAccount }}</span>
+            </td>
+            <td class="account-col">
+              <span class="account-tag credit">{{ entry.creditAccount }}</span>
+            </td>
+            <td class="text-right amount-col monospace">{{ formatCurrency(entry.amount) }}</td>
+            <td>
+              <span class="ledger-status" [ngClass]="(entry.status || 'PENDING').toLowerCase()">
+                {{ entry.status || 'PENDING' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TAB: RECEIPT ═══════════════ -->
+  <div class="pv-tab-content receipt-tab" *ngIf="activeTab === 'receipt'">
+
+    <div class="receipt-actions no-print">
+      <button class="btn-outline" (click)="printReceipt()">
+        <i class="fas fa-print"></i> Print Receipt
+      </button>
+    </div>
+
+    <div class="receipt-sheet" id="payment-receipt">
+
+      <!-- PAID Stamp -->
+      <div class="paid-stamp" *ngIf="existingVoucher?.status === 'PAID' || financeResult?.success">PAID</div>
+
+      <!-- Receipt Header -->
+      <div class="receipt-header">
+        <div class="company-block">
+          <div class="company-logo-mark"><i class="fas fa-building-columns"></i></div>
+          <div>
+            <h2 class="company-name">OptimaX Suites</h2>
+            <p class="company-tagline">Integrated Enterprise Management</p>
+          </div>
+        </div>
+        <div class="receipt-title-block">
+          <h1>PAYMENT RECEIPT</h1>
+          <p class="receipt-number">
+            #{{ existingVoucher?.voucherNumber || 'PV-DRAFT' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="receipt-divider"></div>
+
+      <!-- Parties -->
+      <div class="receipt-parties">
+        <div class="party-block">
+          <h5>FROM</h5>
+          <h4>Your Organization</h4>
+          <p>Procurement Department<br />Lagos, Nigeria</p>
+        </div>
+        <div class="party-arrow"><i class="fas fa-arrow-right"></i></div>
+        <div class="party-block">
+          <h5>TO (VENDOR)</h5>
+          <h4>{{ grn?.vendorName || existingVoucher?.vendorName || '—' }}</h4>
+          <p>
+            {{ existingVoucher?.vendorBankName || vendorBankDetails.bankName || '—' }}<br />
+            Acct: {{ existingVoucher?.vendorAccountNumber || vendorBankDetails.accountNumber || '—' }}<br />
+            {{ existingVoucher?.vendorAccountName || vendorBankDetails.accountName || '—' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="receipt-divider"></div>
+
+      <!-- Payment Amount (large) -->
+      <div class="receipt-amount-block">
+        <span class="receipt-amount-label">AMOUNT PAID</span>
+        <span class="receipt-amount-value">{{ formatCurrency(existingVoucher?.amount ?? totalAmount) }}</span>
+      </div>
+
+      <div class="receipt-divider"></div>
+
+      <!-- Receipt Details -->
+      <div class="receipt-details-grid">
+        <div class="receipt-detail-row">
+          <span class="rd-label">Payment Date</span>
+          <span class="rd-value">{{ formatDate(existingVoucher?.processedAt || today) }}</span>
+        </div>
+        <div class="receipt-detail-row">
+          <span class="rd-label">Payment Method</span>
+          <span class="rd-value">{{ (existingVoucher?.paymentMethod || 'BANK_TRANSFER').replace('_', ' ') }}</span>
+        </div>
+        <div class="receipt-detail-row">
+          <span class="rd-label">Narration</span>
+          <span class="rd-value">{{ existingVoucher?.narration || ('Payment for LPO ' + lpoNumber) }}</span>
+        </div>
+        <div class="receipt-detail-row">
+          <span class="rd-label">LPO Reference</span>
+          <span class="rd-value monospace">{{ lpoNumber || existingVoucher?.lpoNumber || '—' }}</span>
+        </div>
+        <div class="receipt-detail-row">
+          <span class="rd-label">GRN Reference</span>
+          <span class="rd-value monospace">{{ grn?.grnNumber || existingVoucher?.grnNumber || '—' }}</span>
+        </div>
+        <div class="receipt-detail-row" *ngIf="existingVoucher?.referenceNumber">
+          <span class="rd-label">Bank Reference</span>
+          <span class="rd-value monospace">{{ existingVoucher!.referenceNumber }}</span>
+        </div>
+        <div class="receipt-detail-row" *ngIf="financeResult?.reference || existingVoucher?.financeLedgerRef">
+          <span class="rd-label">Finance Ledger Ref</span>
+          <span class="rd-value monospace">{{ financeResult?.reference || existingVoucher?.financeLedgerRef }}</span>
+        </div>
+        <div class="receipt-detail-row" *ngIf="existingVoucher?.approvedBy">
+          <span class="rd-label">Approved By</span>
+          <span class="rd-value">{{ existingVoucher!.approvedBy }}</span>
+        </div>
+      </div>
+
+      <div class="receipt-divider"></div>
+
+      <!-- Receipt Footer -->
+      <div class="receipt-footer">
+        <p class="receipt-notice">
+          This receipt confirms that payment has been processed as detailed above.
+          Please retain for your records.
+        </p>
+        <p class="receipt-generated">Generated by OptimaX Procurement System</p>
+      </div>
+
+    </div>
+  </div>
+
+</div>

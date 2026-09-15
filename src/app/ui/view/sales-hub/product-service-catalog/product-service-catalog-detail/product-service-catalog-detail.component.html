@@ -1,0 +1,356 @@
+<div class="product-detail-container">
+  <div class="detail-wrapper">
+    
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading product details...</p>
+    </div>
+
+    <!-- Content -->
+    <ng-container *ngIf="!isLoading && product">
+      
+      <!-- Header -->
+      <div class="detail-header">
+        <div class="header-left">
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <app-back-button (click)="goBack()"></app-back-button>
+            <span class="back-link" (click)="goBack()" style="cursor: pointer; font-size: 0.875rem; color: #64748b; font-weight: 500;">Back to Products</span>
+          </div>
+          <div class="title-section">
+            <div class="product-avatar-large">
+              <span>{{ getInitials(product.name) }}</span>
+            </div>
+            <div>
+              <h1 class="detail-title">{{ product.name }}</h1>
+              <div class="meta-info">
+                <span class="meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                  </svg>
+                  SKU: {{ product.sku }}
+                </span>
+                <span class="meta-divider"></span>
+                <span class="meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                  </svg>
+                  {{ product.category }}
+                </span>
+                <span class="meta-divider"></span>
+                <span class="meta-item">
+                  <span class="status-badge" [class]="getStatusBadgeClass(product.status)">
+                    {{ getStatusLabel(product.status) }}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="action-buttons-header">
+            <button class="action-btn-header action-edit" (click)="generateQuote()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Create Quote
+            </button>
+            <button class="action-btn-header action-edit" (click)="createInvoice()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-9c-1.11 0-2.08.402-2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Create Invoice
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card stat-card-blue">
+          <div class="stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Unit Price</span>
+            <span class="stat-value">{{ formatCurrency(getUnitPrice()) }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-green">
+          <div class="stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Stock Quantity</span>
+            <span class="stat-value">{{ product.stockQuantity }}</span>
+            <span class="stat-sub" [class]="getStockStatusClass(product.stockQuantity)">
+              {{ getStockStatusLabel(product.stockQuantity) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-orange">
+          <div class="stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Stock Value</span>
+            <span class="stat-value">{{ formatCurrency(getTotalStockValue()) }}</span>
+          </div>
+        </div>
+
+        <div class="stat-card stat-card-purple">
+          <div class="stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Profit Margin</span>
+            <span class="stat-value">{{ getProfitMargin() | number:'1.0-0' }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Column Layout -->
+      <div class="detail-grid">
+        
+        <!-- LEFT COLUMN -->
+        <div class="detail-left">
+          
+          <!-- Product Information Card -->
+          <div class="info-card">
+            <div class="card-header-custom">
+              <div class="card-header-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <h3 class="card-header-title">Product Information</h3>
+            </div>
+            <div class="card-body-custom">
+              <div class="details-list">
+                <div class="detail-row">
+                  <span class="detail-label">Product Name</span>
+                  <span class="detail-value">{{ product.name }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">SKU</span>
+                  <span class="detail-value sku-text">{{ product.sku }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Category</span>
+                  <span class="detail-value">
+                    <span class="category-badge">{{ product.category }}</span>
+                  </span>
+                </div>
+                <div class="detail-row" *ngIf="product.supplier">
+                  <span class="detail-label">Supplier</span>
+                  <span class="detail-value">{{ product.supplier?.name || product.supplier }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Description</span>
+                  <span class="detail-value description-text">{{ product.description }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Status</span>
+                  <span class="detail-value">
+                    <span class="status-badge" [class]="getStatusBadgeClass(product.status)">
+                      {{ getStatusLabel(product.status) }}
+                    </span>
+                  </span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Tax Rate</span>
+                  <span class="detail-value">{{ product.taxRate }}%</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Currency</span>
+                  <span class="detail-value">{{ product.currency }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Variants Card -->
+          <div class="info-card" *ngIf="product.variants && product.variants.length > 0">
+            <div class="card-header-custom">
+              <div class="card-header-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+              </div>
+              <h3 class="card-header-title">Product Variants ({{ product.variants.length }})</h3>
+            </div>
+            <div class="card-body-custom">
+              <div class="variants-table-wrapper" style="overflow-x: auto;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Variant</th>
+                      <th>SKU</th>
+                      <th>Attributes</th>
+                      <th class="text-right">Price</th>
+                      <th class="text-right">Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let v of product.variants">
+                      <td class="font-bold">{{ v.name }}</td>
+                      <td class="font-mono text-muted">{{ v.sku || 'N/A' }}</td>
+                      <td>
+                        <span *ngIf="v.attributes?.color" style="display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 0.725rem; padding: 0.1rem 0.4rem; border-radius: 4px; margin-right: 0.25rem;">{{ v.attributes?.color }}</span>
+                        <span *ngIf="v.attributes?.size" style="display: inline-block; background: #fef3c7; color: #92400e; font-size: 0.725rem; padding: 0.1rem 0.4rem; border-radius: 4px; margin-right: 0.25rem;">{{ v.attributes?.size }}</span>
+                        <span *ngIf="v.attributes?.material" style="display: inline-block; background: #f3e8ff; color: #6b21a8; font-size: 0.725rem; padding: 0.1rem 0.4rem; border-radius: 4px; margin-right: 0.25rem;">{{ v.attributes?.material }}</span>
+                        <span *ngIf="v.attributes?.model" style="display: inline-block; background: #dcfce7; color: #15803d; font-size: 0.725rem; padding: 0.1rem 0.4rem; border-radius: 4px; margin-right: 0.25rem;">{{ v.attributes?.model }}</span>
+                        <span *ngIf="v.attributes?.year" style="display: inline-block; background: #ffe4e6; color: #be123c; font-size: 0.725rem; padding: 0.1rem 0.4rem; border-radius: 4px;">{{ v.attributes?.year }}</span>
+                      </td>
+                      <td class="text-right font-bold text-success">{{ formatCurrency(v.price) }}</td>
+                      <td class="text-right">{{ v.quantity }} units</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pricing Card -->
+          <div class="info-card">
+            <div class="card-header-custom">
+              <div class="card-header-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <h3 class="card-header-title">Pricing</h3>
+            </div>
+            <div class="card-body-custom">
+              <div class="pricing-grid">
+                <div class="pricing-item">
+                  <span class="pricing-label">Unit Price</span>
+                  <span class="pricing-value">{{ formatCurrency(getUnitPrice()) }}</span>
+                </div>
+                <div class="pricing-item">
+                  <span class="pricing-label">Cost Price</span>
+                  <span class="pricing-value">{{ formatCurrency(product.costPrice) }}</span>
+                </div>
+                <div class="pricing-item">
+                  <span class="pricing-label">Profit Margin</span>
+                  <span class="pricing-value profit">{{ getProfitMargin() | number:'1.0-0' }}%</span>
+                </div>
+                <div class="pricing-item">
+                  <span class="pricing-label">Tax Rate</span>
+                  <span class="pricing-value">{{ product.taxRate }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stock Card -->
+          <div class="info-card">
+            <div class="card-header-custom">
+              <div class="card-header-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                </svg>
+              </div>
+              <h3 class="card-header-title">Stock Information</h3>
+            </div>
+            <div class="card-body-custom">
+              <div class="stock-display">
+                <div class="stock-main">
+                  <span class="stock-label">Current Stock</span>
+                  <span class="stock-amount">{{ product.stockQuantity }}</span>
+                </div>
+                <div class="stock-status" [class]="getStockStatusClass(product.stockQuantity)">
+                  {{ getStockStatusLabel(product.stockQuantity) }}
+                </div>
+                <div class="stock-details">
+                  <div class="stock-detail">
+                    <span class="label">Total Value</span>
+                    <span class="value">{{ formatCurrency(getTotalStockValue()) }}</span>
+                  </div>
+                  <div class="stock-detail">
+                    <span class="label">Cost Value</span>
+                    <span class="value">{{ formatCurrency(product.costPrice * product.stockQuantity) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="detail-right">
+          
+          <!-- Sales History Card -->
+          <div class="info-card">
+            <div class="card-header-custom">
+              <div class="card-header-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+                </svg>
+              </div>
+              <h3 class="card-header-title">Sales History</h3>
+              <span class="badge-count">{{ salesHistory.length }}</span>
+            </div>
+            <div class="card-body-custom">
+              <div *ngIf="isLoadingHistory" class="loading-small">
+                <div class="spinner-small"></div>
+                <span>Loading sales history...</span>
+              </div>
+              
+              <div *ngIf="!isLoadingHistory && salesHistory.length === 0" class="empty-state-small">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"></path>
+                </svg>
+                <p>No sales yet</p>
+                <span>This product hasn't been sold</span>
+              </div>
+
+              <div *ngFor="let sale of salesHistory" class="sale-item">
+                <div class="sale-header">
+                  <span class="sale-id">{{ sale.id }}</span>
+                  <span class="sale-date">{{ formatDateShort(sale.date) }}</span>
+                </div>
+                <div class="sale-details">
+                  <span class="sale-customer">{{ sale.customer }}</span>
+                  <span class="sale-quantity">{{ sale.quantity }} units</span>
+                  <span class="sale-amount">{{ formatCurrency(sale.total) }}</span>
+                  <span class="sale-status-badge" [class]="getOrderStatusBadgeClass(sale.status)">
+                    {{ getOrderStatusLabel(sale.status) }}
+                  </span>
+                </div>
+              </div>
+
+              <button class="view-all-btn" *ngIf="salesHistory.length > 0">
+                View All Sales →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Error State -->
+    <div *ngIf="!isLoading && !product" class="error-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <h3>Product not found</h3>
+      <p>The product you're looking for doesn't exist or has been removed.</p>
+      <div style="display: flex; justify-content: center; gap: 0.75rem; align-items: center; margin-top: 1rem;">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <span class="back-link" (click)="goBack()" style="cursor: pointer; font-weight: 500;">Back to Products</span>
+      </div>
+    </div>
+
+  </div>
+</div>

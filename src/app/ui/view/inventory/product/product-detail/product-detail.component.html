@@ -1,0 +1,406 @@
+<!-- product-detail.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Product Details</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Product Quick Stats -->
+        <div class="ql-filter-section" *ngIf="product">
+            <div class="ql-filter-heading">Product Stats</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Stock</span>
+                <span class="ql-sidebar-stat-value">{{ getTotalStock() }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Value</span>
+                <span class="ql-sidebar-stat-value">{{ formatCurrency(getTotalValue()) }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Branches</span>
+                <span class="ql-sidebar-stat-value">{{ branchInventory.length }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Performance</span>
+                <span class="ql-sidebar-stat-value">{{ productPerformance?.performanceScore?.toFixed(0) || '—' }}%</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Sell-Through</span>
+                <span class="ql-sidebar-stat-value">{{ productPerformance?.sellThroughRate?.toFixed(0) || '—' }}%</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Quick Actions</div>
+            <button class="ql-sidebar-action" (click)="editProduct()">
+                <i class="fas fa-edit"></i> Edit Product
+            </button>
+            <button class="ql-sidebar-action" (click)="refresh()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading product details...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refresh()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading && product && !error">
+
+            <!-- Top Bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <div class="ql-product-avatar">
+                        <img *ngIf="product.images && product.images.length > 0" [src]="product.images[0]" alt="{{ product.name }}">
+                        <span *ngIf="!product.images || product.images.length === 0">{{ getInitials(product.name) }}</span>
+                    </div>
+                    <div>
+                        <h1 class="ql-title">{{ product.name }}</h1>
+                        <div class="ql-product-meta">
+                            <span class="ql-meta-item">
+                                <i class="fas fa-tag"></i> {{ product.sku }}
+                            </span>
+                            <span class="ql-meta-item">
+                                <i class="fas fa-box"></i> {{ getCategoryName() }}
+                            </span>
+                            <span class="ql-meta-item">
+                                <i class="fas fa-money-bill-wave"></i> {{ formatCurrency(product.sellingPrice) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ql-top-bar-right">
+                    <span class="ql-status-badge ql-status-badge--{{ getStatusBadgeClass(product.status) }}">
+                        <span class="ql-status-dot"></span>
+                        {{ getStatusLabel(product.status) }}
+                    </span>
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" title="Refresh">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="editProduct()">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'overview'" (click)="setActiveTab('overview')">
+                    <i class="fas fa-info-circle"></i> Overview
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'inventory'" (click)="setActiveTab('inventory')">
+                    <i class="fas fa-boxes"></i> Inventory
+                    <span class="ql-tab-badge ql-tab-badge--danger" *ngIf="getTotalStock() === 0">0</span>
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'performance'" (click)="setActiveTab('performance')">
+                    <i class="fas fa-chart-line"></i> Performance
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'history'" (click)="setActiveTab('history')">
+                    <i class="fas fa-history"></i> History
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
+
+                <!-- ========================================================
+                OVERVIEW TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'overview'" class="ql-tab-panel">
+                    <div class="ql-overview-grid">
+                        <!-- Left Column -->
+                        <div class="ql-overview-left">
+                            <!-- Product Details -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-info-circle"></i> Product Details</h3>
+                                <div class="ql-info-grid">
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Name</span>
+                                        <span class="ql-info-value">{{ product.name }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">SKU</span>
+                                        <span class="ql-info-value">{{ product.sku }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Category</span>
+                                        <span class="ql-info-value">{{ getCategoryName() }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Brand</span>
+                                        <span class="ql-info-value">{{ product.brand || '—' }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Unit of Measure</span>
+                                        <span class="ql-info-value">{{ product.unitOfMeasure || 'EACH' }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Weight</span>
+                                        <span class="ql-info-value">{{ product.weight || '—' }} kg</span>
+                                    </div>
+                                    <div class="ql-info-item full-width">
+                                        <span class="ql-info-label">Description</span>
+                                        <span class="ql-info-value">{{ product.description || 'No description provided' }}</span>
+                                    </div>
+                                    <div class="ql-info-item full-width">
+                                        <span class="ql-info-label">Status</span>
+                                        <span class="ql-info-value">
+                                            <span class="ql-status-badge ql-status-badge--{{ getStatusBadgeClass(product.status) }}">
+                                                <span class="ql-status-dot"></span>
+                                                {{ getStatusLabel(product.status) }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pricing -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-money-bill-wave"></i> Pricing</h3>
+                                <div class="ql-info-grid">
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Selling Price</span>
+                                        <span class="ql-info-value" style="color: #2EB270; font-weight: 700; font-size: 1.1rem;">
+                                            {{ formatCurrency(product.sellingPrice) }}
+                                        </span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Cost Price</span>
+                                        <span class="ql-info-value">{{ formatCurrency(product.costPrice || 0) }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Margin</span>
+                                        <span class="ql-info-value">
+                                            {{ product.costPrice ? (((product.sellingPrice - product.costPrice) / product.sellingPrice * 100)?.toFixed(1) || '0') + '%' : '—' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="ql-overview-right">
+                            <!-- Images -->
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-images"></i> Images</h3>
+                                <div class="ql-image-grid" *ngIf="product.images && product.images.length > 0">
+                                    <div class="ql-image-item" *ngFor="let img of product.images">
+                                        <img [src]="img" alt="{{ product.name }}">
+                                    </div>
+                                </div>
+                                <div *ngIf="!product.images || product.images.length === 0" class="ql-empty-state">
+                                    <i class="fas fa-image"></i>
+                                    <p>No images available</p>
+                                </div>
+                            </div>
+
+                            <!-- Suppliers -->
+                            <div class="ql-info-card" *ngIf="product.supplierIds && product.supplierIds.length > 0">
+                                <h3 class="ql-info-title"><i class="fas fa-truck"></i> Suppliers</h3>
+                                <div class="ql-supplier-list">
+                                    <div *ngFor="let supplierId of product.supplierIds" class="ql-supplier-item">
+                                        <i class="fas fa-truck"></i>
+                                        <span>{{ getSupplierName(supplierId) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tags -->
+                            <div class="ql-info-card" *ngIf="product.tags && product.tags.length > 0">
+                                <h3 class="ql-info-title"><i class="fas fa-tags"></i> Tags</h3>
+                                <div class="ql-tag-list">
+                                    <span class="ql-tag-item" *ngFor="let tag of product.tags">{{ tag }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                INVENTORY TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'inventory'" class="ql-tab-panel">
+                    <div class="ql-inventory-container">
+                        <div class="ql-inventory-header">
+                            <h3><i class="fas fa-boxes"></i> Stock by Branch</h3>
+                            <span class="ql-total-stock">Total: {{ getTotalStock() }} units</span>
+                        </div>
+
+                        <div class="ql-inventory-list">
+                            <div *ngFor="let item of branchInventory" class="ql-inventory-item"
+                                 [class.ql-inventory-item--critical]="getStockStatus(item.quantity, item.reorderPoint, item.safetyStock) === 'CRITICAL'"
+                                 [class.ql-inventory-item--low]="getStockStatus(item.quantity, item.reorderPoint, item.safetyStock) === 'LOW'">
+                                <div class="ql-inventory-item-info">
+                                    <div class="ql-inventory-item-branch">
+                                        <i class="fas fa-store"></i>
+                                        {{ getBranchName(item.branchId) }}
+                                    </div>
+                                    <div class="ql-inventory-item-stock">
+                                        <span class="ql-stock-badge" [class]="'ql-stock--' + getStockStatusClass(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))">
+                                            {{ item.quantity }}
+                                        </span>
+                                        <span class="ql-inventory-item-status">
+                                            {{ getStockStatusLabel(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock)) }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="ql-inventory-item-details">
+                                    <span class="ql-inventory-item-price">{{ formatCurrency(item.sellingPrice) }}</span>
+                                    <span class="ql-inventory-item-reorder">Reorder: {{ item.reorderPoint }}</span>
+                                    <span class="ql-inventory-item-safety">Safety: {{ item.safetyStock }}</span>
+                                </div>
+                                <div class="ql-inventory-item-actions">
+                                    <button class="ql-btn ql-btn--icon ql-btn--ghost-sm" 
+                                            (click)="viewBranch(item.branchId)" title="View Branch">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="ql-btn ql-btn--icon ql-btn--ghost-sm" 
+                                            (click)="createTransfer(product.id, item.branchId)" title="Transfer Stock">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div *ngIf="branchInventory.length === 0" class="ql-empty-state">
+                                <i class="fas fa-boxes"></i>
+                                <p>No stock found in any branch</p>
+                                <span>Add this product to a branch inventory</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                PERFORMANCE TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'performance'" class="ql-tab-panel">
+                    <div class="ql-performance-container" *ngIf="productPerformance">
+                        <div class="ql-performance-grid">
+                            <div class="ql-performance-card">
+                                <div class="ql-performance-value" [style.color]="getPerformanceColor(productPerformance.performanceScore)">
+                                    {{ productPerformance.performanceScore.toFixed(0) }}%
+                                </div>
+                                <div class="ql-performance-label">Performance Score</div>
+                            </div>
+                            <div class="ql-performance-card">
+                                <div class="ql-performance-value">{{ productPerformance.totalSold }}</div>
+                                <div class="ql-performance-label">Units Sold</div>
+                            </div>
+                            <div class="ql-performance-card">
+                                <div class="ql-performance-value">{{ formatCurrency(productPerformance.totalRevenue) }}</div>
+                                <div class="ql-performance-label">Total Revenue</div>
+                            </div>
+                            <div class="ql-performance-card">
+                                <div class="ql-performance-value">{{ productPerformance.sellThroughRate.toFixed(0) }}%</div>
+                                <div class="ql-performance-label">Sell-Through Rate</div>
+                            </div>
+                            <div class="ql-performance-card">
+                                <div class="ql-performance-value">{{ productPerformance.stockTurnover.toFixed(1) }}x</div>
+                                <div class="ql-performance-label">Stock Turnover</div>
+                            </div>
+                            <div class="ql-performance-card">
+                                <div class="ql-performance-value">{{ productPerformance.daysOfInventory.toFixed(0) }} days</div>
+                                <div class="ql-performance-label">Days of Inventory</div>
+                            </div>
+                        </div>
+
+                        <div class="ql-performance-trend">
+                            <h4><i class="fas fa-chart-area"></i> Performance Trend</h4>
+                            <div class="ql-trend-indicator">
+                                <span class="ql-trend-icon" [style.color]="getTrendColor(productPerformance.trend)">
+                                    <i class="fas" [class]="getTrendIcon(productPerformance.trend)"></i>
+                                </span>
+                                <span class="ql-trend-label" [style.color]="getTrendColor(productPerformance.trend)">
+                                    {{ productPerformance.trend }}
+                                </span>
+                            </div>
+                            <p class="ql-performance-period">
+                                {{ formatDate(productPerformance.period?.start) }} — {{ formatDate(productPerformance.period?.end) }}
+                            </p>
+                        </div>
+                    </div>
+                    <div *ngIf="!productPerformance" class="ql-empty-state">
+                        <i class="fas fa-chart-line"></i>
+                        <p>No performance data available</p>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                HISTORY TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'history'" class="ql-tab-panel">
+                    <div class="ql-history-container">
+                        <h3><i class="fas fa-history"></i> Product History</h3>
+                        <div class="ql-timeline">
+                            <div class="ql-timeline-item">
+                                <div class="ql-timeline-dot" style="background: #2EB270;">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <div class="ql-timeline-content">
+                                    <span class="ql-timeline-status">Product Created</span>
+                                    <span class="ql-timeline-description">Product was added to the catalog</span>
+                                    <span class="ql-timeline-date">{{ formatDateTime(product.createdAt) }}</span>
+                                </div>
+                            </div>
+                            <div class="ql-timeline-item" *ngIf="product.updatedAt">
+                                <div class="ql-timeline-dot" style="background: #3B82F6;">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="ql-timeline-content">
+                                    <span class="ql-timeline-status">Product Updated</span>
+                                    <span class="ql-timeline-description">Product details were modified</span>
+                                    <span class="ql-timeline-date">{{ formatDateTime(product.updatedAt) }}</span>
+                                </div>
+                            </div>
+                            <div class="ql-timeline-item" *ngIf="product.status === ProductStatus.OUT_OF_STOCK">
+                                <div class="ql-timeline-dot" style="background: #F59E0B;">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="ql-timeline-content">
+                                    <span class="ql-timeline-status">Out of Stock</span>
+                                    <span class="ql-timeline-description">Product is currently out of stock across all branches</span>
+                                    <span class="ql-timeline-date">{{ formatDateTime(product.updatedAt) }}</span>
+                                </div>
+                            </div>
+                            <div class="ql-timeline-item" *ngIf="product.status === ProductStatus.DISCONTINUED">
+                                <div class="ql-timeline-dot" style="background: #DC2626;">
+                                    <i class="fas fa-ban"></i>
+                                </div>
+                                <div class="ql-timeline-content">
+                                    <span class="ql-timeline-status">Discontinued</span>
+                                    <span class="ql-timeline-description">Product has been discontinued</span>
+                                    <span class="ql-timeline-date">{{ formatDateTime(product.updatedAt) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+    </main>
+</div>

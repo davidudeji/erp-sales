@@ -1,0 +1,521 @@
+<!-- documents.component.html -->
+<div class="documents-container">
+
+    <!-- Documents Header -->
+    <div class="documents-header">
+        <div class="header-left">
+            <h3><i class="fas fa-file-alt"></i> Vendor Documents</h3>
+            <span class="document-count">{{ totalDocuments }} documents</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn-upload" (click)="openFilePicker()" [disabled]="isLoading">
+                <i class="fas fa-upload"></i> Upload Document
+            </button>
+            <input #fileInput type="file" (change)="onFileSelected($event)" 
+                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: none;" />
+        </div>
+    </div>
+
+    <!-- Document Stats -->
+    <div class="document-stats" *ngIf="totalDocuments > 0">
+        <div class="stat-item">
+            <span class="stat-value" style="color: #2EB270;">{{ activeDocuments.length }}</span>
+            <span class="stat-label">Active</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-value" style="color: #F5A623;">{{ expiringDocuments.length }}</span>
+            <span class="stat-label">Expiring Soon</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-value" style="color: #DC2626;">{{ expiredDocuments.length }}</span>
+            <span class="stat-label">Expired</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-value" style="color: #F97316;">{{ pendingDocuments.length }}</span>
+            <span class="stat-label">Pending Verification</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+            <span class="stat-value" style="color: #8B5CF6;">{{ rejectedDocuments.length }}</span>
+            <span class="stat-label">Rejected</span>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-documents">
+        <div class="spinner-small"></div>
+        <p>Loading documents...</p>
+    </div>
+
+    <!-- No Documents -->
+    <div *ngIf="!isLoading && totalDocuments === 0" class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-file-alt"></i>
+            <div class="empty-state-badge">
+                <i class="fas fa-plus"></i>
+            </div>
+        </div>
+        <h4>No Documents Uploaded</h4>
+        <p>Upload documents to complete vendor verification and compliance checks.</p>
+        <button class="btn-primary-sm" (click)="openFilePicker()">
+            <i class="fas fa-upload"></i> Upload First Document
+        </button>
+        <div class="empty-state-requirements">
+            <span class="requirement-badge" *ngFor="let cat of documentCategories">
+                <i class="fas" [class.fa-check-circle]="cat.required" [class.fa-circle]="!cat.required" 
+                   [style.color]="cat.required ? '#2EB270' : '#ccddd9'"></i>
+                {{ cat.label }} {{ cat.required ? '' : '(Optional)' }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Documents Grid -->
+    <div *ngIf="!isLoading && totalDocuments > 0" class="documents-grid">
+        
+        <!-- Rejected Documents Section -->
+        <div *ngIf="rejectedDocuments.length > 0" class="document-section">
+            <div class="section-header rejected">
+                <i class="fas fa-times-circle"></i>
+                Rejected ({{ rejectedDocuments.length }})
+                <span class="section-hint">Documents that need to be re-uploaded</span>
+            </div>
+            <div class="document-card-list">
+                <div *ngFor="let doc of rejectedDocuments" class="document-card rejected" 
+                     (click)="openDocumentViewer(doc)">
+                    <div class="doc-icon" [style.color]="getDocumentStatusColor(doc.status)">
+                        <i class="fas" [class]="getDocumentIcon(doc.fileName)"></i>
+                    </div>
+                    <div class="doc-info">
+                        <span class="doc-name">{{ doc.name || doc.fileName }}</span>
+                        <span class="doc-category">{{ getCategoryLabel(doc.category) }}</span>
+                        <span class="doc-expiry rejected">
+                            <i class="fas fa-times-circle"></i>
+                            Rejected - Needs re-upload
+                        </span>
+                    </div>
+                    <div class="doc-meta">
+                        <span class="doc-status" [style.color]="getDocumentStatusColor(doc.status)">
+                            {{ getDocumentStatusLabel(doc.status) }}
+                        </span>
+                        <span class="doc-date">{{ formatDate(doc.uploadedAt) }}</span>
+                    </div>
+                    <div class="doc-actions" (click)="$event.stopPropagation()">
+                        <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="action-btn" (click)="openVerifyModal(doc)" title="Review">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expiring Soon Section -->
+        <div *ngIf="expiringDocuments.length > 0" class="document-section">
+            <div class="section-header warning">
+                <i class="fas fa-clock"></i>
+                Expiring Soon ({{ expiringDocuments.length }})
+                <span class="section-hint">Documents expiring within 30 days</span>
+            </div>
+            <div class="document-card-list">
+                <div *ngFor="let doc of expiringDocuments" class="document-card expiring" 
+                     (click)="openDocumentViewer(doc)">
+                    <div class="doc-icon" [style.color]="getDocumentStatusColor(doc.status)">
+                        <i class="fas" [class]="getDocumentIcon(doc.fileName)"></i>
+                    </div>
+                    <div class="doc-info">
+                        <span class="doc-name">{{ doc.name || doc.fileName }}</span>
+                        <span class="doc-category">{{ getCategoryLabel(doc.category) }}</span>
+                        <span class="doc-expiry expiring">
+                            <i class="fas fa-clock"></i>
+                            {{ getDaysUntilExpiry(doc.expiryDate) }} days remaining
+                        </span>
+                    </div>
+                    <div class="doc-meta">
+                        <span class="doc-status" [style.color]="getDocumentStatusColor(doc.status)">
+                            {{ getDocumentStatusLabel(doc.status) }}
+                        </span>
+                        <span class="doc-date">{{ formatDate(doc.expiryDate) }}</span>
+                    </div>
+                    <div class="doc-actions" (click)="$event.stopPropagation()">
+                        <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="action-btn" (click)="openVerifyModal(doc)" title="Verify">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expired Section -->
+        <div *ngIf="expiredDocuments.length > 0" class="document-section">
+            <div class="section-header danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                Expired ({{ expiredDocuments.length }})
+                <span class="section-hint">Action required - renew these documents</span>
+            </div>
+            <div class="document-card-list">
+                <div *ngFor="let doc of expiredDocuments" class="document-card expired" 
+                     (click)="openDocumentViewer(doc)">
+                    <div class="doc-icon" [style.color]="getDocumentStatusColor(doc.status)">
+                        <i class="fas" [class]="getDocumentIcon(doc.fileName)"></i>
+                    </div>
+                    <div class="doc-info">
+                        <span class="doc-name">{{ doc.name || doc.fileName }}</span>
+                        <span class="doc-category">{{ getCategoryLabel(doc.category) }}</span>
+                        <span class="doc-expiry expired">
+                            <i class="fas fa-exclamation-circle"></i>
+                            Expired on {{ formatDate(doc.expiryDate) }}
+                        </span>
+                    </div>
+                    <div class="doc-meta">
+                        <span class="doc-status" [style.color]="getDocumentStatusColor(doc.status)">
+                            {{ getDocumentStatusLabel(doc.status) }}
+                        </span>
+                        <span class="doc-date">{{ formatDate(doc.expiryDate) }}</span>
+                    </div>
+                    <div class="doc-actions" (click)="$event.stopPropagation()">
+                        <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="action-btn" (click)="openVerifyModal(doc)" title="Verify">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Documents Section -->
+        <div *ngIf="activeDocuments.length > 0" class="document-section">
+            <div class="section-header success">
+                <i class="fas fa-check-circle"></i>
+                Active Documents ({{ activeDocuments.length }})
+                <span class="section-hint">Valid and up to date</span>
+            </div>
+            <div class="document-card-list">
+                <div *ngFor="let doc of activeDocuments" class="document-card active" 
+                     (click)="openDocumentViewer(doc)">
+                    <div class="doc-icon" [style.color]="getDocumentStatusColor(doc.status)">
+                        <i class="fas" [class]="getDocumentIcon(doc.fileName)"></i>
+                    </div>
+                    <div class="doc-info">
+                        <span class="doc-name">{{ doc.name || doc.fileName }}</span>
+                        <span class="doc-category">{{ getCategoryLabel(doc.category) }}</span>
+                        <span class="doc-expiry active">
+                            <i class="fas fa-check-circle"></i>
+                            Valid until {{ formatDate(doc.expiryDate) }}
+                        </span>
+                    </div>
+                    <div class="doc-meta">
+                        <span class="doc-status" [style.color]="getDocumentStatusColor(doc.status)">
+                            {{ getDocumentStatusLabel(doc.status) }}
+                        </span>
+                        <span class="doc-date">{{ formatDate(doc.expiryDate) }}</span>
+                    </div>
+                    <div class="doc-actions" (click)="$event.stopPropagation()">
+                        <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="action-btn" (click)="openVerifyModal(doc)" title="Verify">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Verification Section -->
+        <div *ngIf="pendingDocuments.length > 0" class="document-section">
+            <div class="section-header pending">
+                <i class="fas fa-hourglass-half"></i>
+                Pending Verification ({{ pendingDocuments.length }})
+                <span class="section-hint">Awaiting review</span>
+            </div>
+            <div class="document-card-list">
+                <div *ngFor="let doc of pendingDocuments" class="document-card pending" 
+                     (click)="openDocumentViewer(doc)">
+                    <div class="doc-icon" [style.color]="getDocumentStatusColor(doc.status)">
+                        <i class="fas" [class]="getDocumentIcon(doc.fileName)"></i>
+                    </div>
+                    <div class="doc-info">
+                        <span class="doc-name">{{ doc.name || doc.fileName }}</span>
+                        <span class="doc-category">{{ getCategoryLabel(doc.category) }}</span>
+                        <span class="doc-expiry pending">
+                            <i class="fas fa-hourglass-half"></i>
+                            Waiting for verification
+                        </span>
+                    </div>
+                    <div class="doc-meta">
+                        <span class="doc-status" [style.color]="getDocumentStatusColor(doc.status)">
+                            {{ getDocumentStatusLabel(doc.status) }}
+                        </span>
+                        <span class="doc-date">{{ formatDate(doc.uploadedAt) }}</span>
+                    </div>
+                    <div class="doc-actions" (click)="$event.stopPropagation()">
+                        <button class="action-btn" (click)="downloadDocument(doc)" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="action-btn primary" (click)="openVerifyModal(doc)" title="Verify">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                        <button class="action-btn danger" (click)="onDeleteDocument(doc.id)" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    UPLOAD MODAL
+    ============================================================ -->
+    <div class="modal-overlay" *ngIf="showUploadModal" (click)="closeUploadModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fas fa-upload"></i> Upload Document</h3>
+                <button class="modal-close" (click)="closeUploadModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="file-preview" *ngIf="selectedFile">
+                    <i class="fas" [class]="getDocumentIcon(selectedFile.name)"></i>
+                    <span class="file-name">{{ selectedFile.name }}</span>
+                    <span class="file-size">{{ getFileSize(selectedFile.size) }}</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="doc-category">Document Category <span class="required">*</span></label>
+                    <select id="doc-category" [value]="selectedCategory" (change)="onCategoryChange($event)" class="form-select">
+                        <option *ngFor="let cat of documentCategories" [value]="cat.value">
+                            {{ cat.label }} {{ cat.required ? '(Required)' : '' }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="issue-date">Issue Date <span class="required">*</span></label>
+                        <input id="issue-date" type="date" [(ngModel)]="issueDate" class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label for="expiry-date">Expiry Date <span class="required">*</span></label>
+                        <input id="expiry-date" type="date" [(ngModel)]="expiryDate" class="form-input" />
+                    </div>
+                </div>
+
+                <div class="upload-progress" *ngIf="isUploading">
+                    <div class="progress-bar">
+                        <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+                    </div>
+                    <span class="progress-text">{{ uploadProgress }}%</span>
+                </div>
+
+                <div class="error-message" *ngIf="uploadError">
+                    <i class="fas fa-exclamation-circle"></i> {{ uploadError }}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" (click)="closeUploadModal()">Cancel</button>
+                <button class="btn-primary" (click)="submitUpload()" [disabled]="!selectedFile || isUploading">
+                    <i class="fas" [class.fa-spinner]="isUploading" [class.fa-upload]="!isUploading" [class.fa-spin]="isUploading"></i>
+                    {{ isUploading ? 'Uploading...' : 'Upload Document' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    VERIFY MODAL
+    ============================================================ -->
+    <div class="modal-overlay" *ngIf="showVerifyModal" (click)="closeVerifyModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle"></i> Verify Document</h3>
+                <button class="modal-close" (click)="closeVerifyModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="verify-doc-info" *ngIf="selectedDocForVerification">
+                    <div class="doc-preview">
+                        <i class="fas" [class]="getDocumentIcon(selectedDocForVerification.fileName)"></i>
+                        <div>
+                            <span class="doc-name">{{ selectedDocForVerification.name || selectedDocForVerification.fileName }}</span>
+                            <span class="doc-category">{{ getCategoryLabel(selectedDocForVerification.category) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="verify-notes">Verification Notes</label>
+                    <textarea id="verify-notes" [(ngModel)]="verificationNotes" 
+                              placeholder="Add any notes about this document..." rows="3" class="form-textarea"></textarea>
+                </div>
+
+                <div class="verify-actions">
+                    <button class="btn-danger" (click)="submitVerification(false)">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                    <button class="btn-success" (click)="submitVerification(true)">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    DOCUMENT VIEWER MODAL
+    ============================================================ -->
+    <div class="modal-overlay" *ngIf="showDocumentViewer" (click)="closeDocumentViewer()">
+        <div class="modal-content viewer-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header viewer-header">
+                <div class="header-left">
+                    <i class="fas" [class]="getDocumentViewerIcon(selectedDocumentForView)" 
+                       style="font-size: 1.5rem; color: #184440;"></i>
+                    <div>
+                        <h3>{{ selectedDocumentForView?.name || selectedDocumentForView?.fileName }}</h3>
+                        <span class="doc-meta">
+                            {{ getCategoryLabel(selectedDocumentForView?.category || '') }} • 
+                            {{ getFileSize(selectedDocumentForView?.fileSize || 0) }} • 
+                            Uploaded: {{ formatDate(selectedDocumentForView?.uploadedAt) }}
+                        </span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <span class="doc-status-badge" 
+                          [style.background]="getDocumentStatusColor(selectedDocumentForView?.status || DocumentStatus.PENDING_VERIFICATION) + '20'"
+                          [style.color]="getDocumentStatusColor(selectedDocumentForView?.status || DocumentStatus.PENDING_VERIFICATION)">
+                        {{ getDocumentStatusLabel(selectedDocumentForView?.status || DocumentStatus.PENDING_VERIFICATION) }}
+                    </span>
+                    <button class="modal-close" (click)="closeDocumentViewer()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="viewer-body">
+                <!-- Toolbar -->
+                <div class="viewer-toolbar">
+                    <div class="toolbar-left">
+                        <button class="toolbar-btn" (click)="prevPage()" [disabled]="viewerPage <= 1">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="page-info">Page {{ viewerPage }} of {{ viewerTotalPages }}</span>
+                        <button class="toolbar-btn" (click)="nextPage()" [disabled]="viewerPage >= viewerTotalPages">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="toolbar-right">
+                        <button class="toolbar-btn" (click)="zoomOut()" title="Zoom Out">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <span class="zoom-level">{{ (viewerZoom * 100).toFixed(0) }}%</span>
+                        <button class="toolbar-btn" (click)="zoomIn()" title="Zoom In">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="toolbar-btn" (click)="resetZoom()" title="Reset Zoom">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="toolbar-btn" (click)="downloadDocument(selectedDocumentForView)" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Document Preview -->
+                <div class="viewer-content">
+                    <div class="pdf-preview" *ngIf="selectedDocumentForView">
+                        <div class="pdf-page" [style.transform]="'scale(' + viewerZoom + ')'">
+                            <div class="pdf-content">
+                                <div class="pdf-header">
+                                    <div class="pdf-title">{{ selectedDocumentForView.name || selectedDocumentForView.fileName }}</div>
+                                    <div class="pdf-date">Issue Date: {{ formatDate(selectedDocumentForView.issueDate) }}</div>
+                                    <div class="pdf-date">Expiry Date: {{ formatDate(selectedDocumentForView.expiryDate) }}</div>
+                                </div>
+                                <div class="pdf-body">
+                                    <div class="pdf-section">
+                                        <h4>Document Information</h4>
+                                        <p><strong>Document ID:</strong> {{ selectedDocumentForView.id }}</p>
+                                        <p><strong>Category:</strong> {{ getCategoryLabel(selectedDocumentForView.category) }}</p>
+                                        <p><strong>File Name:</strong> {{ selectedDocumentForView.fileName }}</p>
+                                        <p><strong>File Size:</strong> {{ getFileSize(selectedDocumentForView.fileSize) }}</p>
+                                        <p><strong>Uploaded By:</strong> {{ selectedDocumentForView.uploadedBy || 'Vendor' }}</p>
+                                        <p><strong>Uploaded At:</strong> {{ formatDateTime(selectedDocumentForView.uploadedAt) }}</p>
+                                    </div>
+                                    <div class="pdf-section">
+                                        <h4>Verification Status</h4>
+                                        <p><strong>Status:</strong> {{ getDocumentStatusLabel(selectedDocumentForView.status) }}</p>
+                                        <p><strong>Required:</strong> {{ selectedDocumentForView.isRequired ? 'Yes' : 'No' }}</p>
+                                        <p *ngIf="selectedDocumentForView.status !== DocumentStatus.PENDING_VERIFICATION">
+                                            <strong>Verified By:</strong> {{ selectedDocumentForView.verifiedBy || '—' }}
+                                        </p>
+                                        <p *ngIf="selectedDocumentForView.verificationNotes">
+                                            <strong>Notes:</strong> {{ selectedDocumentForView.verificationNotes }}
+                                        </p>
+                                    </div>
+                                    <div class="pdf-section" *ngIf="selectedDocumentForView.status === DocumentStatus.EXPIRING_SOON || selectedDocumentForView.status === DocumentStatus.EXPIRED">
+                                        <h4 style="color: #DC2626;">⚠️ Expiry Notice</h4>
+                                        <p>
+                                            This document 
+                                            <span *ngIf="selectedDocumentForView.status === DocumentStatus.EXPIRING_SOON">will expire</span>
+                                            <span *ngIf="selectedDocumentForView.status === DocumentStatus.EXPIRED">expired</span>
+                                            on {{ formatDate(selectedDocumentForView.expiryDate) }}
+                                            <span *ngIf="selectedDocumentForView.status === DocumentStatus.EXPIRING_SOON">
+                                                ({{ getDaysUntilExpiry(selectedDocumentForView.expiryDate) }} days remaining)
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <div class="pdf-section" *ngIf="selectedDocumentForView.status === DocumentStatus.REJECTED">
+                                        <h4 style="color: #DC2626;">❌ Rejected</h4>
+                                        <p>This document has been rejected and needs to be re-uploaded.</p>
+                                        <p *ngIf="selectedDocumentForView.verificationNotes">
+                                            <strong>Reason:</strong> {{ selectedDocumentForView.verificationNotes }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="pdf-footer">
+                                    <div class="pdf-watermark">OPTIMAX • Vendor Document • {{ selectedDocumentForView.id }}</div>
+                                    <div class="pdf-page-number">Page 1 of 1</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer viewer-footer">
+                <button class="btn-secondary" (click)="closeDocumentViewer()">Close</button>
+                <button class="btn-primary" (click)="downloadDocument(selectedDocumentForView)">
+                    <i class="fas fa-download"></i> Download
+                </button>
+                <button class="btn-success" *ngIf="selectedDocumentForView?.status === DocumentStatus.PENDING_VERIFICATION" 
+                        (click)="openVerifyModal(selectedDocumentForView); closeDocumentViewer()">
+                    <i class="fas fa-check-circle"></i> Verify
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>

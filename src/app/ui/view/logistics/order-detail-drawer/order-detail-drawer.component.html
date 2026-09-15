@@ -1,0 +1,125 @@
+<app-side-modal (close)="close()">
+  <div class="h-full flex flex-col">
+    <!-- Header -->
+    <div class="flex items-start justify-between pb-4 border-b border-[#e5eaed]">
+      <div>
+        <p class="text-[11px] font-medium text-[#9aa7ae] uppercase tracking-wide mb-1">Order Detail</p>
+        <h2 class="text-[19px] font-bold text-[#14181b]">{{ order?.orderId || '...' }}</h2>
+      </div>
+      <button
+        type="button"
+        (click)="close()"
+        class="w-8 h-8 rounded-full flex items-center justify-center text-[#71828a] hover:bg-[#eef2f5] hover:text-[#14181b] transition-colors shrink-0"
+        aria-label="Close"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18 6 6 18M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="flex-1 flex items-center justify-center">
+      <p class="text-[13px] text-[#9aa7ae]">Loading order…</p>
+    </div>
+
+    <!-- Not found -->
+    <div *ngIf="!isLoading && !order" class="flex-1 flex items-center justify-center">
+      <p class="text-[13px] text-[#9aa7ae]">Order not found.</p>
+    </div>
+
+    <!-- Body -->
+    <div *ngIf="!isLoading && order" class="flex-1 overflow-y-auto py-5 space-y-6">
+
+      <!-- Status + quick facts -->
+      <div class="bg-white rounded-xl border border-[#e5eaed] p-4">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-[15px] font-semibold text-[#14181b]">{{ order.customerName }}</span>
+          <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold" [ngClass]="getOrderStatusBadgeClass(order.status)">
+            {{ getOrderStatusLabel(order.status) }}
+          </span>
+        </div>
+        <dl class="grid grid-cols-2 gap-y-3 gap-x-4 text-[13px]">
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Items</dt>
+            <dd class="text-[#14181b] font-medium">{{ order.itemsSummary }}</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Delivery Location</dt>
+            <dd class="text-[#14181b] font-medium">{{ order.deliveryLocation }}</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Time Since Paid</dt>
+            <dd class="text-[#14181b] font-medium">{{ timeSincePaid() }}</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Fulfillment Type</dt>
+            <dd class="text-[#14181b] font-medium capitalize">{{ (order.fulfillmentType || 'unassigned').toLowerCase() }}</dd>
+          </div>
+          <div *ngIf="order.riderName">
+            <dt class="text-[#9aa7ae] mb-0.5">Assigned Rider</dt>
+            <dd class="text-[#14181b] font-medium">{{ order.riderName }}</dd>
+          </div>
+          <div *ngIf="order.batchId">
+            <dt class="text-[#9aa7ae] mb-0.5">Batch</dt>
+            <dd class="text-[#14181b] font-medium">{{ order.batchId }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Items breakdown (expandable) -->
+      <div class="bg-white rounded-xl border border-[#e5eaed] overflow-hidden">
+        <button
+          type="button"
+          class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#f7f9fa] transition-colors"
+          (click)="toggleItems()"
+        >
+          <span class="text-[13px] font-semibold text-[#14181b]">
+            Order Items <span class="text-[#9aa7ae] font-normal">({{ order.itemCount }})</span>
+          </span>
+          <svg
+            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+            class="text-[#9aa7ae] transition-transform"
+            [class.rotate-180]="showItems"
+          >
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
+        <div *ngIf="showItems" class="border-t border-[#eef2f5] divide-y divide-[#eef2f5]">
+          <div *ngFor="let item of order.items" class="px-4 py-2.5 flex items-center justify-between">
+            <div>
+              <p class="text-[13px] font-medium text-[#14181b]">{{ item.name }}</p>
+              <p *ngIf="item.note" class="text-[11.5px] text-[#9aa7ae]">{{ item.note }}</p>
+            </div>
+            <span class="text-[12.5px] font-semibold text-[#566670]">× {{ item.quantity }}</span>
+          </div>
+          <div *ngIf="!order.items?.length" class="px-4 py-4 text-center text-[12.5px] text-[#9aa7ae]">
+            No itemized breakdown available for this order.
+          </div>
+        </div>
+      </div>
+
+      <!-- Audit trail -->
+      <div>
+        <h3 class="text-[13px] font-semibold text-[#14181b] mb-3">Audit Trail</h3>
+        <div class="bg-white rounded-xl border border-[#e5eaed] divide-y divide-[#eef2f5]">
+          <div *ngFor="let entry of auditLog" class="px-4 py-3 flex items-start gap-3">
+            <span class="w-2 h-2 rounded-full bg-[#00a191] mt-1.5 shrink-0"></span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[13px] text-[#14181b]">
+                <span class="font-semibold">{{ entry.actor }}</span>
+                changed status from <span class="font-medium">{{ entry.fromStatus }}</span>
+                to <span class="font-medium">{{ entry.toStatus }}</span>
+              </p>
+              <p *ngIf="entry.note" class="text-[12px] text-[#71828a] mt-0.5">"{{ entry.note }}"</p>
+              <p class="text-[11px] text-[#9aa7ae] mt-0.5">{{ entry.timestamp | date: 'MMM d, y · h:mm a' }}</p>
+            </div>
+          </div>
+          <div *ngIf="!auditLog.length" class="px-4 py-6 text-center text-[13px] text-[#9aa7ae]">
+            No audit history yet.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-side-modal>

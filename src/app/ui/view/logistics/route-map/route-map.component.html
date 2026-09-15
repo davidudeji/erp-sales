@@ -1,0 +1,13 @@
+<div class="route-map-wrapper">
+  <div #mapEl class="route-map-canvas"></div>
+
+  <div *ngIf="loadFailed" class="route-map-fallback">
+    <p class="text-[12.5px] text-[#9aa7ae] text-center px-4">
+      Map preview couldn't load (no network access to the map tiles). The stop list on the left still shows the full sequence.
+    </p>
+  </div>
+
+  <div *ngIf="!stops?.length" class="route-map-fallback">
+    <p class="text-[12.5px] text-[#9aa7ae]">No stop coordinates to preview.</p>
+  </div>
+</div>

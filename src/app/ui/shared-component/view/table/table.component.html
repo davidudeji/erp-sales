@@ -1,0 +1,106 @@
+<p-table
+  [value]="rows"
+  [rowHover]="true"
+  [responsiveLayout]="'scroll'"
+  [styleClass]="buildClass('app-data-table', wrapperClass)"
+  [tableStyleClass]="buildClass('app-data-table__table', tableClass)"
+  [tableStyle]="tableStyle"
+  [ngClass]="{
+    'is-compact': compact,
+    'is-striped': striped,
+    'has-selection': selectable,
+    'has-actions': actions.length
+  }"
+  [paginator]="paginator"
+  [rows]="rowsPerPage"
+  [rowsPerPageOptions]="rowsPerPageOptions"
+  [dataKey]="dataKey"
+  [selection]="selection"
+  [selectionMode]="selectable ? selectionMode : undefined"
+  (selectionChange)="handleSelectionChange($event)"
+>
+  <ng-template pTemplate="header">
+    <tr>
+      <th
+        *ngIf="selectable && selectionMode === 'multiple'"
+        class="app-table-select"
+        style="width: 4rem;"
+      >
+        <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+      </th>
+      <th
+        *ngIf="selectable && selectionMode === 'single'"
+        class="app-table-select"
+        style="width: 4rem;"
+      ></th>
+      <th
+        *ngFor="let col of columns; let colIndex = index"
+        [ngClass]="[col.className || '', colIndex === 0 ? 'app-table-main-col' : '']"
+        [style.text-align]="col.align || 'left'"
+        [pSortableColumn]="getSortField(col)"
+      >
+        <span class="app-table-header">
+          {{ col.header }}
+          <p-sortIcon *ngIf="col.sortable" [field]="getSortField(col)"></p-sortIcon>
+        </span>
+      </th>
+      <th *ngIf="actions.length" class="app-table-actions-col">Actions</th>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="body" let-row let-rowIndex="rowIndex">
+    <tr
+      [class.row-clickable]="rowClickable"
+      (click)="handleRowClick(row)"
+    >
+      <td *ngIf="selectable && selectionMode === 'multiple'" class="app-table-select">
+        <p-tableCheckbox [value]="row" (click)="$event.stopPropagation()"></p-tableCheckbox>
+      </td>
+      <td *ngIf="selectable && selectionMode === 'single'" class="app-table-select">
+        <p-tableRadioButton [value]="row" (click)="$event.stopPropagation()"></p-tableRadioButton>
+      </td>
+      <ng-container *ngIf="bodyTemplate; else defaultBody">
+        <ng-container
+          [ngTemplateOutlet]="bodyTemplate.templateRef"
+          [ngTemplateOutletContext]="{ $implicit: row, columns: columns, rowIndex: rowIndex }"
+        ></ng-container>
+      </ng-container>
+
+      <ng-template #defaultBody>
+        <td
+          *ngFor="let col of columns; let colIndex = index"
+          [ngClass]="[col.className || '', colIndex === 0 ? 'app-table-main-col' : '']"
+          [style.text-align]="col.align || 'left'"
+        >
+          <span *ngIf="col.badgeClass; else plainCell" [ngClass]="col.badgeClass(row)">
+            {{ resolveCell(row, col) }}
+          </span>
+          <ng-template #plainCell>{{ resolveCell(row, col) }}</ng-template>
+        </td>
+        <td *ngIf="actions.length" class="app-table-actions app-table-actions-col">
+          <ng-container *ngFor="let action of actions">
+            <button
+              *ngIf="!action.visible || action.visible(row)"
+              type="button"
+              class="app-table-action"
+              [ngClass]="action.className"
+              [disabled]="action.disabled ? action.disabled(row) : false"
+              (click)="handleActionClick(action.id, row, $event)"
+            >
+              <i *ngIf="action.icon" [class]="action.icon"></i>
+              {{ action.label }}
+            </button>
+          </ng-container>
+        </td>
+      </ng-template>
+    </tr>
+  </ng-template>
+
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td [attr.colspan]="colSpan" class="app-table-empty">
+        {{ emptyMessage }}
+      </td>
+    </tr>
+  </ng-template>
+</p-table>

@@ -1,0 +1,145 @@
+<!-- restock-suggestion.component.html -->
+<div class="ql-suggestion" [class.ql-suggestion--compact]="compact">
+
+    <!-- ============================================================
+    HEADER
+    ============================================================ -->
+    <div class="ql-suggestion-header">
+        <div class="ql-suggestion-header-left">
+            <h3><i class="fas fa-lightbulb"></i> Restock Suggestions</h3>
+            <span class="ql-suggestion-count">{{ stats.total }}</span>
+        </div>
+        <div class="ql-suggestion-header-right">
+            <span class="ql-suggestion-stats">
+                <span class="ql-suggestion-stat ql-suggestion-stat--critical" *ngIf="stats.critical > 0">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ stats.critical }} critical
+                </span>
+                <span class="ql-suggestion-stat ql-suggestion-stat--low" *ngIf="stats.low > 0">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ stats.low }} low
+                </span>
+            </span>
+            <button class="ql-btn ql-btn--ghost-sm" (click)="refresh()" [disabled]="isLoading" title="Refresh">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    LOADING STATE
+    ============================================================ -->
+    <div *ngIf="isLoading" class="ql-suggestion-loading">
+        <div class="ql-spinner"></div>
+        <span>Analyzing inventory...</span>
+    </div>
+
+    <!-- ============================================================
+    ERROR STATE
+    ============================================================ -->
+    <div *ngIf="error && !isLoading" class="ql-suggestion-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+        <button (click)="refresh()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
+    <!-- ============================================================
+    EMPTY STATE
+    ============================================================ -->
+    <div *ngIf="!isLoading && !error && suggestions.length === 0" class="ql-suggestion-empty">
+        <i class="fas fa-check-circle" style="color: #2EB270;"></i>
+        <p>All stock levels are healthy!</p>
+        <span>No restock suggestions at this time</span>
+    </div>
+
+    <!-- ============================================================
+    SUGGESTIONS LIST
+    ============================================================ -->
+    <div *ngIf="!isLoading && !error && suggestions.length > 0" class="ql-suggestion-list">
+        <div *ngFor="let suggestion of filteredSuggestions" class="ql-suggestion-item"
+            [class.ql-suggestion-item--critical]="suggestion.urgency === RestockUrgency.CRITICAL"
+            [class.ql-suggestion-item--low]="suggestion.urgency === RestockUrgency.HIGH"
+            (click)="selectSuggestion(suggestion)">
+
+            <!-- Product Icon -->
+            <div class="ql-suggestion-icon">
+                <img *ngIf="suggestion.productImage" [src]="suggestion.productImage" alt="{{ suggestion.productName }}">
+                <span *ngIf="!suggestion.productImage">{{ getInitials(suggestion.productName) }}</span>
+            </div>
+
+            <!-- Product Info -->
+            <div class="ql-suggestion-info">
+                <div class="ql-suggestion-product">
+                    <span class="ql-suggestion-name">{{ suggestion.productName }}</span>
+                    <span class="ql-suggestion-sku">{{ suggestion.sku }}</span>
+                </div>
+                <div class="ql-suggestion-meta">
+                    <span class="ql-suggestion-branch">
+                        <i class="fas fa-store"></i>
+                        {{ getBranchName(suggestion.branchId) }}
+                    </span>
+                    <span class="ql-suggestion-category" *ngIf="suggestion.category">
+                        {{ suggestion.category }}
+                    </span>
+                </div>
+                <div class="ql-suggestion-stock">
+                    <span class="ql-stock-badge" [class]="'ql-stock--' + getStockStatusClass(getStockStatus(
+                        suggestion.currentStock,
+                        suggestion.reorderPoint,
+                        suggestion.safetyStock
+                    ))">
+                        {{ suggestion.currentStock }}
+                    </span>
+                    <span class="ql-stock-label">/ {{ suggestion.reorderPoint }} reorder</span>
+                    <span class="ql-stock-status" [style.color]="getStockStatusColor(getStockStatus(
+                        suggestion.currentStock,
+                        suggestion.reorderPoint,
+                        suggestion.safetyStock
+                    ))">
+                        {{ getStockStatusLabel(getStockStatus(
+                        suggestion.currentStock,
+                        suggestion.reorderPoint,
+                        suggestion.safetyStock
+                        )) }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Suggestion Action -->
+            <div class="ql-suggestion-action">
+                <div class="ql-suggestion-qty">
+                    <span class="ql-suggestion-qty-label">Suggested</span>
+                    <span class="ql-suggestion-qty-value">+{{ suggestion.suggestedQuantity }}</span>
+                </div>
+                <div class="ql-suggestion-urgency">
+                    <span class="ql-urgency-badge" [style.background]="getUrgencyColor(suggestion.urgency) + '20'"
+                        [style.color]="getUrgencyColor(suggestion.urgency)">
+                        {{ getUrgencyLabel(suggestion.urgency) }}
+                    </span>
+                </div>
+                <div class="ql-suggestion-actions">
+                    <button class="ql-btn ql-btn--primary-sm"
+                        (click)="$event.stopPropagation(); createRestockRequest(suggestion)">
+                        <i class="fas fa-plus"></i> Restock
+                    </button>
+                    <button class="ql-btn ql-btn--ghost-sm"
+                        (click)="$event.stopPropagation(); viewProduct(suggestion.productId)" title="View Product">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Show All Button -->
+        <div class="ql-suggestion-footer" *ngIf="suggestions.length > limit">
+            <button class="ql-btn ql-btn--ghost-sm" (click)="toggleShowAll()">
+                {{ showAll ? 'Show Less' : 'Show All (' + suggestions.length + ')' }}
+                <i class="fas" [class.fa-chevron-up]="showAll" [class.fa-chevron-down]="!showAll"></i>
+            </button>
+            <button class="ql-btn ql-btn--primary-sm" (click)="createAllRequests()" *ngIf="!compact">
+                <i class="fas fa-file-export"></i> Create All
+            </button>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,1186 @@
+// ─── Design tokens ────────────────────────────────────────────────────────────
+:host {
+  --brand:       #224957;
+  --brand-h:     #1a3a44;
+  --brand-pale:  #e8f2f7;
+  --brand-pale2: #d2e8f2;
+  --green:       #16a34a;
+  --green-pale:  #f0fdf4;
+  --red:         #dc2626;
+  --red-pale:    #fef2f2;
+  --amber:       #d97706;
+  --amber-pale:  #fffbeb;
+  --gray-0:      #ffffff;
+  --gray-50:     #f8fafc;
+  --gray-100:    #f1f5f9;
+  --gray-200:    #e2e8f0;
+  --gray-300:    #cbd5e1;
+  --gray-400:    #94a3b8;
+  --gray-500:    #64748b;
+  --gray-600:    #475569;
+  --gray-700:    #334155;
+  --gray-900:    #0f172a;
+  --r-sm:        4px;
+  --r-md:        6px;
+  --r-lg:        8px;
+  --r-xl:        10px;
+  --t:           .14s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+}
+
+// ─── Page shell ───────────────────────────────────────────────────────────────
+.vr-shell {
+  min-height: 100vh;
+  background: var(--gray-50);
+  display: flex;
+  flex-direction: column;
+}
+
+// ─── Top nav bar ──────────────────────────────────────────────────────────────
+.vr-topbar {
+  background: var(--gray-0);
+  border-bottom: 1px solid var(--gray-200);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.vr-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .vr-topbar-logo {
+    width: 28px;
+    height: 28px;
+    background: var(--brand);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+  }
+
+  .vr-topbar-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-900);
+  }
+
+  .vr-topbar-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--gray-200);
+    margin: 0 2px;
+  }
+
+  .vr-topbar-sub {
+    font-size: 13px;
+    color: var(--gray-500);
+  }
+}
+
+.vr-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vr-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .vr-progress-bar {
+    width: 120px;
+    height: 4px;
+    background: var(--gray-200);
+    border-radius: 2px;
+    overflow: hidden;
+
+    .vr-progress-fill {
+      height: 100%;
+      background: var(--brand);
+      border-radius: 2px;
+      transition: width .4s ease;
+    }
+  }
+
+  .vr-progress-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brand);
+    min-width: 28px;
+  }
+}
+
+.vr-autosave {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--gray-500);
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+}
+
+// ─── Body layout ──────────────────────────────────────────────────────────────
+.vr-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+.vr-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--gray-0);
+  border-right: 1px solid var(--gray-200);
+  padding: 20px 0;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.vr-sidebar-section {
+  padding: 0 12px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  margin-bottom: 8px;
+}
+
+.vr-sidebar-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 0 8px;
+  margin-bottom: 4px;
+}
+
+.vr-step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: var(--r-lg);
+  cursor: default;
+  transition: background var(--t);
+  position: relative;
+
+  &--clickable { cursor: pointer; }
+  &--clickable:hover { background: var(--gray-100); }
+
+  &--active {
+    background: var(--brand-pale);
+
+    .vr-step-num  { background: var(--brand); color: white; border-color: var(--brand); }
+    .vr-step-name { color: var(--brand); font-weight: 600; }
+  }
+
+  &--done {
+    .vr-step-num  { background: var(--green-pale); color: var(--green); border-color: #bbf7d0; }
+    .vr-step-name { color: var(--gray-600); }
+  }
+
+  &--future {
+    .vr-step-num  { background: var(--gray-50); color: var(--gray-400); border-color: var(--gray-200); }
+    .vr-step-name { color: var(--gray-400); }
+  }
+}
+
+.vr-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all var(--t);
+}
+
+.vr-step-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.vr-step-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+  line-height: 1.2;
+  transition: color var(--t);
+}
+
+.vr-step-sub {
+  font-size: 10px;
+  color: var(--gray-400);
+  margin-top: 1px;
+}
+
+.vr-sidebar-footer {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.vr-save-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-600);
+  background: var(--gray-0);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--t);
+
+  &:hover { background: var(--gray-100); border-color: var(--gray-300); }
+}
+
+// ─── Main content ─────────────────────────────────────────────────────────────
+.vr-main {
+  flex: 1;
+  min-width: 0;
+  padding: 24px 32px;
+  max-width: 900px;
+}
+
+// ─── Step header ──────────────────────────────────────────────────────────────
+.vr-step-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-200);
+
+  .vr-step-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand);
+    background: var(--brand-pale);
+    padding: 2px 8px;
+    border-radius: 100px;
+    margin-bottom: 6px;
+    letter-spacing: .02em;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0 0 3px;
+    letter-spacing: -.2px;
+  }
+
+  p {
+    font-size: 13px;
+    color: var(--gray-500);
+    margin: 0;
+  }
+}
+
+// ─── Section ──────────────────────────────────────────────────────────────────
+.vr-section {
+  background: var(--gray-0);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-xl);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.vr-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  background: var(--gray-50);
+
+  h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin: 0;
+  }
+
+  p {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin: 3px 0 0;
+  }
+}
+
+.vr-section-body {
+  padding: 16px;
+}
+
+// ─── Form grid ────────────────────────────────────────────────────────────────
+.vr-g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vr-g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.vr-g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+.vr-span2 { grid-column: span 2; }
+.vr-span3 { grid-column: span 3; }
+
+// ─── Form field ───────────────────────────────────────────────────────────────
+.vr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vr-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-700);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+
+  &.req::after {
+    content: '*';
+    color: var(--red);
+    font-size: 11px;
+  }
+
+  .opt {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--gray-400);
+  }
+}
+
+.vr-input,
+.vr-select,
+.vr-textarea {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--gray-900);
+  background: var(--gray-0);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--t), box-shadow var(--t);
+  -webkit-appearance: none;
+  line-height: 1.4;
+
+  &::placeholder { color: var(--gray-400); font-size: 12px; }
+  &:hover:not(:disabled) { border-color: var(--gray-300); }
+
+  &:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px rgba(34,73,87,.12);
+  }
+
+  &.err {
+    border-color: var(--red);
+    &:focus { box-shadow: 0 0 0 2px rgba(220,38,38,.12); }
+  }
+}
+
+.vr-select {
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.vr-textarea {
+  resize: vertical;
+  line-height: 1.5;
+  min-height: 80px;
+}
+
+.vr-hint { font-size: 11px; color: var(--gray-400); }
+.vr-err  { font-size: 11px; color: var(--red); font-weight: 500; }
+
+// ─── Character count ──────────────────────────────────────────────────────────
+.vr-count {
+  font-size: 11px;
+  color: var(--gray-400);
+  text-align: right;
+  margin-top: -2px;
+}
+
+// ─── Toggle ───────────────────────────────────────────────────────────────────
+.vr-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-lg);
+  background: var(--gray-0);
+  cursor: pointer;
+  transition: border-color var(--t), background var(--t);
+
+  &:hover { border-color: var(--gray-300); }
+  &.on    { border-color: var(--brand-pale2); background: var(--brand-pale); }
+  &.danger.on { border-color: #fecaca; background: var(--red-pale); }
+}
+
+.vr-toggle {
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--gray-200);
+  position: relative;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: background var(--t);
+  cursor: pointer;
+
+  &.on { background: var(--brand); }
+  &.danger.on { background: var(--red); }
+
+  .vr-toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2);
+    transition: transform var(--t);
+  }
+
+  &.on .vr-toggle-knob { transform: translateX(14px); }
+}
+
+.vr-toggle-text {
+  flex: 1;
+  min-width: 0;
+
+  strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-900);
+    line-height: 1.3;
+  }
+
+  span {
+    display: block;
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 1px;
+    line-height: 1.4;
+  }
+}
+
+// ─── Checkbox grid ────────────────────────────────────────────────────────────
+.vr-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+}
+
+.vr-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all var(--t);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-700);
+
+  &:hover { border-color: var(--gray-300); background: var(--gray-50); }
+
+  &.on {
+    border-color: var(--brand);
+    background: var(--brand-pale);
+    color: var(--brand);
+
+    .vr-checkbox { border-color: var(--brand); background: var(--brand); }
+  }
+}
+
+.vr-checkbox {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--t);
+}
+
+// ─── ISO checkbox (wider label) ───────────────────────────────────────────────
+.vr-iso-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.vr-iso-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all var(--t);
+  font-size: 12px;
+  color: var(--gray-700);
+
+  &:hover { border-color: var(--gray-300); background: var(--gray-50); }
+
+  &.on {
+    border-color: var(--brand);
+    background: var(--brand-pale);
+    color: var(--brand);
+    .vr-checkbox { border-color: var(--brand); background: var(--brand); }
+  }
+}
+
+// ─── Region grid ─────────────────────────────────────────────────────────────
+.vr-region-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 5px;
+}
+
+.vr-region-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--gray-700);
+  transition: all var(--t);
+
+  &:hover { border-color: var(--gray-300); background: var(--gray-50); }
+
+  &.on {
+    border-color: var(--brand);
+    background: var(--brand-pale);
+    color: var(--brand);
+    .vr-checkbox { border-color: var(--brand); background: var(--brand); }
+  }
+}
+
+// ─── Declaration cards ────────────────────────────────────────────────────────
+.vr-decl-card {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 8px;
+
+  &.danger-active {
+    border-color: #fecaca;
+    background: var(--red-pale);
+  }
+}
+
+.vr-decl-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  background: var(--gray-50);
+  border-bottom: 1px solid transparent;
+  transition: background var(--t);
+
+  &:hover { background: var(--gray-100); }
+
+  .vr-decl-head-text {
+    flex: 1;
+
+    strong { font-size: 13px; font-weight: 500; color: var(--gray-900); display: block; }
+    span   { font-size: 11px; color: var(--gray-500); margin-top: 1px; display: block; }
+  }
+}
+
+.vr-decl-body {
+  padding: 12px 14px;
+  border-top: 1px solid var(--gray-100);
+  background: var(--gray-0);
+}
+
+// ─── Dynamic list cards ───────────────────────────────────────────────────────
+.vr-list-card {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: var(--gray-0);
+}
+
+.vr-list-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+
+  span {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  button {
+    font-size: 11px;
+    color: var(--red);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background var(--t);
+    &:hover { background: var(--red-pale); }
+  }
+}
+
+// ─── Add button ───────────────────────────────────────────────────────────────
+.vr-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--brand);
+  border: 1px dashed var(--brand-pale2);
+  background: var(--gray-0);
+  padding: 7px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--t);
+  margin-top: 4px;
+
+  &:hover { background: var(--brand-pale); border-color: var(--brand); }
+}
+
+// ─── Document upload row ──────────────────────────────────────────────────────
+.vr-doc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-lg);
+  background: var(--gray-0);
+  margin-bottom: 6px;
+  transition: border-color var(--t);
+
+  &.uploaded { border-color: #86efac; background: #f0fdf4; }
+
+  .vr-doc-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--gray-100);
+    color: var(--gray-500);
+
+    &.done { background: #dcfce7; color: var(--green); }
+  }
+
+  .vr-doc-info {
+    flex: 1;
+    min-width: 0;
+
+    .vr-doc-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-900);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .vr-doc-hint { font-size: 11px; color: var(--gray-500); margin-top: 1px; }
+    .vr-doc-file { font-size: 11px; color: var(--green); font-weight: 500; margin-top: 2px; }
+  }
+
+  .vr-doc-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+}
+
+// ─── Agreement checkboxes ─────────────────────────────────────────────────────
+.vr-agree-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: all var(--t);
+
+  &:hover { border-color: var(--gray-300); background: var(--gray-50); }
+
+  &.on {
+    border-color: var(--brand-pale2);
+    background: var(--brand-pale);
+
+    .vr-agree-check { border-color: var(--brand); background: var(--brand); }
+  }
+
+  .vr-agree-check {
+    width: 15px;
+    height: 15px;
+    border: 1.5px solid var(--gray-300);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all var(--t);
+  }
+
+  span {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-800);
+    line-height: 1.5;
+    user-select: none;
+  }
+}
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+.vr-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .02em;
+
+  &.required { background: #fef2f2; color: #dc2626; }
+  &.optional  { background: var(--gray-100); color: var(--gray-500); }
+}
+
+// ─── Info callout ─────────────────────────────────────────────────────────────
+.vr-callout {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-lg);
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+
+  svg { flex-shrink: 0; margin-top: 1px; }
+
+  strong { font-weight: 600; display: block; margin-bottom: 2px; }
+
+  &.blue   { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+  &.amber  { background: var(--amber-pale); border: 1px solid #fde68a; color: #92400e; }
+  &.green  { background: var(--green-pale); border: 1px solid #bbf7d0; color: #15803d; }
+}
+
+// ─── Logo upload ──────────────────────────────────────────────────────────────
+.vr-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-lg);
+  background: var(--gray-50);
+
+  .vr-logo-preview {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--gray-200);
+    background: white;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--gray-300);
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  .vr-logo-info {
+    flex: 1;
+
+    p { font-size: 12px; color: var(--gray-900); font-weight: 500; margin: 0 0 3px; }
+    span { font-size: 11px; color: var(--gray-500); }
+  }
+}
+
+.vr-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-md);
+  background: white;
+  color: var(--gray-700);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--t);
+
+  &:hover { border-color: var(--gray-300); background: var(--gray-50); }
+}
+
+// ─── Navigation bar ───────────────────────────────────────────────────────────
+.vr-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.vr-nav-left { display: flex; align-items: center; gap: 8px; }
+.vr-nav-right { display: flex; align-items: center; gap: 8px; }
+
+.vr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--t);
+
+  &-secondary {
+    background: white;
+    border-color: var(--gray-200);
+    color: var(--gray-700);
+    &:hover { border-color: var(--gray-300); background: var(--gray-50); }
+  }
+
+  &-primary {
+    background: var(--brand);
+    color: white;
+    &:hover { background: var(--brand-h); }
+  }
+
+  &-success {
+    background: var(--green);
+    color: white;
+    &:hover { background: #15803d; }
+    &:disabled { opacity: .5; cursor: not-allowed; }
+  }
+}
+
+// ─── Step dots (mobile) ───────────────────────────────────────────────────────
+.vr-step-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    transition: all var(--t);
+
+    &.active  { background: var(--brand); width: 16px; border-radius: 3px; }
+    &.done    { background: var(--green); }
+    &.future  { background: var(--gray-200); }
+  }
+}
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+.vr-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ─── Section separator ────────────────────────────────────────────────────────
+.vr-sep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 10px;
+
+  span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+
+  &::before, &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--gray-200);
+  }
+}
+
+// ─── Success page ─────────────────────────────────────────────────────────────
+.vr-success {
+  min-height: 100vh;
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+
+  .vr-success-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: none;
+  }
+
+  .vr-success-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--green-pale);
+    border: 1px solid #bbf7d0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: var(--green);
+  }
+
+  h1 { font-size: 20px; font-weight: 700; color: var(--gray-900); margin: 0 0 8px; }
+  p  { font-size: 13px; color: var(--gray-500); margin: 0 0 20px; line-height: 1.6; }
+
+  .vr-app-num {
+    background: var(--brand-pale);
+    border: 1px solid var(--brand-pale2);
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-bottom: 20px;
+
+    label { font-size: 11px; color: var(--gray-500); display: block; margin-bottom: 4px; }
+    strong { font-size: 18px; font-weight: 700; color: var(--brand); letter-spacing: .06em; }
+  }
+}
+
+// ─── Responsive ───────────────────────────────────────────────────────────────
+@media (max-width: 900px) {
+  .vr-sidebar { display: none; }
+  .vr-main { padding: 16px; max-width: 100%; }
+  .vr-g3 { grid-template-columns: 1fr 1fr; }
+  .vr-g4 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  .vr-g2, .vr-g3, .vr-g4 { grid-template-columns: 1fr; }
+  .vr-span2, .vr-span3 { grid-column: auto; }
+  .vr-iso-grid { grid-template-columns: 1fr; }
+}
+
+// ─── Stepper connecting rail ──────────────────────────────────────────────────
+// A single vertical line threading through every step number — the dots read
+// as one continuous path being walked, not six unrelated numbered boxes. The
+// circle's own background matches the sidebar so it visually "cuts" the line.
+.vr-step-rail {
+  position: relative;
+  padding-left: 3px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 18px;
+    bottom: 18px;
+    width: 1.5px;
+    background: var(--gray-200);
+  }
+
+  .vr-step-item { position: relative; z-index: 1; }
+  .vr-step-num  { background: var(--gray-0); }
+}
+
+// ─── Autosave indicator — an honest, transient state rather than a
+//     permanently-on "saved" claim ────────────────────────────────────────────
+.vr-autosave {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--gray-500);
+  min-width: 82px;
+  transition: color var(--t);
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gray-300);
+    flex-shrink: 0;
+  }
+
+  &.is-saving { color: var(--gray-600); }
+  &.is-saved  { color: var(--green); }
+}
+
+.vr-autosave__spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--gray-200);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: spin .6s linear infinite;
+}
+
+// ─── Validation banner — replaces window.alert() ─────────────────────────────
+.vr-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 32px;
+  font-size: 12.5px;
+  font-weight: 500;
+  animation: vrBannerIn .18s cubic-bezier(.16,1,.3,1) both;
+
+  &--error {
+    background: var(--red-pale);
+    color: #991b1b;
+    border-bottom: 1px solid #fecaca;
+  }
+
+  svg { flex-shrink: 0; }
+  span { flex: 1; }
+}
+
+.vr-banner__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: .6;
+  cursor: pointer;
+  transition: opacity var(--t), background var(--t);
+
+  &:hover { opacity: 1; background: rgba(0,0,0,.06); }
+}
+
+@keyframes vrBannerIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ─── Review summary (Step 6) ──────────────────────────────────────────────────
+.vr-review-list {
+  padding: 4px 4px;
+}
+
+.vr-review-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--gray-100);
+
+  &:last-child { border-bottom: none; }
+}
+
+.vr-review-row__label {
+  width: 160px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.vr-review-row__value {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vr-review-row__edit {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--brand);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  transition: background var(--t);
+
+  &:hover { background: var(--brand-pale); }
+}

@@ -1,0 +1,102 @@
+<h2 mat-dialog-title>Number/Currency Format</h2>
+<mat-dialog-content>
+  <p>Change between Roman and Arabic number systems. Million vs. Lakhs.</p>
+  <mat-radio-group class="d-block">
+    <mat-radio-button value="india" class="radio-button d-block">
+      NGN 1,23,45,679 <span class="country">(India - English (Lakhs))</span>
+    </mat-radio-button> 
+    <mat-radio-button value="us" class="radio-button d-block">
+      NGN 12,345,679 <span class="country">(United States - English (Millions))</span>
+    </mat-radio-button>
+    <mat-radio-button value="nigeria" class="radio-button d-block">
+      ₦12,345,679 <span class="country">(Nigeria - English (English))</span>
+    </mat-radio-button>
+  </mat-radio-group>
+
+  <mat-form-field appearance="fill" class="country-select">
+    <mat-label>Choose from other countries</mat-label>
+    <mat-select>
+      <mat-option *ngFor="let country of countries" [value]="country.value">
+        {{ country.viewValue }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <div class="decimal-digits">
+    <label>Select Decimal Digits</label> <br>
+    <mat-radio-group class="grid">
+      <mat-radio-button value="default" class="">Default</mat-radio-button>
+      <mat-radio-button value="99" class="">99</mat-radio-button>
+      <mat-radio-button value="99.0" class="">99.0</mat-radio-button>
+      <mat-radio-button value="99.00" class="">99.00</mat-radio-button>
+      <mat-radio-button value="99.000" class="">99.000</mat-radio-button>
+      <mat-radio-button value="99.0000" class="">99.0000</mat-radio-button>
+    </mat-radio-group>
+  </div>
+
+  <mat-form-field appearance="fill" class="currency-symbol">
+    <mat-label>Add Custom Currency Symbol</mat-label>
+    <input matInput placeholder="Custom Currency Symbol">
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-button color="primary" (click)="saveChanges()">Save Changes</button>
+</mat-dialog-actions>
+
+
+<!-- <div class="currency-format-container">
+    <h2>Number/Currency Format</h2>
+    <p>Change between Roman and Arabic number systems. Million vs. Lakhs.</p>
+  
+    <form #currencyForm="ngForm" (ngSubmit)="onSubmit(currencyForm)">
+      <div class="form-group">
+        <label>Select Number Format</label>
+        <div *ngFor="let format of numberFormats">
+          <input
+            type="radio"
+            name="numberFormat"
+            [value]="format.value"
+            [(ngModel)]="selectedNumberFormat"
+            required
+            #numberFormatCtrl="ngModel"
+          />
+          {{ format.label }}
+        </div>
+        <div *ngIf="currencyForm.submitted && numberFormatCtrl.invalid">
+          <small class="error">Please select a number format.</small>
+        </div>
+      </div>
+  
+      <div class="form-group">
+        <label>Select Decimal Digits</label>
+        <div *ngFor="let digits of decimalDigits">
+          <input
+            type="radio"
+            name="decimalDigits"
+            [value]="digits.value"
+            [(ngModel)]="selectedDecimalDigits"
+            required
+            #decimalDigitsCtrl="ngModel"
+          />
+          {{ digits.label }}
+        </div>
+        <div *ngIf="currencyForm.submitted && decimalDigitsCtrl.invalid">
+          <small class="error">Please select the number of decimal digits.</small>
+        </div>
+      </div>
+  
+      <div class="form-group">
+        <label>Add Custom Currency Symbol</label>
+        <input
+          type="text"
+          [(ngModel)]="customCurrencySymbol"
+          name="customCurrencySymbol"
+          placeholder="Enter custom symbol"
+        />
+      </div>
+  
+      <button type="submit" class="save-button" [disabled]="currencyForm.invalid">Save Changes</button>
+    </form>
+  </div>
+   -->

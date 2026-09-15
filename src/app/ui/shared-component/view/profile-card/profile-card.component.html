@@ -1,0 +1,13 @@
+<div class="mb">
+    <div *ngFor="let profile of profiles" class="profile-card">
+      <div class="profile-card-img-container">
+        <img [src]="profile.img" alt="" class="profile-card-img">
+      </div>
+      <div class="profile-card-text-container">
+        <div>
+          <p class="profile-card-name">{{ profile.name }}</p>
+          <p class="profile-card-position">{{ profile.position }}</p>
+        </div>
+      </div>
+    </div>
+</div>

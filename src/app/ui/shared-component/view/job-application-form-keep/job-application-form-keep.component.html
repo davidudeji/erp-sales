@@ -1,0 +1,101 @@
+<p-toast></p-toast>
+<div class="">
+    <div class="form-container">
+      <div class="job-application-form  p-4">
+        <div class="job-application-wrapper ">
+          <div class="job-application-container card">
+            <h2>Job Application Form</h2>
+          
+            <!-- Applicant's FName -->
+            <label for="name">First Name:</label>
+            <input
+              type="text"
+              id="name"
+              class="editInput"
+              [(ngModel)]="applicant.firstName"
+              placeholder="Enter your name"
+            />
+            <br>
+
+            <!-- Applicant's LName -->
+            <label for="name">Last Name:</label>
+            <input
+              type="text"
+              id="name"
+              class="editInput"
+              [(ngModel)]="applicant.lastName"
+              placeholder="Enter your name"
+            />
+            <br>
+          
+            <!-- Applicant's Email -->
+            <label for="email">Email:</label>
+            <input
+              type="email"
+              id="email"
+              class="editInput"
+              [(ngModel)]="applicant.email"
+              placeholder="Enter your email"
+            />
+            <br>
+          
+            <!-- Applicant's Phone Number -->
+            <label for="phone">Phone:</label>
+            <input
+              type="tel"
+              id="phone"
+              class="editInput"
+              [(ngModel)]="applicant.contactNo"
+              placeholder="Enter your phone number"
+            />
+            <br>
+          
+            <!-- Job Position -->
+            <label for="position">Position Applied For:</label>
+            <input
+              type="text"
+              id="position"
+              class="editInput"
+              [(ngModel)]="applicant.position"
+              placeholder="Enter the job position"
+            />
+            <br>
+  
+            <!-- Resume/CV Upload -->
+            <label for="resume">Upload Resume/CV:</label>
+            <input
+              type="file"
+              id="resume"
+              (change)="onFileSelected($event)"
+              accept=".pdf, .doc, .docx"
+            />
+  
+            <br>
+          
+            <!-- Cover Letter -->
+            <label for="coverLetter">Cover Letter:</label>
+            <textarea
+              id="coverLetter"
+              class="editInput cover-letter"
+              [(ngModel)]="applicant.coverLetter"
+              placeholder="Write your cover letter"
+  
+            ></textarea>
+            <br>
+          
+            <!-- Submit Button -->
+            <app-button text="Submit Application" class="btn-save" (click)="submitApplication()"></app-button>
+            <br>
+            
+          </div>
+        </div>
+      </div>
+      <div class="aside-container">
+        <!-- Display the current tip with fade-in animation -->
+        <div *ngIf="tips.length" class="tip-content fade-in">
+          <img [src]="tips[currentIndex].image" alt="Job Application Tip" class="tip-image">
+          <p class="tip-text">{{ tips[currentIndex].text }}</p>
+        </div>
+      </div>
+    </div>
+</div>

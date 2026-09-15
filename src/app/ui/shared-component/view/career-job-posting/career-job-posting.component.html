@@ -1,0 +1,64 @@
+
+<div>
+    <div class="container-fluid p-4">
+        <div class="flex gap-4 w-1/2">
+            <div class="w-full">
+                <ng-select
+                    [items]="categories"
+                    bindLabel="category"
+                    bindValue="category"
+                    placeholder="Select Category"
+                    [(ngModel)]="selectedCategory"
+                    (change)="filterJobs()">
+                </ng-select>
+            </div>
+      
+            <div class="w-full">
+                <ng-select
+                    [items]="employmentTypes"
+                    bindLabel="employmentType"
+                    bindValue="employmentType"
+                    placeholder="Select Employment Type"
+                    [(ngModel)]="selectedEmploymentType"
+                    (change)="filterJobs()">
+                </ng-select>
+            </div>
+      
+            <div class="w-full">
+                <ng-select
+                    [items]="locations"
+                    bindLabel="location"
+                    bindValue="location"
+                    placeholder="Select Location"
+                    [(ngModel)]="selectedLocation"
+                    (change)="filterJobs()">
+                </ng-select>
+            </div>
+        </div>
+        <br>
+
+        <div class="list-card-container">
+            <div  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 " > 
+                <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-4 editInput" >
+                    <div class="list-card-wrapper" (click)="navigateToJob(job.id!)">
+                        <div class="list-card-right">
+                            <h3><strong>{{job.jobTitle}}</strong></h3>
+                            <p> <i class="pi pi-bars table-item me-2"></i> <span>{{job.jobCategory}}</span></p>
+                            <p> <i class="pi pi-clock table-item me-2"></i> <span>{{job.jobType}}</span></p>
+                            <p> <i class="pi pi-map-marker table-item me-2 "></i> <span>{{job.location}}</span></p>
+                            <br>
+                            <p><span>View More</span><i class="pi pi-arrow-right table-item ms-2 "></i></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <div *ngIf="filteredJobPostings.length == 0" class="input-container-100 nothing">
+                <span>
+                    No Job posting(s) yet
+                </span>
+            </div>
+          </div>
+    </div>
+</div>
+

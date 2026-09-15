@@ -1,0 +1,275 @@
+<!-- Same 2-col grid / white doc-paper preview design used in Request Management's RFQ template selector -->
+<div class="template-container">
+
+  <div class="selector-body">
+
+    <!-- 2-column template card grid -->
+    <div class="template-grid">
+
+      <div *ngFor="let template of templates"
+           class="tpl-card"
+           [class.tpl-card--selected]="selectedTemplateId === template.id"
+           (click)="selectTemplate(template.id)">
+
+        <!-- ── TOP: document preview area ── -->
+        <div class="tpl-preview" [ngClass]="'tpl-preview--' + getLayoutKey(template.id)">
+
+          <!-- selected checkmark badge -->
+          <div class="tpl-check" *ngIf="selectedTemplateId === template.id">
+            <i class="fas fa-check"></i>
+          </div>
+
+          <!-- white paper document -->
+          <div class="doc-paper">
+
+            <!-- STANDARD -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'standard'">
+              <div class="dp-header">
+                <div class="dp-logo"></div>
+                <div class="dp-org">
+                  <div class="dp-org-name">Company Name</div>
+                  <div class="dp-org-sub">{{ docLabel }} Document</div>
+                </div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DOC NO.</div>
+                  <div class="dp-mc-val">QT-2026-001</div>
+                </div>
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DATE</div>
+                  <div class="dp-mc-val">31 Jul 2026</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦ —</div>
+                </div>
+              </div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span class="num">Qty</span><span class="num">Rate</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>Item description here</span><span class="num">1</span><span class="num">—</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span class="sn">2</span><span>Another product item</span><span class="num">2</span><span class="num">—</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">3</span><span>Third line item</span><span class="num">5</span><span class="num">—</span>
+                </div>
+              </div>
+              <div class="dp-total">
+                <span>TOTAL</span><span class="amt">₦ 0.00</span>
+              </div>
+            </ng-container>
+
+            <!-- CORPORATE / BRANDED -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'centrifuge'">
+              <div class="dp-corp-top">
+                <div class="dp-corp-word">{{ docLabel }}</div>
+                <div class="dp-corp-brand"><strong>YOUR</strong><br>COMPANY</div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DOCUMENT NO.</div>
+                  <div class="dp-mc-val">495314</div>
+                </div>
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DATE</div>
+                  <div class="dp-mc-val">31 Jul 2026</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦8.2M</div>
+                </div>
+              </div>
+              <div class="dp-two-col">
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">PREPARED FOR</div>
+                  <div class="dp-col-val">Client Ltd</div>
+                </div>
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">PREPARED BY</div>
+                  <div class="dp-col-val">Your Company</div>
+                </div>
+              </div>
+              <div class="dp-banner">Goods &amp; Services Supply</div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span class="num">Qty</span><span class="num">Amount</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>HP ProBook 440 G9</span><span class="num">1</span><span class="num">₦1.4M</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span class="sn">2</span><span>Air Conditioner 1.5HP</span><span class="num">2</span><span class="num">₦1.2M</span>
+                </div>
+              </div>
+              <div class="dp-words">
+                <div class="dp-words-lbl">AMOUNT IN WORDS</div>
+                <div class="dp-words-val">Eight million, two hundred and nine thousand…</div>
+              </div>
+            </ng-container>
+
+            <!-- MINIMAL -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'minimal'">
+              <div class="dp-min-head">{{ docLabel }}</div>
+              <div class="dp-thin-rule"></div>
+              <div class="dp-field"><span class="dp-field-lbl">To:</span><span class="dp-field-val">Customer Name</span></div>
+              <div class="dp-field"><span class="dp-field-lbl">Date:</span><span class="dp-field-val">31 July 2026</span></div>
+              <div class="dp-field"><span class="dp-field-lbl">Valid Until:</span><span class="dp-field-val">30 Aug 2026</span></div>
+              <div class="dp-thin-rule"></div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span>Item</span><span class="num">Qty</span><span>Notes</span>
+                </div>
+                <div class="dp-trow">
+                  <span>Item One — Product A</span><span class="num">1</span><span>—</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span>Item Two — Product B</span><span class="num">3</span><span>—</span>
+                </div>
+                <div class="dp-trow">
+                  <span>Item Three — Product C</span><span class="num">2</span><span>—</span>
+                </div>
+              </div>
+              <div class="dp-footnote">Thank you for your business.</div>
+            </ng-container>
+
+            <!-- DETAILED -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'detailed'">
+              <div class="dp-header">
+                <div class="dp-logo"></div>
+                <div class="dp-org">
+                  <div class="dp-org-name">Company Name</div>
+                  <div class="dp-org-sub">Detailed {{ docLabel }}</div>
+                </div>
+              </div>
+              <div class="dp-rule orange"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell dark">
+                  <div class="dp-mc-lbl">DOC NO.</div>
+                  <div class="dp-mc-val">QT-2026-001</div>
+                </div>
+                <div class="dp-meta-cell dark accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦ —</div>
+                </div>
+              </div>
+              <div class="dp-two-col">
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">CUSTOMER</div>
+                  <div class="dp-col-val">Customer Name</div>
+                </div>
+                <div class="dp-col-box">
+                  <div class="dp-col-lbl">CATEGORY</div>
+                  <div class="dp-col-val">IT &amp; Electronics</div>
+                </div>
+              </div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span>Specs</span><span class="num">Qty</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>Item with specifications</span><span>Brand/Model</span><span class="num">1</span>
+                </div>
+              </div>
+              <div class="dp-qual">
+                <div class="dp-qual-lbl">PAYMENT TERMS</div>
+                <div class="dp-qual-val">• Net 30 &nbsp;&nbsp;• Bank Transfer &nbsp;&nbsp;• Signature Required</div>
+              </div>
+            </ng-container>
+
+            <!-- COMPACT -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'compact'">
+              <div class="dp-cpt-header">
+                <span class="dp-cpt-org">Company Name</span><span class="dp-cpt-sep">·</span><span>{{ docLabel }} 001</span><span class="dp-cpt-sep">·</span><span>31 Jul 26</span>
+              </div>
+              <div class="dp-thin-rule"></div>
+              <div class="dp-cpt-party"><strong>Customer Name</strong></div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span>Item</span><span class="num">Qty</span><span class="num">Total</span>
+                </div>
+                <div class="dp-trow">
+                  <span>Item description here</span><span class="num">1</span><span class="num">—</span>
+                </div>
+                <div class="dp-trow alt">
+                  <span>Another product item</span><span class="num">2</span><span class="num">—</span>
+                </div>
+              </div>
+              <div class="dp-cpt-totals">
+                <span>Total</span><span>₦ 0.00</span>
+              </div>
+            </ng-container>
+
+            <!-- CLIENT-FACING PREMIUM -->
+            <ng-container *ngIf="getLayoutKey(template.id) === 'custom-client'">
+              <div class="dp-prem-top">
+                <div class="dp-prem-word">{{ docLabel }}</div>
+                <div class="dp-prem-brand"><strong>Company Name</strong></div>
+              </div>
+              <div class="dp-rule green"></div>
+              <div class="dp-meta">
+                <div class="dp-meta-cell green">
+                  <div class="dp-mc-lbl">DOC NO.</div>
+                  <div class="dp-mc-val">001</div>
+                </div>
+                <div class="dp-meta-cell green accent">
+                  <div class="dp-mc-lbl">TOTAL</div>
+                  <div class="dp-mc-val">₦ —</div>
+                </div>
+              </div>
+              <div class="dp-prem-customer-card">
+                <div class="dp-col-lbl">BILLED TO</div>
+                <div class="dp-col-val">Client Name</div>
+              </div>
+              <div class="dp-table">
+                <div class="dp-thead">
+                  <span class="sn">S/N</span><span>Description</span><span class="num">Total</span>
+                </div>
+                <div class="dp-trow">
+                  <span class="sn">1</span><span>Item description here</span><span class="num">—</span>
+                </div>
+              </div>
+            </ng-container>
+
+          </div><!-- /doc-paper -->
+
+          <div class="preview-fade"></div>
+
+        </div><!-- /tpl-preview -->
+
+        <!-- ── BOTTOM: template info section ── -->
+        <div class="tpl-info">
+          <div class="tpl-info-main">
+            <div class="tpl-name-row">
+              <h3 class="tpl-name">{{ template.name }}</h3>
+              <span class="tpl-default" *ngIf="isTemplateDefault(template)">
+                <i class="fas fa-star"></i> Default
+              </span>
+            </div>
+            <p class="tpl-desc">{{ template.description }}</p>
+            <div class="tpl-tags" *ngIf="getTemplateTags(template).length > 0">
+              <span class="tpl-tag" *ngFor="let tag of getTemplateTags(template)">
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+          <div class="tpl-select-row">
+            <div class="tpl-select-btn" [class.active]="selectedTemplateId === template.id">
+              <i class="fas fa-check" *ngIf="selectedTemplateId === template.id"></i>
+              <i class="fas fa-arrow-right" *ngIf="selectedTemplateId !== template.id"></i>
+              {{ selectedTemplateId === template.id ? 'Selected' : 'Use this template' }}
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tpl-card -->
+    </div><!-- /template-grid -->
+
+  </div>
+</div>

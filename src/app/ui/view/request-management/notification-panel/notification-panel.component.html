@@ -1,0 +1,146 @@
+<div class="np-wrapper" [class.compact]="compact">
+
+  <!-- ─── COMPACT MODE: summary line only ─── -->
+  <ng-container *ngIf="compact">
+    <div class="np-compact-summary">
+      <span class="np-icon"><i class="fas fa-bell"></i></span>
+      <span class="np-compact-text">
+        <span *ngIf="notifications.length === 0">No notifications sent.</span>
+        <ng-container *ngIf="notifications.length > 0">
+          <span class="chip delivered" *ngIf="sentCount > 0">
+            <i class="fas fa-check-circle"></i> {{ sentCount }} delivered
+          </span>
+          <span class="chip failed" *ngIf="failedCount > 0">
+            <i class="fas fa-exclamation-circle"></i> {{ failedCount }} failed
+          </span>
+          <span *ngIf="sentCount === 0 && failedCount === 0" class="chip pending">
+            <i class="fas fa-clock"></i> {{ notifications.length }} pending
+          </span>
+        </ng-container>
+      </span>
+      <button class="np-compact-reload" (click)="loadNotifications()" title="Refresh">
+        <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- ─── FULL MODE ─── -->
+  <ng-container *ngIf="!compact">
+
+    <!-- Header -->
+    <div class="np-header">
+      <div class="np-header-left">
+        <div class="np-header-icon"><i class="fas fa-bell"></i></div>
+        <div>
+          <h4 class="np-title">Notifications</h4>
+          <p class="np-subtitle" *ngIf="entityType">{{ entityType }} — {{ entityId }}</p>
+        </div>
+      </div>
+      <div class="np-header-chips">
+        <span class="chip delivered" *ngIf="sentCount > 0">
+          <i class="fas fa-check-circle"></i> {{ sentCount }} sent
+        </span>
+        <span class="chip failed" *ngIf="failedCount > 0">
+          <i class="fas fa-exclamation-circle"></i> {{ failedCount }} failed
+        </span>
+        <button class="np-reload-btn" (click)="loadNotifications()" [disabled]="isLoading" title="Refresh notifications">
+          <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="np-loading" *ngIf="isLoading && notifications.length === 0">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Loading notifications...</span>
+    </div>
+
+    <!-- Empty state -->
+    <div class="np-empty" *ngIf="!isLoading && notifications.length === 0">
+      <div class="np-empty-icon"><i class="fas fa-bell-slash"></i></div>
+      <p>No notifications sent yet for this record.</p>
+      <small>Notifications will appear here as this procurement progresses through each stage.</small>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="np-list" *ngIf="notifications.length > 0">
+      <div
+        class="np-entry"
+        *ngFor="let n of notifications"
+        [ngClass]="n.status.toLowerCase()">
+
+        <!-- Status Icon -->
+        <div class="np-status-icon" [ngClass]="n.status.toLowerCase()" [title]="n.status">
+          <i class="fas"
+             [class.fa-check]="n.status === 'DELIVERED'"
+             [class.fa-paper-plane]="n.status === 'SENT'"
+             [class.fa-clock]="n.status === 'PENDING'"
+             [class.fa-times]="n.status === 'FAILED'"
+             [class.fa-undo]="n.status === 'BOUNCED'"></i>
+        </div>
+
+        <!-- Entry Body -->
+        <div class="np-entry-body">
+
+          <!-- Top row: type + channels -->
+          <div class="np-entry-top">
+            <span class="np-type-label">{{ getTypeLabel(n.type) }}</span>
+            <span class="channel-badge" [ngClass]="n.channel.toLowerCase()">{{ n.channel }}</span>
+          </div>
+
+          <!-- Recipient -->
+          <div class="np-recipient">
+            <i class="fas fa-user-circle"></i>
+            <span>{{ n.recipientName }}</span>
+            <span class="np-email" *ngIf="n.recipientEmail">&lt;{{ n.recipientEmail }}&gt;</span>
+          </div>
+
+          <!-- Subject -->
+          <div class="np-subject" *ngIf="n.subject">
+            <i class="fas fa-envelope"></i>
+            <span>{{ n.subject }}</span>
+          </div>
+
+          <!-- Timestamps -->
+          <div class="np-timestamps">
+            <span *ngIf="n.sentAt" class="ts-item">
+              <i class="fas fa-paper-plane"></i> Sent {{ n.sentAt | date:'d MMM yyyy, HH:mm' }}
+            </span>
+            <span *ngIf="n.deliveredAt" class="ts-item delivered">
+              <i class="fas fa-check-double"></i> Delivered {{ n.deliveredAt | date:'d MMM yyyy, HH:mm' }}
+            </span>
+            <span *ngIf="!n.sentAt" class="ts-item muted">
+              <i class="fas fa-clock"></i> Created {{ n.createdAt | date:'d MMM yyyy, HH:mm' }}
+            </span>
+          </div>
+
+          <!-- Failure reason -->
+          <div class="np-failure" *ngIf="n.failureReason">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>{{ n.failureReason }}</span>
+          </div>
+
+          <!-- Retry info -->
+          <div class="np-retry-info" *ngIf="n.retryCount > 0">
+            <i class="fas fa-redo"></i>
+            <span>{{ n.retryCount }} {{ n.retryCount === 1 ? 'retry' : 'retries' }} attempted</span>
+          </div>
+        </div>
+
+        <!-- Retry Action -->
+        <div class="np-entry-actions" *ngIf="n.status === 'FAILED' || n.status === 'BOUNCED'">
+          <button
+            class="btn-retry"
+            (click)="retry(n)"
+            [disabled]="retryingId === n.id">
+            <span *ngIf="retryingId !== n.id"><i class="fas fa-redo"></i> Retry</span>
+            <span *ngIf="retryingId === n.id"><i class="fas fa-spinner fa-spin"></i></span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </ng-container>
+
+</div>

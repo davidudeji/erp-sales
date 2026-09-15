@@ -1,0 +1,31 @@
+@import '../request-for-quotation-list/request-for-quotation-list.component.scss';
+
+.procurement-requests-container {
+  .continue-btn {
+    color: #1e40af;
+    background: rgba(59, 130, 246, 0.1);
+    font-weight: 700;
+    padding: 0 12px;
+    width: auto;
+    font-size: 0.75rem;
+    gap: 4px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+
+    &:hover {
+      background: rgba(59, 130, 246, 0.18);
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+    }
+  }
+
+  .loading-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
+    font-size: 1.1rem;
+    color: #184440;
+    font-weight: 600;
+    gap: 0.5rem;
+  }
+}

@@ -1,0 +1,291 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="il-layout">
+
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="il-sidebar">
+
+    <div class="il-sidebar-title">
+      <span>Filters</span>
+      <button class="il-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <!-- Quick search -->
+    <div class="il-filter-section">
+      <div class="il-search-wrap">
+        <i class="fas fa-search il-search-icon"></i>
+        <input type="text" class="il-search-input" placeholder="Search invoices…"
+               [(ngModel)]="filters.searchTerm" (input)="applyFilters()">
+      </div>
+    </div>
+
+    <!-- Status filters -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Status</div>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'ALL'"
+              (click)="filters.status = 'ALL'; applyFilters()">
+        <i class="fas fa-layer-group"></i>
+        <span>All Invoices</span>
+        <span class="il-count-pill">{{ stats.total }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'DRAFT'"
+              (click)="filters.status = 'DRAFT'; applyFilters()">
+        <i class="fas fa-edit"></i>
+        <span>Draft</span>
+        <span class="il-count-pill il-count-pill--gray">{{ stats.draft }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'SENT'"
+              (click)="filters.status = 'SENT'; applyFilters()">
+        <i class="fas fa-paper-plane"></i>
+        <span>Sent</span>
+        <span class="il-count-pill il-count-pill--blue">{{ stats.sent }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'OVERDUE'"
+              (click)="filters.status = 'OVERDUE'; applyFilters()">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>Overdue</span>
+        <span class="il-count-pill il-count-pill--red">{{ stats.overdue }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="filters.status === 'CANCELLED'"
+              (click)="filters.status = 'CANCELLED'; applyFilters()">
+        <i class="fas fa-ban"></i>
+        <span>Cancelled</span>
+        <span class="il-count-pill">{{ stats.cancelled }}</span>
+      </button>
+    </div>
+
+    <!-- Date range -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Date Range</div>
+      <div class="il-field">
+        <label class="il-flabel">From</label>
+        <input type="date" class="il-date-input" [(ngModel)]="filters.dateFrom" (change)="applyFilters()">
+      </div>
+      <div class="il-field">
+        <label class="il-flabel">To</label>
+        <input type="date" class="il-date-input" [(ngModel)]="filters.dateTo" (change)="applyFilters()">
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN AREA ══════════════════════════════════════════════════════════ -->
+  <main class="il-main">
+
+    <!-- Top bar -->
+    <div class="il-top-bar">
+      <div class="il-top-bar-left">
+        <h1 class="il-title">Invoices</h1>
+        <span class="il-total-badge">{{ totalElements }}</span>
+      </div>
+      <div class="il-top-bar-right">
+        <div class="il-page-size-wrap">
+          <span class="il-page-size-label">Per page</span>
+          <select class="il-page-size-select" [(ngModel)]="filters.size" (change)="onPageSizeChange(filters.size)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+        <button type="button" class="il-btn il-btn--primary" (click)="openNewInvoiceModal()">
+          <i class="fas fa-plus"></i> New Invoice
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Insight Banner -->
+    <div class="il-ai-banner" *ngIf="!aiDismissed && stats.overdue > 0">
+      <div class="il-ai-icon"><i class="fas fa-robot"></i></div>
+      <div class="il-ai-body">
+        <div class="il-ai-title">AI Insight</div>
+        <div class="il-ai-text">
+          <strong>{{ stats.overdue }}</strong> invoice{{ stats.overdue > 1 ? 's are' : ' is' }} overdue. Automated reminders increase collection rates by 47%. Consider sending payment reminders now.
+        </div>
+      </div>
+      <button type="button" class="il-ai-dismiss" (click)="aiDismissed = true"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Bulk action bar -->
+    <div class="il-bulk-bar" *ngIf="selectedInvoiceIds.length > 0">
+      <i class="fas fa-check-square"></i>
+      <span><strong>{{ selectedInvoiceIds.length }}</strong> invoice{{ selectedInvoiceIds.length > 1 ? 's' : '' }} selected</span>
+      <button type="button" class="il-btn il-btn--danger-sm">
+        <i class="fas fa-trash"></i> Delete Selected
+      </button>
+      <button type="button" class="il-btn il-btn--ghost-sm" (click)="selectedInvoiceIds = []">
+        Clear
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="il-table-wrap">
+      <table class="il-table">
+        <thead>
+          <tr>
+            <th class="il-th-chk">
+              <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)">
+            </th>
+            <th>Invoice #</th>
+            <th>Client</th>
+            <th>Amount</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th class="il-th-actions">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Loading skeleton -->
+        <tbody *ngIf="isLoading">
+          <tr class="il-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="8"><div class="il-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+
+        <!-- Empty state -->
+        <tbody *ngIf="!isLoading && invoices.length === 0">
+          <tr>
+            <td colspan="8">
+              <div class="il-empty">
+                <i class="fas fa-file-invoice il-empty-icon"></i>
+                <p class="il-empty-title">No invoices found</p>
+                <p class="il-empty-sub">Adjust your filters or create a new invoice</p>
+                <button type="button" class="il-btn il-btn--primary" (click)="openNewInvoiceModal()">
+                  <i class="fas fa-plus"></i> New Invoice
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="!isLoading && invoices.length > 0">
+          <tr *ngFor="let inv of invoices"
+              [class.il-row--overdue]="isOverdue(inv.dueDate) && inv.status !== 'CANCELLED'"
+              [class.il-row--cancelled]="inv.status === 'CANCELLED'">
+
+            <td class="il-td-chk">
+              <input type="checkbox" [checked]="isSelected(inv.id)" (change)="toggleSelection(inv.id, $event)">
+            </td>
+
+            <td class="il-td-num">
+              <button type="button" class="il-link" (click)="openInvoiceDetail(inv.id)">
+                {{ inv.invoiceNumber || '#' + inv.id }}
+              </button>
+            </td>
+
+            <td class="il-td-client">{{ getCustomerName(inv.customerId) }}</td>
+
+            <td class="il-td-amount">{{ formatCurrency(inv.totalAmount) }}</td>
+
+            <td class="il-td-date">{{ formatDate(inv.issueDate) }}</td>
+
+            <td class="il-td-date">
+              {{ formatDate(inv.dueDate) }}
+              <span class="il-overdue-badge" *ngIf="isOverdue(inv.dueDate) && inv.status !== 'CANCELLED'">
+                {{ getDaysOverdue(inv.dueDate) }}d overdue
+              </span>
+            </td>
+
+            <td>
+              <span class="il-status-badge"
+                    [class.il-status-badge--draft]="inv.status === 'DRAFT'"
+                    [class.il-status-badge--sent]="inv.status === 'SENT'"
+                    [class.il-status-badge--cancelled]="inv.status === 'CANCELLED'"
+                    [class.il-status-badge--overdue]="isOverdue(inv.dueDate) && inv.status !== 'CANCELLED'">
+                {{ isOverdue(inv.dueDate) && inv.status !== 'CANCELLED' ? 'Overdue' : getStatusLabel(inv.status) }}
+              </span>
+            </td>
+
+            <td class="il-td-actions">
+              <div class="il-row-actions">
+                <button type="button" class="il-action-btn" (click)="openInvoiceDetail(inv.id)" title="View">
+                  <i class="fas fa-eye"></i> View
+                </button>
+                <button type="button" class="il-action-btn" (click)="openEditInvoiceModal(inv.id)" title="Edit"
+                        *ngIf="inv.status !== 'CANCELLED'">
+                  <i class="fas fa-pencil-alt"></i> Edit
+                </button>
+                <button type="button" class="il-action-btn" (click)="duplicateInvoice(inv)" title="Duplicate">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--remind"
+                        (click)="sendReminder(inv)" title="Send Reminder"
+                        *ngIf="inv.status === 'SENT' || isOverdue(inv.dueDate)">
+                  <i class="fas fa-bell"></i> Remind
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--danger"
+                        (click)="deleteInvoice(inv)" title="Cancel Invoice"
+                        *ngIf="inv.status !== 'CANCELLED'">
+                  <i class="fas fa-ban"></i>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="il-pagination" *ngIf="totalElements > 0">
+      <span>
+        Showing {{ filters.page * filters.size + 1 }}–{{ Math.min((filters.page + 1) * filters.size, totalElements) }} of {{ totalElements }}
+      </span>
+      <div class="il-page-btns">
+        <button type="button" class="il-page-btn" [disabled]="filters.page === 0" (click)="onPageChange(filters.page - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="il-page-btn"
+                *ngFor="let p of getPageNumbers()"
+                [class.il-page-btn--active]="p === filters.page"
+                (click)="onPageChange(p)">{{ p + 1 }}</button>
+        <button type="button" class="il-page-btn" [disabled]="filters.page >= totalPages - 1" (click)="onPageChange(filters.page + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ SEND REMINDER CONFIRM ══════════════════════════════════════════════ -->
+<div class="il-confirm-backdrop" *ngIf="showReminderModal" (click)="$event.target === $event.currentTarget && (showReminderModal = false)">
+  <div class="il-confirm-modal">
+    <div class="il-confirm-icon" style="color:#4338ca"><i class="fas fa-bell"></i></div>
+    <div class="il-confirm-title">Send Payment Reminder?</div>
+    <div class="il-confirm-sub">
+      Send a reminder to <strong>{{ pendingCustomerName }}</strong> for invoice
+      <strong>{{ pendingInvoiceNumber }}</strong>?
+    </div>
+    <div class="il-confirm-actions">
+      <button type="button" class="il-btn il-btn--ghost-sm" style="padding:8px 16px;font-size:13px" (click)="showReminderModal = false">Cancel</button>
+      <button type="button" class="il-btn il-btn--primary" (click)="confirmSendReminder()">
+        <i class="fas fa-bell"></i> Send Reminder
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DELETE / CANCEL CONFIRM ════════════════════════════════════════════ -->
+<div class="il-confirm-backdrop" *ngIf="showDeleteInvoiceModal" (click)="$event.target === $event.currentTarget && (showDeleteInvoiceModal = false)">
+  <div class="il-confirm-modal">
+    <div class="il-confirm-icon" style="color:#dc2626"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="il-confirm-title">Cancel Invoice?</div>
+    <div class="il-confirm-sub">
+      Cancel invoice <strong>{{ pendingInvoiceNumber }}</strong> for
+      <strong>{{ pendingCustomerName }}</strong>? This action cannot be undone.
+    </div>
+    <div class="il-confirm-actions">
+      <button type="button" class="il-btn il-btn--ghost-sm" style="padding:8px 16px;font-size:13px" (click)="showDeleteInvoiceModal = false">Keep</button>
+      <button type="button" class="il-btn" style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px" (click)="confirmDeleteInvoice()">
+        <i class="fas fa-ban"></i> Cancel Invoice
+      </button>
+    </div>
+  </div>
+</div>

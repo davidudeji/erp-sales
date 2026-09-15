@@ -1,0 +1,858 @@
+<!-- ═══════════════════════════════════════════════════════════════════════
+     QUOTATION RESPONSE CENTER
+     Three-panel layout: sticky left sidebar + scrollable right main area.
+     The sidebar is always visible. The right area switches between:
+       welcome        — no RFQ selected
+       rfq-detail     — RFQ detail page
+       quotation-editor — inline quotation form
+════════════════════════════════════════════════════════════════════════ -->
+
+<div class="qrc-root">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       LEFT SIDEBAR — RFQ INBOX
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <aside class="qrc-sidebar">
+
+    <!-- Sidebar header -->
+    <div class="qrc-sidebar__header">
+      <div class="qrc-sidebar__title-row">
+        <h2 class="qrc-sidebar__title">RFQ Inbox</h2>
+        <span *ngIf="unreadCount > 0" class="qrc-badge qrc-badge--unread">{{ unreadCount }}</span>
+      </div>
+
+      <!-- Search -->
+      <div class="qrc-search">
+        <svg class="qrc-search__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="qrc-search__input"
+          type="text"
+          placeholder="Search RFQs…"
+          [(ngModel)]="rfqSearchTerm"
+          aria-label="Search RFQs"
+        />
+        <button *ngIf="rfqSearchTerm" class="qrc-search__clear" (click)="rfqSearchTerm=''" title="Clear search">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Filter tabs -->
+      <div class="qrc-filter-tabs">
+        <button class="qrc-filter-tab" [class.qrc-filter-tab--active]="rfqFilter==='all'" (click)="rfqFilter='all'">
+          All <span class="qrc-filter-tab__count">{{ totalRfqCount }}</span>
+        </button>
+        <button class="qrc-filter-tab" [class.qrc-filter-tab--active]="rfqFilter==='unread'" (click)="rfqFilter='unread'">
+          Unread <span class="qrc-filter-tab__count" [class.qrc-filter-tab__count--accent]="unreadCount > 0">{{ unreadCount }}</span>
+        </button>
+        <button class="qrc-filter-tab" [class.qrc-filter-tab--active]="rfqFilter==='expiring'" (click)="rfqFilter='expiring'">
+          Expiring <span class="qrc-filter-tab__count" [class.qrc-filter-tab__count--warn]="expiringCount > 0">{{ expiringCount }}</span>
+        </button>
+        <button class="qrc-filter-tab" [class.qrc-filter-tab--active]="rfqFilter==='converted'" (click)="rfqFilter='converted'">
+          Done <span class="qrc-filter-tab__count">{{ convertedCount }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- RFQ list -->
+    <div class="qrc-sidebar__list">
+
+      <!-- Empty state -->
+      <div *ngIf="getFilteredRfqs().length === 0" class="qrc-sidebar__empty">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="qrc-sidebar__empty-icon">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <p class="qrc-sidebar__empty-text">No RFQs in your inbox</p>
+        <p *ngIf="rfqSearchTerm || rfqFilter !== 'all'" class="qrc-sidebar__empty-hint">Try adjusting your filter or search</p>
+      </div>
+
+      <!-- RFQ items -->
+      <button
+        *ngFor="let rfq of getFilteredRfqs(); trackBy: trackByRfqId"
+        class="qrc-rfq-item"
+        [class.qrc-rfq-item--active]="selectedRfq?.id === rfq.id"
+        [class.qrc-rfq-item--unread]="!rfq.isRead"
+        (click)="selectRfq(rfq)"
+        type="button"
+      >
+        <!-- Unread dot -->
+        <span *ngIf="!rfq.isRead" class="qrc-rfq-item__unread-dot" title="Unread"></span>
+
+        <!-- Top row: RFQ# + direct invite badge -->
+        <div class="qrc-rfq-item__header">
+          <span class="qrc-rfq-item__number">{{ rfq.rfqNumber }}</span>
+          <span *ngIf="rfq.isDirectInvite" class="qrc-rfq-item__direct-badge">Direct</span>
+        </div>
+
+        <!-- Client name -->
+        <p class="qrc-rfq-item__client">{{ rfq.clientName }}</p>
+
+        <!-- Category chip -->
+        <span class="qrc-rfq-item__category">{{ rfq.category }}</span>
+
+        <!-- Bottom row: due date + status -->
+        <div class="qrc-rfq-item__footer">
+          <span class="qrc-rfq-item__due" [ngClass]="dueDateClass(rfq)">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <ng-container *ngIf="rfq.status === 'open'">{{ getDueInDays(rfq.dueDate) }} days</ng-container>
+            <ng-container *ngIf="rfq.status !== 'open'">{{ fmtDate(rfq.dueDate) }}</ng-container>
+          </span>
+
+          <span class="qrc-rfq-item__status"
+            [class.qrc-rfq-item__status--open]="rfq.status==='open'"
+            [class.qrc-rfq-item__status--converted]="rfq.status==='converted'"
+            [class.qrc-rfq-item__status--expired]="rfq.status==='expired'"
+            [class.qrc-rfq-item__status--closed]="rfq.status==='closed'">
+            {{ rfq.status | titlecase }}
+          </span>
+        </div>
+
+        <!-- Estimated value (if known) -->
+        <p *ngIf="rfq.totalEstimatedValue" class="qrc-rfq-item__value">
+          {{ formatCurrency(rfq.totalEstimatedValue, rfq.currency) }}
+        </p>
+      </button>
+
+    </div><!-- /list -->
+
+
+  </aside><!-- /sidebar -->
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       RIGHT MAIN AREA
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <main class="qrc-main">
+
+    <!-- ── WELCOME STATE ─────────────────────────────────────────────────── -->
+    <ng-container *ngIf="rightPanelView === 'welcome'">
+      <div class="qrc-welcome">
+
+        <div class="qrc-welcome__hero">
+          <div class="qrc-welcome__icon-wrap">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <h2 class="qrc-welcome__heading">Quotation Response Center</h2>
+          <p class="qrc-welcome__subheading">Select an RFQ from the left panel to view details and respond with your quotation.</p>
+        </div>
+
+        <!-- Stats summary cards -->
+        <div class="qrc-stats-grid" *ngIf="stats">
+          <div class="qrc-stat-card">
+            <span class="qrc-stat-card__label">Total RFQs</span>
+            <span class="qrc-stat-card__value">{{ totalRfqCount }}</span>
+          </div>
+          <div class="qrc-stat-card qrc-stat-card--accent">
+            <span class="qrc-stat-card__label">Open</span>
+            <span class="qrc-stat-card__value">{{ openCount }}</span>
+          </div>
+          <div class="qrc-stat-card" [class.qrc-stat-card--warn]="expiringCount > 0">
+            <span class="qrc-stat-card__label">Expiring Soon</span>
+            <span class="qrc-stat-card__value">{{ expiringCount }}</span>
+          </div>
+          <div class="qrc-stat-card qrc-stat-card--success">
+            <span class="qrc-stat-card__label">Responded</span>
+            <span class="qrc-stat-card__value">{{ convertedCount }}</span>
+          </div>
+        </div>
+
+        <!-- Unread alert -->
+        <div *ngIf="unreadCount > 0" class="qrc-welcome__alert">
+          <span class="qrc-welcome__alert-dot"></span>
+          <strong>{{ unreadCount }} unread RFQ{{ unreadCount !== 1 ? 's' : '' }}</strong> require your attention.
+          <button class="qrc-welcome__alert-link" (click)="rfqFilter='unread'">View unread</button>
+        </div>
+
+      </div>
+    </ng-container>
+
+
+    <!-- ── RFQ DETAIL VIEW ───────────────────────────────────────────────── -->
+    <ng-container *ngIf="rightPanelView === 'rfq-detail' && selectedRfq">
+      <div class="qrc-detail page-in">
+
+        <!-- Back button -->
+        <button class="qrc-detail__back" (click)="clearSelection()" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back to inbox
+        </button>
+
+        <!-- RFQ Header card -->
+        <div class="qrc-detail__header-card">
+          <!-- Direct invite badge -->
+          <div *ngIf="selectedRfq.isDirectInvite" class="qrc-direct-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            DIRECT INVITE — You were specifically selected for this RFQ
+          </div>
+
+          <div class="qrc-detail__header-top">
+            <div class="qrc-detail__header-meta">
+              <h1 class="qrc-detail__rfq-number">{{ selectedRfq.rfqNumber }}</h1>
+              <p class="qrc-detail__client">{{ selectedRfq.clientName }}</p>
+            </div>
+            <div class="qrc-detail__header-actions">
+              <button class="qrc-btn qrc-btn--ghost" (click)="downloadRfqPdf()" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download PDF
+              </button>
+              <button
+                *ngIf="selectedRfq.status === 'open' && !rfqHasQuotation(selectedRfq.id)"
+                class="qrc-btn qrc-btn--primary"
+                (click)="openQuotationEditor()"
+                type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Respond to RFQ
+              </button>
+              <button
+                *ngIf="rfqHasQuotation(selectedRfq.id)"
+                class="qrc-btn qrc-btn--primary"
+                (click)="openQuotationEditor()"
+                type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Edit Quotation
+              </button>
+            </div>
+          </div>
+
+          <!-- Key dates row -->
+          <div class="qrc-detail__dates">
+            <div class="qrc-detail__date-item">
+              <span class="qrc-detail__date-label">Issued</span>
+              <span class="qrc-detail__date-value">{{ fmtDate(selectedRfq.issuedDate) }}</span>
+            </div>
+            <div class="qrc-detail__date-sep"></div>
+            <div class="qrc-detail__date-item">
+              <span class="qrc-detail__date-label">Response Due</span>
+              <span class="qrc-detail__date-value" [ngClass]="detailDueDateClass(selectedRfq)">
+                {{ fmtDate(selectedRfq.dueDate) }}
+                <span class="qrc-due-countdown" [ngClass]="detailDueDateClass(selectedRfq)">{{ dueDateLabel(selectedRfq) }}</span>
+              </span>
+            </div>
+            <div class="qrc-detail__date-sep"></div>
+            <div class="qrc-detail__date-item">
+              <span class="qrc-detail__date-label">Category</span>
+              <span class="qrc-detail__date-value">{{ selectedRfq.category }}</span>
+            </div>
+            <div class="qrc-detail__date-sep"></div>
+            <div class="qrc-detail__date-item">
+              <span class="qrc-detail__date-label">Status</span>
+              <span class="qrc-status-chip qrc-status-chip--{{ rfqStatusTone(selectedRfq.status) }}">
+                {{ selectedRfq.status | titlecase }}
+              </span>
+            </div>
+          </div>
+        </div><!-- /header-card -->
+
+        <!-- Client instructions -->
+        <div *ngIf="selectedRfq.clientInstructions" class="qrc-detail__section qrc-instructions-card">
+          <h3 class="qrc-detail__section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Client Instructions
+          </h3>
+          <p class="qrc-instructions-card__text">{{ selectedRfq.clientInstructions }}</p>
+        </div>
+
+        <!-- Logistics -->
+        <div *ngIf="selectedRfq.deliveryAddress || selectedRfq.paymentTerms" class="qrc-detail__section qrc-logistics">
+          <div *ngIf="selectedRfq.deliveryAddress" class="qrc-logistics__item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <div>
+              <span class="qrc-logistics__label">Delivery Address</span>
+              <span class="qrc-logistics__value">{{ selectedRfq.deliveryAddress }}</span>
+            </div>
+          </div>
+          <div *ngIf="selectedRfq.paymentTerms" class="qrc-logistics__item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+              <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+            <div>
+              <span class="qrc-logistics__label">Payment Terms</span>
+              <span class="qrc-logistics__value">{{ selectedRfq.paymentTerms }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items table -->
+        <div class="qrc-detail__section">
+          <h3 class="qrc-detail__section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            Requested Items ({{ selectedRfq.items.length }})
+          </h3>
+
+          <div class="qrc-items-table">
+            <div class="qrc-items-table__head">
+              <span>Item</span>
+              <span class="qrc-items-table__col--num">Qty</span>
+              <span>Unit</span>
+              <span>Specifications</span>
+            </div>
+            <div
+              *ngFor="let item of selectedRfq.items"
+              class="qrc-items-table__row">
+              <div class="qrc-items-table__item-name">
+                <strong>{{ item.name }}</strong>
+                <span *ngIf="item.description" class="qrc-items-table__item-desc">{{ item.description }}</span>
+              </div>
+              <div class="qrc-items-table__col--num">{{ item.quantity }}</div>
+              <div>{{ item.unit }}</div>
+              <div class="qrc-items-table__specs">
+                <span *ngIf="item.specifications; else noSpecs">{{ item.specifications }}</span>
+                <ng-template #noSpecs><span class="text-[#94a9b3]">—</span></ng-template>
+              </div>
+
+              <!-- Reference images -->
+              <div *ngIf="item.referenceImages?.length" class="qrc-items-table__images">
+                <button
+                  *ngFor="let img of item.referenceImages"
+                  class="qrc-thumb"
+                  (click)="openLightbox(img, $event)"
+                  type="button"
+                  [title]="img.label || 'Reference image'">
+                  <img [src]="img.url" [alt]="img.label || 'Reference image'" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div><!-- /items -->
+
+        <!-- Attachments -->
+        <div *ngIf="selectedRfq.attachments?.length" class="qrc-detail__section">
+          <h3 class="qrc-detail__section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+            Attachments ({{ selectedRfq.attachments!.length }})
+          </h3>
+          <div class="qrc-attachments">
+            <button
+              *ngFor="let file of selectedRfq.attachments"
+              class="qrc-attachment-item"
+              (click)="downloadAttachment(file, $event)"
+              type="button"
+              [title]="'Download ' + file.fileName">
+              <span class="qrc-attachment-item__icon" [ngClass]="attachmentIconBg(file.fileType)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+              </span>
+              <div class="qrc-attachment-item__info">
+                <span class="qrc-attachment-item__name">{{ file.fileName }}</span>
+                <span class="qrc-attachment-item__meta">{{ file.fileSize }} · {{ file.fileType | uppercase }}</span>
+                <span *ngIf="file.label" class="qrc-attachment-item__label">{{ file.label }}</span>
+              </div>
+              <svg class="qrc-attachment-item__dl" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- CTA — only if still open and no quotation yet -->
+        <div *ngIf="selectedRfq.status === 'open'" class="qrc-detail__cta">
+          <ng-container *ngIf="!rfqHasQuotation(selectedRfq.id)">
+            <p class="qrc-detail__cta-hint">Ready to respond? Build your quotation below — you can save a draft and come back at any time.</p>
+            <button class="qrc-btn qrc-btn--primary qrc-btn--lg" (click)="openQuotationEditor()" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Respond to this RFQ
+            </button>
+          </ng-container>
+          <ng-container *ngIf="rfqHasQuotation(selectedRfq.id)">
+            <p class="qrc-detail__cta-hint">You have already responded to this RFQ. You can still edit your quotation before the deadline.</p>
+            <button class="qrc-btn qrc-btn--primary qrc-btn--lg" (click)="openQuotationEditor()" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Edit My Quotation
+            </button>
+          </ng-container>
+        </div>
+
+      </div>
+    </ng-container><!-- /rfq-detail -->
+
+
+    <!-- ── QUOTATION EDITOR ──────────────────────────────────────────────── -->
+    <ng-container *ngIf="rightPanelView === 'quotation-editor' && activeQuotation">
+      <div class="qrc-editor page-in">
+
+        <!-- Editor header -->
+        <div class="qrc-editor__header">
+          <button class="qrc-detail__back" (click)="backToRfqDetail()" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Back to RFQ
+          </button>
+
+          <div class="qrc-editor__header-row">
+            <div>
+              <h1 class="qrc-editor__title">Your Quotation Response</h1>
+              <p class="qrc-editor__subtitle">
+                {{ activeQuotation.quotationNumber }} · for {{ selectedRfq?.rfqNumber }}
+              </p>
+            </div>
+            <span class="qrc-status-chip qrc-status-chip--{{ quotStatusTone(activeQuotation.status) }}">
+              {{ quotStatusLabel(activeQuotation.status) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Revision requested alert -->
+        <div *ngIf="activeQuotation.status === 'revision_requested'" class="qrc-revision-alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div>
+            <strong class="qrc-revision-alert__title">Revision Requested</strong>
+            <p *ngIf="activeQuotation.revisionRequestNote" class="qrc-revision-alert__note">
+              "{{ activeQuotation.revisionRequestNote }}"
+            </p>
+            <p *ngIf="!activeQuotation.revisionRequestNote" class="qrc-revision-alert__note">
+              The client has asked for changes. Review their feedback and resubmit.
+            </p>
+          </div>
+        </div>
+
+        <!-- Two-column layout: form (left) + totals panel (right) -->
+        <div class="qrc-editor__body">
+
+          <!-- Left: form -->
+          <div class="qrc-editor__form">
+
+            <!-- Validity period -->
+            <div class="qrc-form-section">
+              <h3 class="qrc-form-section__title">Quotation Validity</h3>
+              <div class="qrc-validity-options">
+                <label *ngFor="let d of [7, 14, 21, 30]" class="qrc-validity-option">
+                  <input type="radio" [name]="'validity'" [value]="d" [(ngModel)]="validityDays" />
+                  <span>{{ d }} days</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Line items -->
+            <div class="qrc-form-section">
+              <h3 class="qrc-form-section__title">Line Items</h3>
+              <p class="qrc-form-section__hint">
+                For each item, choose your availability and fill in the required details. Every item needs a response before you can submit.
+              </p>
+
+              <div class="qrc-line-items">
+                <div
+                  *ngFor="let item of activeQuotation.items; trackBy: trackByItemId; let idx = index"
+                  class="qrc-line-item"
+                  [class.qrc-line-item--invalid]="!isItemValid(item)"
+                  [class.qrc-line-item--valid]="isItemValid(item)">
+
+                  <!-- Item header (read-only) -->
+                  <div class="qrc-line-item__header">
+                    <div class="qrc-line-item__header-left">
+                      <span class="qrc-line-item__index">{{ idx + 1 }}</span>
+                      <div>
+                        <p class="qrc-line-item__name">{{ item.name }}</p>
+                        <p *ngIf="item.description" class="qrc-line-item__desc">{{ item.description }}</p>
+                      </div>
+                    </div>
+                    <div class="qrc-line-item__requested">
+                      <span class="qrc-line-item__qty-label">Requested</span>
+                      <span class="qrc-line-item__qty-value">{{ item.quantity }} {{ item.unit }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Availability toggles -->
+                  <div class="qrc-avail-group">
+                    <button
+                      type="button"
+                      class="qrc-avail-btn qrc-avail-btn--available"
+                      [class.qrc-avail-btn--active]="item.availability === 'available'"
+                      (click)="updateItemAvailability(item, 'available')">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Available
+                    </button>
+                    <button
+                      type="button"
+                      class="qrc-avail-btn qrc-avail-btn--partial"
+                      [class.qrc-avail-btn--active]="item.availability === 'partial'"
+                      (click)="updateItemAvailability(item, 'partial')">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>
+                      </svg>
+                      Partial
+                    </button>
+                    <button
+                      type="button"
+                      class="qrc-avail-btn qrc-avail-btn--substitute"
+                      [class.qrc-avail-btn--active]="item.availability === 'substitute'"
+                      (click)="updateItemAvailability(item, 'substitute')">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                        <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                      </svg>
+                      Substitute
+                    </button>
+                    <button
+                      type="button"
+                      class="qrc-avail-btn qrc-avail-btn--unavailable"
+                      [class.qrc-avail-btn--active]="item.availability === 'unavailable'"
+                      (click)="updateItemAvailability(item, 'unavailable')">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                      Unavailable
+                    </button>
+                  </div>
+
+                  <!-- Conditional fields based on availability -->
+
+                  <!-- AVAILABLE: unit price + subtotal -->
+                  <div *ngIf="item.availability === 'available'" class="qrc-line-item__fields">
+                    <div class="qrc-field">
+                      <label class="qrc-field__label">Unit Price ({{ activeQuotation.currency }})</label>
+                      <div class="qrc-field__input-wrap">
+                        <span class="qrc-field__prefix">₦</span>
+                        <input
+                          type="number"
+                          class="qrc-field__input qrc-field__input--price"
+                          [value]="item.unitPrice"
+                          (change)="onRawPriceChange(item, $any($event.target).value)"
+                          min="0"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div class="qrc-line-item__subtotal">
+                      <span class="qrc-line-item__subtotal-label">Line total</span>
+                      <span class="qrc-line-item__subtotal-value">
+                        {{ itemLineTotal(item) !== null ? formatCurrency(itemLineTotal(item)!, activeQuotation.currency) : '—' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- PARTIAL: unit price + offered qty + exception note -->
+                  <div *ngIf="item.availability === 'partial'" class="qrc-line-item__fields qrc-line-item__fields--partial">
+                    <div class="qrc-field">
+                      <label class="qrc-field__label">Unit Price ({{ activeQuotation.currency }})</label>
+                      <div class="qrc-field__input-wrap">
+                        <span class="qrc-field__prefix">₦</span>
+                        <input
+                          type="number"
+                          class="qrc-field__input qrc-field__input--price"
+                          [value]="item.unitPrice"
+                          (change)="onRawPriceChange(item, $any($event.target).value)"
+                          min="0"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div class="qrc-field">
+                      <label class="qrc-field__label">Qty I Can Offer (max {{ item.quantity - 1 }})</label>
+                      <input
+                        type="number"
+                        class="qrc-field__input"
+                        [value]="item.offeredQuantity"
+                        (change)="onRawQtyChange(item, $any($event.target).value)"
+                        [min]="1"
+                        [max]="item.quantity - 1"
+                        placeholder="Enter quantity"
+                      />
+                    </div>
+                    <div class="qrc-field qrc-field--full">
+                      <label class="qrc-field__label">Reason / Exception Note <span class="qrc-field__required">*</span></label>
+                      <textarea
+                        class="qrc-field__textarea"
+                        [(ngModel)]="item.exceptionNote"
+                        placeholder="e.g. Only 10 units in current stock. Additional units available in 6 weeks."
+                        rows="2">
+                      </textarea>
+                    </div>
+                    <div class="qrc-line-item__subtotal qrc-line-item__subtotal--full">
+                      <span class="qrc-line-item__subtotal-label">Line total (offered qty)</span>
+                      <span class="qrc-line-item__subtotal-value">
+                        {{ itemLineTotal(item) !== null ? formatCurrency(itemLineTotal(item)!, activeQuotation.currency) : '—' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- SUBSTITUTE: unit price + substitute description -->
+                  <div *ngIf="item.availability === 'substitute'" class="qrc-line-item__fields">
+                    <div class="qrc-field">
+                      <label class="qrc-field__label">Unit Price ({{ activeQuotation.currency }})</label>
+                      <div class="qrc-field__input-wrap">
+                        <span class="qrc-field__prefix">₦</span>
+                        <input
+                          type="number"
+                          class="qrc-field__input qrc-field__input--price"
+                          [value]="item.unitPrice"
+                          (change)="onRawPriceChange(item, $any($event.target).value)"
+                          min="0"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div class="qrc-field qrc-field--full">
+                      <label class="qrc-field__label">Substitute Description <span class="qrc-field__required">*</span></label>
+                      <textarea
+                        class="qrc-field__textarea"
+                        [(ngModel)]="item.substituteDescription"
+                        placeholder="e.g. Offering Grundfos CM3-5 instead — equivalent spec, same flow rate, 12-month warranty."
+                        rows="2">
+                      </textarea>
+                    </div>
+                    <div class="qrc-line-item__subtotal qrc-line-item__subtotal--full">
+                      <span class="qrc-line-item__subtotal-label">Line total (full qty)</span>
+                      <span class="qrc-line-item__subtotal-value">
+                        {{ itemLineTotal(item) !== null ? formatCurrency(itemLineTotal(item)!, activeQuotation.currency) : '—' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- UNAVAILABLE: exception note only -->
+                  <div *ngIf="item.availability === 'unavailable'" class="qrc-line-item__fields">
+                    <div class="qrc-field qrc-field--full">
+                      <label class="qrc-field__label">Reason for Unavailability <span class="qrc-field__required">*</span></label>
+                      <textarea
+                        class="qrc-field__textarea"
+                        [(ngModel)]="item.exceptionNote"
+                        placeholder="e.g. This part is discontinued. Unable to source from any of our suppliers."
+                        rows="2">
+                      </textarea>
+                    </div>
+                  </div>
+
+                  <!-- Invalid warning -->
+                  <div *ngIf="!isItemValid(item)" class="qrc-line-item__invalid-msg">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <ng-container [ngSwitch]="item.availability">
+                      <span *ngSwitchCase="'available'">Enter a unit price to continue.</span>
+                      <span *ngSwitchCase="'partial'">Enter unit price, offered quantity (less than {{ item.quantity }}), and a reason.</span>
+                      <span *ngSwitchCase="'substitute'">Enter unit price and describe the substitute item.</span>
+                      <span *ngSwitchCase="'unavailable'">Provide a reason so the client understands.</span>
+                    </ng-container>
+                  </div>
+
+                </div><!-- /qrc-line-item -->
+              </div><!-- /qrc-line-items -->
+            </div>
+
+            <!-- Notes / Terms -->
+            <div class="qrc-form-section">
+              <h3 class="qrc-form-section__title">Notes &amp; Terms</h3>
+              <textarea
+                class="qrc-field__textarea qrc-field__textarea--lg"
+                [(ngModel)]="quotationNotes"
+                placeholder="Any additional terms, lead times, delivery notes, or conditions for this quotation…"
+                rows="4">
+              </textarea>
+            </div>
+
+            <!-- Validation summary -->
+            <div *ngIf="!canSubmit() && activeQuotation.items.length > 0" class="qrc-validation-summary">
+              <p class="qrc-validation-summary__title">Complete the following before submitting:</p>
+              <ul class="qrc-validation-summary__list">
+                <li *ngFor="let item of invalidItems">
+                  <strong>{{ item.name }}</strong> — {{ getAvailabilityLabel(item.availability) }} selected but incomplete.
+                </li>
+                <li *ngIf="allItemsUnavailable()">
+                  At least one item must be available, partial, or offered as a substitute.
+                </li>
+              </ul>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="qrc-editor__actions">
+              <button class="qrc-btn qrc-btn--ghost" (click)="saveDraft()" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Save Draft
+              </button>
+              <button
+                class="qrc-btn qrc-btn--primary"
+                [class.qrc-btn--disabled]="!canSubmit()"
+                [disabled]="!canSubmit()"
+                (click)="onSubmitQuotation()"
+                type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                {{ isResubmitFlow ? 'Resubmit Quotation' : 'Submit Quotation' }}
+              </button>
+            </div>
+
+          </div><!-- /qrc-editor__form -->
+
+          <!-- Right: running totals -->
+          <aside class="qrc-totals-panel">
+            <div class="qrc-totals-panel__inner">
+              <h3 class="qrc-totals-panel__title">Summary</h3>
+
+              <div class="qrc-totals-panel__rows">
+                <div class="qrc-totals-row">
+                  <span>Subtotal</span>
+                  <span>{{ formatCurrency(calculateSubtotal(), activeQuotation.currency) }}</span>
+                </div>
+                <div class="qrc-totals-row">
+                  <span>VAT (7.5%)</span>
+                  <span>{{ formatCurrency(calculateTax(), activeQuotation.currency) }}</span>
+                </div>
+              </div>
+
+              <div class="qrc-totals-panel__grand">
+                <span>Grand Total</span>
+                <span class="qrc-totals-panel__grand-amount">{{ formatCurrency(calculateTotal(), activeQuotation.currency) }}</span>
+              </div>
+
+              <!-- Progress: items answered -->
+              <div class="qrc-totals-panel__progress">
+                <div class="qrc-totals-panel__progress-label">
+                  <span>Items answered</span>
+                  <span>{{ activeQuotation.items.length - invalidItems.length }} / {{ activeQuotation.items.length }}</span>
+                </div>
+                <div class="qrc-progress-bar">
+                  <div class="qrc-progress-bar__fill"
+                    [style.width.%]="activeQuotation.items.length > 0 ? ((activeQuotation.items.length - invalidItems.length) / activeQuotation.items.length) * 100 : 0">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Submit CTA inside totals panel (sticky) -->
+              <button
+                class="qrc-btn qrc-btn--primary qrc-totals-panel__submit"
+                [class.qrc-btn--disabled]="!canSubmit()"
+                [disabled]="!canSubmit()"
+                (click)="onSubmitQuotation()"
+                type="button">
+                {{ isResubmitFlow ? 'Resubmit' : 'Submit Quotation' }}
+              </button>
+
+              <p *ngIf="!canSubmit()" class="qrc-totals-panel__submit-hint">
+                Complete all items above to enable submission.
+              </p>
+            </div>
+          </aside>
+
+        </div><!-- /qrc-editor__body -->
+
+      </div>
+    </ng-container><!-- /quotation-editor -->
+
+  </main><!-- /qrc-main -->
+
+</div><!-- /qrc-root -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SUBMIT CONFIRMATION MODAL
+═══════════════════════════════════════════════════════════════════════ -->
+<div *ngIf="showSubmitConfirm" class="qrc-modal-overlay" (click)="showSubmitConfirm=false">
+  <div class="qrc-modal modal-pop" (click)="$event.stopPropagation()">
+    <div class="qrc-modal__header">
+      <div class="qrc-modal__icon qrc-modal__icon--submit">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="qrc-modal__title">{{ isResubmitFlow ? 'Resubmit Quotation?' : 'Submit Quotation?' }}</h2>
+        <p class="qrc-modal__subtitle">
+          {{ isResubmitFlow
+            ? 'This will send your revised quotation back to the client for review.'
+            : 'This will send your quotation to the client. You can still withdraw it before they respond.' }}
+        </p>
+      </div>
+    </div>
+
+    <div *ngIf="activeQuotation" class="qrc-modal__summary">
+      <div class="qrc-modal__summary-row">
+        <span>Quotation</span>
+        <strong>{{ activeQuotation.quotationNumber }}</strong>
+      </div>
+      <div class="qrc-modal__summary-row">
+        <span>Grand Total</span>
+        <strong>{{ formatCurrency(calculateTotal(), activeQuotation.currency) }}</strong>
+      </div>
+      <div class="qrc-modal__summary-row">
+        <span>Items</span>
+        <strong>{{ activeQuotation.items.length }}</strong>
+      </div>
+      <div class="qrc-modal__summary-row">
+        <span>Validity</span>
+        <strong>{{ validityDays }} days</strong>
+      </div>
+    </div>
+
+    <div class="qrc-modal__actions">
+      <button class="qrc-btn qrc-btn--ghost" (click)="showSubmitConfirm=false" type="button">Cancel</button>
+      <button class="qrc-btn qrc-btn--primary" (click)="confirmSubmit()" [disabled]="submitting" type="button">
+        <svg *ngIf="!submitting" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        {{ isResubmitFlow ? 'Yes, Resubmit' : 'Yes, Submit' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     LIGHTBOX
+═══════════════════════════════════════════════════════════════════════ -->
+<div *ngIf="lightboxImage" class="qrc-lightbox" (click)="closeLightbox()">
+  <button class="qrc-lightbox__close" (click)="closeLightbox()" type="button" aria-label="Close">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+  <figure class="qrc-lightbox__figure" (click)="$event.stopPropagation()">
+    <img class="qrc-lightbox__img" [src]="lightboxImage.url" [alt]="lightboxImage.label" />
+    <figcaption class="qrc-lightbox__caption">{{ lightboxImage.label }}</figcaption>
+  </figure>
+</div>

@@ -1,0 +1,393 @@
+<div class="vs-wrapper">
+
+  <!-- ── Page Header ─────────────────────────────────────────── -->
+  <div class="vs-page-header">
+    <div class="vs-header-top">
+      <div class="vs-breadcrumb">
+        <span class="vs-breadcrumb-item">Commerce</span>
+        <i class="fas fa-chevron-right vs-breadcrumb-sep"></i>
+        <span class="vs-breadcrumb-item">Requests</span>
+        <i class="fas fa-chevron-right vs-breadcrumb-sep"></i>
+        <span class="vs-breadcrumb-item active">Select Vendors</span>
+      </div>
+      <button class="vs-smart-btn" (click)="showSmartPanel = true">
+        <i class="fas fa-brain"></i>
+        <span>AI Vendor Intelligence</span>
+        <span class="vs-smart-badge">NEW</span>
+      </button>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="vs-step-bar">
+      <div class="vs-step completed">
+        <div class="vs-step-circle"><i class="fas fa-check"></i></div>
+        <span class="vs-step-label">Type</span>
+      </div>
+      <div class="vs-step-connector done"></div>
+      <div class="vs-step completed">
+        <div class="vs-step-circle"><i class="fas fa-check"></i></div>
+        <span class="vs-step-label">Details</span>
+      </div>
+      <div class="vs-step-connector done"></div>
+      <div class="vs-step completed">
+        <div class="vs-step-circle"><i class="fas fa-check"></i></div>
+        <span class="vs-step-label">Template</span>
+      </div>
+      <div class="vs-step-connector done"></div>
+      <div class="vs-step active">
+        <div class="vs-step-circle">4</div>
+        <span class="vs-step-label">Vendors</span>
+      </div>
+      <div class="vs-step-connector"></div>
+      <div class="vs-step">
+        <div class="vs-step-circle">5</div>
+        <span class="vs-step-label">Submit</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AI Banner ───────────────────────────────────────────── -->
+  <div class="vs-ai-banner" *ngIf="showAiBanner && !isLoading">
+    <div class="vs-ai-banner-icon">
+      <i class="fas fa-robot"></i>
+    </div>
+    <div class="vs-ai-banner-content">
+      <div class="vs-ai-banner-title">OptimaX AI has analysed {{ vendors.length }} vendors</div>
+      <div class="vs-ai-banner-sub">
+        Pre-selected {{ recommendedCount }} best matches based on category fit, performance history, and price competitiveness.
+        <a class="vs-ai-review-link" (click)="showSmartPanel = true" href="javascript:void(0)">Review AI Logic</a>
+      </div>
+    </div>
+    <button class="vs-ai-banner-apply" (click)="selectTopRecommended()" title="Apply top recommended selections">
+      <i class="fas fa-magic"></i> Apply AI Selection
+    </button>
+    <button class="vs-ai-banner-close" (click)="dismissBanner()" title="Dismiss">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- ── Toolbar: search + filters + view toggle ─────────────── -->
+  <div class="vs-toolbar">
+    <div class="vs-search-wrap">
+      <i class="fas fa-search vs-search-icon"></i>
+      <input
+        type="text"
+        class="vs-search-input"
+        [(ngModel)]="searchTerm"
+        placeholder="Search vendors by name, code, or category…"
+      />
+    </div>
+
+    <select class="vs-filter-select" [(ngModel)]="filterCategory">
+      <option value="">All Categories</option>
+      <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+    </select>
+
+    <select class="vs-filter-select vs-tier-filter" [(ngModel)]="filterTier">
+      <option value="ALL">All Tiers</option>
+      <option value="PREFERRED">Preferred</option>
+      <option value="APPROVED">Approved</option>
+    </select>
+
+    <div class="vs-view-toggle">
+      <button class="vs-view-btn" [class.active]="viewMode === 'grid'" (click)="setViewMode('grid')" title="Grid view">
+        <i class="fas fa-th-large"></i>
+      </button>
+      <button class="vs-view-btn" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" title="List view">
+        <i class="fas fa-list"></i>
+      </button>
+      <button class="vs-view-btn" [class.active]="viewMode === 'compare'" (click)="setViewMode('compare')" title="Compare view">
+        <i class="fas fa-columns"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Stats strip ─────────────────────────────────────────── -->
+  <div class="vs-stats-strip">
+    <div class="vs-stat">
+      <span class="vs-stat-num">{{ filteredVendors.length }}</span>
+      <span class="vs-stat-label">vendors found</span>
+    </div>
+    <div class="vs-stat-sep"></div>
+    <div class="vs-stat">
+      <span class="vs-stat-num vs-stat-rec">{{ recommendedCount }}</span>
+      <span class="vs-stat-label">AI recommended</span>
+    </div>
+    <div class="vs-stat-sep"></div>
+    <div class="vs-stat">
+      <span class="vs-stat-num vs-stat-sel">{{ getSelectedCount() }}</span>
+      <span class="vs-stat-label">selected (max 3)</span>
+    </div>
+  </div>
+
+  <!-- ── Loading state ───────────────────────────────────────── -->
+  <div class="vs-loading" *ngIf="isLoading">
+    <div class="vs-spinner"></div>
+    <p class="vs-loading-text">Analysing vendors with AI…</p>
+    <p class="vs-loading-sub">Evaluating category fit, performance, and pricing data</p>
+  </div>
+
+  <!-- ── GRID VIEW ───────────────────────────────────────────── -->
+  <div class="vs-grid" *ngIf="!isLoading && viewMode === 'grid'">
+    <div
+      *ngFor="let vendor of filteredVendors; trackBy: trackByVendorId"
+      class="vs-card"
+      [class.vs-card--selected]="isVendorSelected(vendor.vendorId)"
+      [class.vs-card--disabled]="getSelectedCount() >= 3 && !isVendorSelected(vendor.vendorId)"
+      [class.vs-card--shake]="shakeVendorId === vendor.vendorId"
+    >
+      <!-- Tier badge top-right -->
+      <div class="vs-tier-badge" [attr.data-tier]="getMatchTier(vendor.matchScore)">
+        <i class="fas fa-gem" *ngIf="getMatchTier(vendor.matchScore) === 'PLATINUM'"></i>
+        <i class="fas fa-star" *ngIf="getMatchTier(vendor.matchScore) === 'GOLD'"></i>
+        <i class="fas fa-shield-alt" *ngIf="getMatchTier(vendor.matchScore) === 'SILVER'"></i>
+        <i class="fas fa-circle" *ngIf="getMatchTier(vendor.matchScore) === 'STANDARD'"></i>
+        {{ getMatchTier(vendor.matchScore) }}
+      </div>
+
+      <!-- Notification dot -->
+      <div class="vs-notif-dot" *ngIf="getNotifCount(vendor.vendorId) > 0" [title]="getNotifCount(vendor.vendorId) + ' new updates'">
+        {{ getNotifCount(vendor.vendorId) }}
+      </div>
+
+      <!-- Card top: avatar + score ring -->
+      <div class="vs-card-top">
+        <div class="vs-avatar" [style.background]="getAvatarGradient(vendor.vendorName)">
+          {{ getInitials(vendor.vendorName) }}
+        </div>
+        <div class="vs-score-ring" [style.--pct]="vendor.matchScore" [style.--color]="getMatchColor(vendor.matchScore)">
+          <span class="vs-score-val">{{ vendor.matchScore }}</span>
+          <span class="vs-score-pct">%</span>
+        </div>
+      </div>
+
+      <!-- Vendor name + code -->
+      <div class="vs-card-name">{{ vendor.vendorName }}</div>
+      <div class="vs-card-code">{{ vendor.vendorCode }}</div>
+
+      <!-- Category chips -->
+      <div class="vs-card-chips">
+        <span class="vs-chip" *ngFor="let cat of vendor.categories.slice(0, 3)">{{ cat }}</span>
+      </div>
+
+      <!-- Star rating -->
+      <div class="vs-stars">
+        <span
+          *ngFor="let s of getStarArray(vendor.rating); let i = index"
+          class="vs-star"
+          [attr.data-fill]="getStarFill(i, vendor.rating)"
+        >★</span>
+        <span class="vs-rating-val">{{ vendor.rating.toFixed(1) }}</span>
+      </div>
+
+      <!-- Metric pills -->
+      <div class="vs-metrics">
+        <div class="vs-metric-pill">
+          <i class="fas fa-briefcase"></i>
+          <span>{{ vendor.totalProjects }} projects</span>
+        </div>
+        <div class="vs-metric-pill">
+          <i class="fas fa-truck"></i>
+          <span>{{ vendor.completionRate }}% delivery</span>
+        </div>
+        <div class="vs-metric-pill">
+          <i class="fas fa-bolt"></i>
+          <span>{{ vendor.averageResponseTime }}h response</span>
+        </div>
+      </div>
+
+      <!-- Reason / AI narrative -->
+      <div class="vs-reason" *ngIf="vendor.reason">
+        <i class="fas fa-lightbulb"></i>
+        <em>{{ vendor.reason }}</em>
+      </div>
+
+      <!-- Card actions -->
+      <div class="vs-card-actions">
+        <button
+          class="vs-compare-link"
+          [class.vs-compare-link--active]="isInCompare(vendor.vendorId)"
+          (click)="$event.stopPropagation(); addToCompare(vendor)"
+        >
+          <i class="fas fa-balance-scale"></i>
+          {{ isInCompare(vendor.vendorId) ? 'In Compare' : 'Add to Compare' }}
+        </button>
+
+        <button
+          class="vs-select-btn"
+          [class.vs-select-btn--selected]="isVendorSelected(vendor.vendorId)"
+          (click)="toggleVendor(vendor.vendorId)"
+        >
+          <i class="fas fa-check" *ngIf="isVendorSelected(vendor.vendorId)"></i>
+          <i class="fas fa-plus" *ngIf="!isVendorSelected(vendor.vendorId)"></i>
+          {{ isVendorSelected(vendor.vendorId) ? 'Selected' : 'Select' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="vs-empty" *ngIf="filteredVendors.length === 0">
+      <i class="fas fa-search vs-empty-icon"></i>
+      <p class="vs-empty-title">No vendors match your filters</p>
+      <p class="vs-empty-sub">Try adjusting your search term or category filter</p>
+    </div>
+  </div>
+
+  <!-- ── LIST VIEW ───────────────────────────────────────────── -->
+  <div class="vs-list" *ngIf="!isLoading && viewMode === 'list'">
+    <div class="vs-list-header">
+      <span class="vs-lh-vendor">Vendor</span>
+      <span class="vs-lh-score">Match</span>
+      <span class="vs-lh-rating">Rating</span>
+      <span class="vs-lh-projects">Projects</span>
+      <span class="vs-lh-delivery">Delivery</span>
+      <span class="vs-lh-response">Response</span>
+      <span class="vs-lh-action">Action</span>
+    </div>
+
+    <div
+      *ngFor="let vendor of filteredVendors; trackBy: trackByVendorId"
+      class="vs-list-row"
+      [class.vs-list-row--selected]="isVendorSelected(vendor.vendorId)"
+    >
+      <div class="vs-lr-vendor">
+        <div class="vs-lr-avatar" [style.background]="getAvatarGradient(vendor.vendorName)">
+          {{ getInitials(vendor.vendorName) }}
+        </div>
+        <div class="vs-lr-info">
+          <div class="vs-lr-name">{{ vendor.vendorName }}</div>
+          <div class="vs-lr-code">{{ vendor.vendorCode }}</div>
+        </div>
+        <div class="vs-tier-mini" [attr.data-tier]="getMatchTier(vendor.matchScore)">
+          {{ getMatchTier(vendor.matchScore) }}
+        </div>
+      </div>
+
+      <div class="vs-lr-score" [style.color]="getMatchColor(vendor.matchScore)">
+        <strong>{{ vendor.matchScore }}%</strong>
+      </div>
+
+      <div class="vs-lr-rating">
+        <div class="vs-stars vs-stars--sm">
+          <span *ngFor="let s of getStarArray(vendor.rating); let i = index" class="vs-star" [attr.data-fill]="getStarFill(i, vendor.rating)">★</span>
+        </div>
+        <span class="vs-lr-rating-val">{{ vendor.rating.toFixed(1) }}</span>
+      </div>
+
+      <div class="vs-lr-projects">{{ vendor.totalProjects }}</div>
+      <div class="vs-lr-delivery">{{ vendor.completionRate }}%</div>
+      <div class="vs-lr-response">{{ vendor.averageResponseTime }}h</div>
+
+      <div class="vs-lr-actions">
+        <button class="vs-compare-link vs-compare-link--sm" (click)="addToCompare(vendor)">
+          <i class="fas fa-balance-scale"></i>
+        </button>
+        <button
+          class="vs-select-btn vs-select-btn--sm"
+          [class.vs-select-btn--selected]="isVendorSelected(vendor.vendorId)"
+          (click)="toggleVendor(vendor.vendorId)"
+        >
+          <i class="fas fa-check" *ngIf="isVendorSelected(vendor.vendorId)"></i>
+          <i class="fas fa-plus" *ngIf="!isVendorSelected(vendor.vendorId)"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="vs-empty" *ngIf="filteredVendors.length === 0">
+      <i class="fas fa-search vs-empty-icon"></i>
+      <p class="vs-empty-title">No vendors found</p>
+    </div>
+  </div>
+
+  <!-- ── COMPARE VIEW ────────────────────────────────────────── -->
+  <div class="vs-compare" *ngIf="!isLoading && viewMode === 'compare'">
+    <div class="vs-compare-hint" *ngIf="comparisonVendors.length === 0">
+      <i class="fas fa-info-circle"></i>
+      <span>Click "Add to Compare" on vendor cards to populate this view (up to 3 vendors).</span>
+    </div>
+
+    <div class="vs-compare-table" *ngIf="comparisonVendors.length > 0">
+      <!-- Vendor headers -->
+      <div class="vs-cmp-header-row">
+        <div class="vs-cmp-label-col">Criteria</div>
+        <div class="vs-cmp-vendor-col" *ngFor="let vendor of comparisonVendors">
+          <div class="vs-cmp-vendor-avatar" [style.background]="getAvatarGradient(vendor.vendorName)">
+            {{ getInitials(vendor.vendorName) }}
+          </div>
+          <div class="vs-cmp-vendor-name">{{ vendor.vendorName }}</div>
+          <div class="vs-cmp-vendor-code">{{ vendor.vendorCode }}</div>
+          <div class="vs-tier-badge vs-tier-badge--sm" [attr.data-tier]="getMatchTier(vendor.matchScore)">
+            {{ getMatchTier(vendor.matchScore) }}
+          </div>
+          <button class="vs-cmp-remove" (click)="removeFromCompare(vendor)" title="Remove from compare">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Data rows -->
+      <div class="vs-cmp-row" *ngFor="let row of getCompareRows()">
+        <div class="vs-cmp-label-col">{{ row.label }}</div>
+        <div
+          class="vs-cmp-cell"
+          *ngFor="let vendor of comparisonVendors"
+          [class.vs-cmp-cell--best]="isBestInRow(vendor, row.key)"
+        >
+          <span class="vs-cmp-val">{{ getCompareValue(vendor, row.key, row.format) }}</span>
+          <span class="vs-cmp-best-tag" *ngIf="isBestInRow(vendor, row.key)">Best</span>
+        </div>
+        <!-- Placeholder columns if fewer than 3 -->
+        <div class="vs-cmp-cell vs-cmp-cell--empty" *ngFor="let e of [].constructor(3 - comparisonVendors.length)">—</div>
+      </div>
+
+      <!-- Selection row -->
+      <div class="vs-cmp-row vs-cmp-action-row">
+        <div class="vs-cmp-label-col">Select</div>
+        <div class="vs-cmp-cell" *ngFor="let vendor of comparisonVendors">
+          <button
+            class="vs-select-btn"
+            [class.vs-select-btn--selected]="isVendorSelected(vendor.vendorId)"
+            (click)="toggleVendor(vendor.vendorId)"
+          >
+            <i class="fas fa-check" *ngIf="isVendorSelected(vendor.vendorId)"></i>
+            <i class="fas fa-plus" *ngIf="!isVendorSelected(vendor.vendorId)"></i>
+            {{ isVendorSelected(vendor.vendorId) ? 'Selected' : 'Select' }}
+          </button>
+        </div>
+        <div class="vs-cmp-cell vs-cmp-cell--empty" *ngFor="let e of [].constructor(3 - comparisonVendors.length)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Bottom action bar ───────────────────────────────────── -->
+  <div class="vs-action-bar">
+    <button class="vs-btn-back" (click)="onBack()">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+
+    <div class="vs-selection-indicator">
+      <div class="vs-sel-dot" [class.vs-sel-dot--filled]="getSelectedCount() >= 1"></div>
+      <div class="vs-sel-dot" [class.vs-sel-dot--filled]="getSelectedCount() >= 2"></div>
+      <div class="vs-sel-dot" [class.vs-sel-dot--filled]="getSelectedCount() >= 3"></div>
+      <span class="vs-sel-label">{{ getSelectedCount() }}/3 selected</span>
+    </div>
+
+    <button
+      class="vs-btn-next"
+      [disabled]="getSelectedCount() === 0"
+      (click)="onNext()"
+    >
+      Continue <i class="fas fa-arrow-right"></i>
+    </button>
+  </div>
+
+</div>
+
+<!-- ── Smart Vendor Panel overlay ──────────────────────────── -->
+<app-smart-vendor-selection
+  *ngIf="showSmartPanel"
+  [vendors]="vendors"
+  [requestData]="requestData"
+  (vendorSelected)="handleSmartPanelSelect($event)"
+  (closed)="showSmartPanel = false"
+></app-smart-vendor-selection>

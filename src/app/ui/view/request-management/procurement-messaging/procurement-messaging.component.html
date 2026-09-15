@@ -1,0 +1,204 @@
+<!-- procurement-messaging.component.html -->
+
+<div class="messaging-container">
+
+  <!-- ── Header ────────────────────────────────────────────── -->
+  <div class="messaging-header">
+    <div class="header-left">
+      <div class="header-icon">
+        <i class="fas fa-comments"></i>
+      </div>
+      <div class="header-text">
+        <h4 class="header-title">Messages</h4>
+        <span class="header-subtitle">
+          {{ currentUserRole === 'REQUESTER' ? (vendorName || 'Vendor') : requesterName }}
+        </span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="rfq-badge" *ngIf="rfqId">
+        <i class="fas fa-hashtag"></i>{{ rfqId }}
+      </span>
+      <span class="msg-count-badge" *ngIf="messages.length > 0">
+        {{ messages.length }}
+      </span>
+      <button
+        class="btn-compose"
+        (click)="showCompose = !showCompose"
+        [class.active]="showCompose"
+        title="Toggle compose">
+        <i class="fas" [class.fa-pen]="!showCompose" [class.fa-times]="showCompose"></i>
+        <span>{{ showCompose ? 'Close' : 'Send Message' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Loading State ─────────────────────────────────────── -->
+  <div class="loading-state" *ngIf="isLoading">
+    <i class="fas fa-circle-notch fa-spin"></i>
+    <span>Loading messages...</span>
+  </div>
+
+  <!-- ── Message Thread ─────────────────────────────────────── -->
+  <div class="message-thread" #messageThread *ngIf="!isLoading">
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="messages.length === 0">
+      <div class="empty-icon">
+        <i class="fas fa-inbox"></i>
+      </div>
+      <p class="empty-title">No messages yet</p>
+      <p class="empty-sub">Start the conversation by sending a message below.</p>
+    </div>
+
+    <!-- Messages -->
+    <ng-container *ngFor="let msg of messages; let i = index">
+
+      <!-- Date separator -->
+      <div class="date-separator"
+        *ngIf="i === 0 || formatTime(msg.createdAt) !== formatTime(messages[i - 1].createdAt) && (formatTime(msg.createdAt) === 'Yesterday' || (i > 0 && msg.createdAt.toString().substring(0,10) !== messages[i-1].createdAt.toString().substring(0,10)))">
+        <span>{{ formatTime(msg.createdAt) }}</span>
+      </div>
+
+      <!-- System notification -->
+      <div class="system-message" *ngIf="msg.senderRole === 'SYSTEM'">
+        <span class="system-pill">
+          <i class="fas fa-info-circle"></i>
+          {{ msg.content }}
+        </span>
+      </div>
+
+      <!-- Regular message -->
+      <div
+        class="message-row"
+        *ngIf="msg.senderRole !== 'SYSTEM'"
+        [class.own]="isOwnMessage(msg)"
+        [class.other]="!isOwnMessage(msg)">
+
+        <!-- Avatar (left = other) -->
+        <div class="avatar-wrap" *ngIf="!isOwnMessage(msg)">
+          <div
+            class="avatar"
+            [style.background]="getAvatarColor(msg.senderRole)"
+            [title]="msg.senderName">
+            {{ getInitials(msg.senderName) }}
+          </div>
+        </div>
+
+        <!-- Bubble -->
+        <div class="bubble-wrap">
+          <!-- Sender meta (other messages only) -->
+          <div class="sender-meta" *ngIf="!isOwnMessage(msg)">
+            <span class="sender-name">{{ msg.senderName }}</span>
+            <span class="role-badge" [class.role-vendor]="msg.senderRole === 'VENDOR'" [class.role-req]="msg.senderRole === 'REQUESTER'">
+              {{ getRoleBadgeLabel(msg.senderRole) }}
+            </span>
+            <span class="type-tag" *ngIf="getMessageTypeLabel(msg.messageType)">
+              {{ getMessageTypeLabel(msg.messageType) }}
+            </span>
+          </div>
+
+          <div class="bubble" [class.bubble-own]="isOwnMessage(msg)" [class.bubble-other]="!isOwnMessage(msg)">
+            <!-- Type label for own messages -->
+            <div class="own-type-tag" *ngIf="isOwnMessage(msg) && getMessageTypeLabel(msg.messageType)">
+              {{ getMessageTypeLabel(msg.messageType) }}
+            </div>
+            <p class="bubble-content">{{ msg.content }}</p>
+
+            <!-- Attachments -->
+            <div class="attachments" *ngIf="msg.attachments && msg.attachments.length > 0">
+              <a
+                *ngFor="let att of msg.attachments"
+                [href]="att.url"
+                target="_blank"
+                class="attachment-chip">
+                <i class="fas fa-paperclip"></i>
+                {{ att.name }}
+              </a>
+            </div>
+          </div>
+
+          <div class="bubble-footer" [class.footer-own]="isOwnMessage(msg)">
+            <span class="timestamp">{{ formatTime(msg.createdAt) }}</span>
+            <span class="read-indicator" *ngIf="isOwnMessage(msg)">
+              <i class="fas" [class.fa-check]="!msg.isRead" [class.fa-check-double]="msg.isRead" [class.read]="msg.isRead"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Avatar (right = own) -->
+        <div class="avatar-wrap" *ngIf="isOwnMessage(msg)">
+          <div
+            class="avatar avatar-own"
+            [style.background]="getAvatarColor(msg.senderRole)"
+            [title]="msg.senderName">
+            {{ getInitials(msg.senderName) }}
+          </div>
+        </div>
+
+      </div>
+    </ng-container>
+
+    <!-- Typing indicator placeholder -->
+    <div class="typing-indicator" *ngIf="isSending">
+      <div class="typing-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <span class="typing-label">Sending...</span>
+    </div>
+
+  </div>
+
+  <!-- ── Compose Area ───────────────────────────────────────── -->
+  <div class="compose-area" [class.compose-visible]="showCompose">
+
+    <!-- Quick-reply chips -->
+    <div class="quick-replies">
+      <button
+        *ngFor="let qr of quickReplies"
+        class="quick-chip"
+        (click)="applyQuickReply(qr)"
+        [title]="qr.text">
+        {{ qr.label }}
+      </button>
+    </div>
+
+    <!-- Message type selector -->
+    <div class="type-selector">
+      <label class="type-label">Type:</label>
+      <select [(ngModel)]="selectedMessageType" class="type-select">
+        <option value="TEXT">General</option>
+        <option value="CLARIFICATION">Clarification</option>
+        <option value="REVISION_REQUEST">Revision Request</option>
+      </select>
+    </div>
+
+    <!-- Input row -->
+    <div class="input-row">
+      <div class="textarea-wrap">
+        <textarea
+          class="msg-input"
+          [(ngModel)]="newMessage"
+          [maxlength]="maxLength"
+          rows="2"
+          placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+          (keydown)="onTextareaKeydown($event)"
+          (input)="autoResize($event)">
+        </textarea>
+        <span class="char-counter" [class.near-limit]="charCount > maxLength * 0.8">
+          {{ charCount }}/{{ maxLength }}
+        </span>
+      </div>
+
+      <button
+        class="btn-send"
+        [disabled]="!canSend"
+        (click)="sendMessage()"
+        title="Send message">
+        <i class="fas" [class.fa-paper-plane]="!isSending" [class.fa-circle-notch]="isSending" [class.fa-spin]="isSending"></i>
+      </button>
+    </div>
+
+  </div>
+
+</div>

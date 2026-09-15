@@ -1,0 +1,248 @@
+<div class="rbw-page">
+
+  <!-- Top-level view switch (acts as the two "tabs": Choose Orders / Build Route) -->
+  <div class="rbw-view-switch">
+    <button type="button" class="rbw-view-btn" [class.active]="view === 'choose'" (click)="setView('choose')">
+      Choose Orders
+    </button>
+    <button type="button" class="rbw-view-btn" [class.active]="view === 'build'" (click)="setView('build')">
+      Build Route
+      <span *ngIf="myBatch?.proposedRoute?.length" class="rbw-view-badge">{{ myBatch?.proposedRoute?.length }}</span>
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 1 — CHOOSE ORDERS -->
+  <!-- ============================================================ -->
+  <div *ngIf="view === 'choose'" class="rbw-choose">
+
+    <div class="rbw-header">
+      <h1 class="rbw-title">Choose Orders</h1>
+      <p class="rbw-subtitle">{{ filteredPool.length }} available in your zone</p>
+    </div>
+
+    <div class="rbw-search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="rbw-search-icon">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m21 21-4.3-4.3"></path>
+      </svg>
+      <input
+        type="text"
+        class="rbw-search-input"
+        placeholder="Search by order ID, customer or area..."
+        [ngModel]="searchTerm"
+        (ngModelChange)="onSearchChange($event)"
+      />
+    </div>
+
+    <div *ngIf="claimLimitMessage" class="rbw-limit-banner">{{ claimLimitMessage }}</div>
+
+    <div *ngIf="isPoolLoading" class="rbw-empty">Loading available orders…</div>
+    <div *ngIf="!isPoolLoading && !filteredPool.length" class="rbw-empty">No orders available right now.</div>
+
+    <!-- Desktop table -->
+    <div *ngIf="!isPoolLoading && filteredPool.length" class="rbw-table-card">
+      <app-table
+        [columns]="poolColumns"
+        [rows]="filteredPool"
+        [actions]="[]"
+        [selectable]="true"
+        [selectionMode]="'multiple'"
+        [selection]="selectedRows"
+        (selectionChange)="onSelectionChange($event)"
+        [dataKey]="'id'"
+        emptyMessage=""
+      >
+        <ng-template appTableBody let-order>
+          <td>
+            <span class="rbw-order-id">{{ order.orderId }}</span>
+          </td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="rbw-avatar">{{ initials(order.customerName) }}</span>
+              <span class="text-[13px] text-[#14181b]">{{ order.customerName }}</span>
+            </div>
+          </td>
+          <td>
+            <p class="text-[13px] text-[#14181b]">{{ order.itemsSummary }}</p>
+            <p *ngIf="order.weightKg" class="text-[11.5px] text-[#9aa7ae]">{{ order.weightKg }}kg</p>
+          </td>
+          <td class="text-[13px] text-[#00a191] font-medium">{{ order.area || order.deliveryLocation }}</td>
+          <td>
+            <span *ngIf="order.distanceKm" class="rbw-distance">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 7-7 7 7M12 5v14"></path></svg>
+              {{ order.distanceKm }}km away
+            </span>
+          </td>
+          <td class="text-right" (click)="$event.stopPropagation()">
+            <button type="button" class="rbw-icon-btn" aria-label="View order details" (click)="openOrderPreview(order)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa7ae" stroke-width="2">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
+    </div>
+
+    <!-- Mobile checklist cards -->
+    <div *ngIf="!isPoolLoading && filteredPool.length" class="rbw-card-list">
+      <label *ngFor="let order of filteredPool" class="rbw-card" [class.selected]="isSelected(order)">
+        <input type="checkbox" class="rbw-checkbox rbw-checkbox--lg" [checked]="isSelected(order)" (change)="toggleSelect(order)" />
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <span class="rbw-order-id">{{ order.orderId }}</span>
+            <span *ngIf="order.distanceKm" class="rbw-distance">{{ order.distanceKm }}km away</span>
+          </div>
+          <p class="rbw-mobile-customer">{{ order.customerName }}</p>
+          <p class="rbw-mobile-meta">{{ order.itemsSummary }}<span *ngIf="order.weightKg"> · {{ order.weightKg }}kg</span></p>
+          <p class="rbw-mobile-area">{{ order.area || order.deliveryLocation }}</p>
+        </div>
+        <button type="button" class="rbw-icon-btn shrink-0" aria-label="View order details" (click)="$event.preventDefault(); $event.stopPropagation(); openOrderPreview(order)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa7ae" stroke-width="2">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </label>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- VIEW 2 — BUILD ROUTE -->
+  <!-- ============================================================ -->
+  <div *ngIf="view === 'build'" class="rbw-build">
+
+    <div *ngIf="isBatchLoading" class="rbw-empty">Loading your route…</div>
+
+    <div *ngIf="!isBatchLoading && !myBatch" class="rbw-empty-batch">
+      <p class="text-[15px] font-semibold text-[#14181b] mb-2">Nothing claimed yet</p>
+      <p class="text-[13px] text-[#9aa7ae] mb-4">Switch to Choose Orders and select a few to start building your route.</p>
+      <button type="button" class="rbw-btn-primary" (click)="setView('choose')">Choose Orders</button>
+    </div>
+
+    <ng-container *ngIf="myBatch as batch">
+
+      <!-- Rejection banner -->
+      <div *ngIf="batch.status === BatchStatus.CLAIMING && batch.adminNotes" class="rbw-note-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b3690a" stroke-width="2.2" class="shrink-0 mt-0.5">
+          <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        </svg>
+        <div>
+          <p class="text-[12.5px] font-semibold text-[#8a4c07] mb-0.5">Admin Note</p>
+          <p class="text-[13px] text-[#8a4c07]">{{ batch.adminNotes }}</p>
+        </div>
+      </div>
+
+      <!-- Waiting for approval -->
+      <div *ngIf="batch.status === BatchStatus.ROUTE_SUBMITTED" class="rbw-waiting-banner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7v5l3 3"></path>
+        </svg>
+        <p class="text-[13px] font-semibold text-[#2563eb]">Waiting for approval — your route is locked until admin responds.</p>
+      </div>
+
+      <!-- Mobile sub-tabs -->
+      <div class="rbw-subtabs">
+        <button type="button" class="rbw-subtab" [class.active]="buildSubTab === 'stops'" (click)="setBuildSubTab('stops')">My Stops</button>
+        <button type="button" class="rbw-subtab" [class.active]="buildSubTab === 'map'" (click)="setBuildSubTab('map')">Route Map</button>
+      </div>
+
+      <div class="rbw-build-split">
+
+        <!-- Left: reorderable stop list -->
+        <div class="rbw-stop-panel" [class.rbw-hidden-mobile]="buildSubTab !== 'stops'">
+          <p class="rbw-panel-title">Build Route</p>
+          <p class="rbw-panel-hint" *ngIf="isBatchEditable">Drag to reorder claimed tasks.</p>
+          <p *ngIf="unconfirmedCount > 0 && isBatchEditable" class="rbw-unconfirmed-hint">
+            {{ unconfirmedCount }} stop{{ unconfirmedCount === 1 ? '' : 's' }} still need a confirmed location.
+          </p>
+
+          <div class="rbw-stop-list">
+            <div
+              *ngFor="let stop of batch.proposedRoute; let i = index"
+              class="rbw-stop-card"
+              [class.confirmed]="stop.locationConfirmed"
+              [draggable]="isBatchEditable"
+              (dragstart)="onDragStart(i)"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop(i)"
+            >
+              <span *ngIf="isBatchEditable" class="rbw-drag-handle" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"></circle><circle cx="8" cy="12" r="1.6"></circle><circle cx="8" cy="18" r="1.6"></circle><circle cx="16" cy="6" r="1.6"></circle><circle cx="16" cy="12" r="1.6"></circle><circle cx="16" cy="18" r="1.6"></circle></svg>
+              </span>
+
+              <div class="flex-1 min-w-0">
+                <p class="rbw-stop-address">{{ stop.location }}</p>
+                <p class="rbw-stop-meta">
+                  {{ stop.itemsSummary }}<span *ngIf="stop.weightKg"> · {{ stop.weightKg }}kg</span><span *ngIf="stop.requiresSignature"> · Signature Req</span>
+                </p>
+                <button *ngIf="isBatchEditable" type="button" class="rbw-location-link" [class.warn]="!stop.locationConfirmed" [class.active]="activeOrderId === stop.orderId" (click)="selectStopForPin(stop)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
+                  {{ stop.locationConfirmed ? 'Pinned — tap to adjust' : 'Confirm location needed' }}
+                </button>
+              </div>
+
+              <div class="flex flex-col items-center gap-1 shrink-0">
+                <span *ngIf="stop.locationConfirmed" class="rbw-confirmed-check" aria-label="Location confirmed">✓</span>
+                <svg *ngIf="!stop.locationConfirmed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.2" aria-label="Location unconfirmed">
+                  <path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                </svg>
+
+                <ng-container *ngIf="isBatchEditable">
+                  <div class="flex flex-col mt-1">
+                    <button type="button" class="rbw-chevron-btn" [disabled]="i === 0" (click)="moveStop(i, -1)" aria-label="Move up">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m18 15-6-6-6 6"></path></svg>
+                    </button>
+                    <button type="button" class="rbw-chevron-btn" [disabled]="i === batch.proposedRoute.length - 1" (click)="moveStop(i, 1)" aria-label="Move down">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"></path></svg>
+                    </button>
+                  </div>
+                  <button type="button" class="rbw-remove-link" (click)="removeStop(stop)">Remove</button>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="isBatchEditable" class="rbw-submit-bar">
+            <button type="button" class="rbw-btn-primary rbw-btn-full" [disabled]="!batch.proposedRoute.length || isSubmitting" (click)="submitForApproval()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="m3 11 18-8-8 18-2-8-8-2z"></path></svg>
+              {{ isSubmitting ? 'Submitting…' : 'Submit Route for Approval' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: interactive route map — search or click/drag to place the active stop's pin -->
+        <div class="rbw-map-panel" [class.rbw-hidden-mobile]="buildSubTab !== 'map'">
+          <app-route-builder-map
+            [stops]="batch.proposedRoute"
+            [activeOrderId]="activeOrderId"
+            [editable]="isBatchEditable"
+            (selectStop)="activeOrderId = $event"
+            (locationPicked)="onMapLocationPicked($event)"
+          ></app-route-builder-map>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Sticky "Add to My Route" bar (Choose Orders view) -->
+  <div *ngIf="view === 'choose' && selectedCount > 0" class="rbw-sticky-bar">
+    <span class="text-[13px] font-medium text-[#14181b]">{{ selectedCount }} order(s) selected</span>
+    <button type="button" class="rbw-btn-primary" [disabled]="isClaiming" (click)="addToMyRoute()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 5v14M5 12h14"></path></svg>
+      {{ isClaiming ? 'Adding…' : 'Add to My Route (' + selectedCount + ')' }}
+    </button>
+  </div>
+
+  <!-- Toasts -->
+  <div class="rbw-toast-stack">
+    <div *ngFor="let toast of toasts" class="rbw-toast">{{ toast.message }}</div>
+  </div>
+
+  <!-- Order preview drawer (eye icon) -->
+  <app-pool-order-detail-drawer *ngIf="previewOrder" [order]="previewOrder" (closed)="closeOrderPreview()"></app-pool-order-detail-drawer>
+
+</div>

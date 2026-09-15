@@ -1,0 +1,373 @@
+<!-- ═══════════════════════════════════════════════════
+     LPO PAGE
+════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]">
+
+  <!-- Page header -->
+  <div class="mb-7">
+    <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Local Purchase Orders</h1>
+    <p class="text-sm text-[#5a7380] mt-0.5">Review, accept or reject purchase orders issued by your clients</p>
+  </div>
+
+  <!-- ── Stats cards ─────────────────────────────────────── -->
+  <div class="grid grid-cols-4 gap-4 mb-5" *ngIf="stats">
+
+    <button (click)="filterCard('pending')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='pending'" [class.ring-[#224957]]="lpoFilter==='pending'">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Pending Review</span>
+        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.pending }}</div>
+      <p class="text-xs" [class.text-amber-600]="stats.unread > 0" [class.text-[#5a7380]]="!stats.unread">
+        <ng-container *ngIf="stats.unread > 0"><strong>{{ stats.unread }} unread</strong> — action needed</ng-container>
+        <ng-container *ngIf="stats.unread === 0">All reviewed</ng-container>
+      </p>
+    </button>
+
+    <button (click)="filterCard('accepted')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='accepted'" [class.ring-[#224957]]="lpoFilter==='accepted'">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Accepted</span>
+        <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.accepted }}</div>
+      <p class="text-xs text-[#5a7380]"><strong class="text-[#1a2c35]">{{ stats.fulfilled }}</strong> already fulfilled</p>
+    </button>
+
+    <button (click)="filterCard('rejected')" class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#224957] transition-all text-left w-full cursor-pointer"
+      [class.ring-2]="lpoFilter==='rejected'" [class.ring-[#224957]]="lpoFilter==='rejected'">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Rejected</span>
+        <span class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-1">{{ stats.rejected }}</div>
+      <p class="text-xs text-[#5a7380]">of {{ stats.total }} total LPOs</p>
+    </button>
+
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Accepted Value</span>
+        <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </span>
+      </div>
+      <div class="text-2xl font-bold tracking-tight mb-1 text-[#224957]">{{ fmtCurrency(stats.totalValue) }}</div>
+      <p class="text-xs text-[#5a7380]">From accepted &amp; fulfilled orders</p>
+    </div>
+
+  </div>
+
+  <!-- ── Activity pills ──────────────────────────────────── -->
+  <div class="flex flex-wrap gap-2 mb-7" *ngIf="stats">
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-[#5a7380]"></span><strong class="text-[#1a2c35]">{{ stats.total }}</strong>&nbsp;Total LPOs</span>
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span><strong class="text-[#1a2c35]">{{ stats.pending }}</strong>&nbsp;Pending</span>
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span><strong class="text-[#1a2c35]">{{ stats.accepted }}</strong>&nbsp;Accepted</span>
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span><strong class="text-[#1a2c35]">{{ stats.fulfilled }}</strong>&nbsp;Fulfilled</span>
+    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#e6edf2] rounded-full text-xs text-[#5a7380] font-medium"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span><strong class="text-[#1a2c35]">{{ stats.rejected }}</strong>&nbsp;Rejected</span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       LPO TABLE
+  ═════════════════════════════════════════════════════════ -->
+  <div class="bg-white border border-[#e6edf2] rounded-2xl overflow-hidden shadow-sm">
+
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#eef2f6]">
+      <div class="flex items-center gap-2">
+        <h2 class="text-sm font-semibold text-[#1a2c35]">All Purchase Orders</h2>
+        <span *ngIf="unreadCount > 0"
+          class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+          {{ unreadCount }}
+        </span>
+      </div>
+      <p class="text-xs text-[#5a7380]">Click any row to view details and take action</p>
+    </div>
+
+    <div class="p-4">
+      <!-- 5 columns → 5 <td>s -->
+
+      <!-- Active filter chip -->
+      <div *ngIf="lpoFilter!=='all'" class="flex items-center gap-2 px-5 py-2.5 border-b border-[#f0f4f8]">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#e8f2f7] text-[#224957]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          {{ lpoFilter | titlecase }}
+          <button (click)="clearFilter()" class="ml-0.5 hover:text-red-500 transition-colors">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </span>
+        <span class="text-xs text-[#5a7380]">{{ filteredLpos.length }} result{{ filteredLpos.length !== 1 ? 's' : '' }}</span>
+      </div>
+      <app-table
+        [columns]="lpoColumns"
+        [rows]="filteredLpos"
+        [actions]="[]"
+        [rowClickable]="true"
+        [paginator]="true"
+        [rowsPerPage]="10"
+        emptyMessage="No LPOs found. Purchase orders issued against your quotations will appear here."
+        (rowClick)="onLpoRowClick($event)"
+      >
+        <ng-template appTableBody let-row>
+
+          <!-- 1. LPO No. + unread dot -->
+          <td class="app-table-main-col">
+            <div class="flex items-center gap-2">
+              <span *ngIf="!row.isRead" class="w-2 h-2 rounded-full bg-amber-500 shrink-0 ring-2 ring-amber-100"></span>
+              <div>
+                <p class="font-semibold text-[#1a2c35] text-sm">{{ row.lpoNumber }}</p>
+                <p *ngIf="row.quotationNumber" class="text-[10px] text-[#5a7380]">Quot: {{ row.quotationNumber }}</p>
+              </div>
+            </div>
+          </td>
+
+          <!-- 2. Client -->
+          <td>
+            <p class="text-sm text-[#1a2c35]">{{ row.clientName }}</p>
+            <p *ngIf="row.rfqNumber" class="text-[10px] text-[#5a7380]">RFQ: {{ row.rfqNumber }}</p>
+          </td>
+
+          <!-- 3. Delivery date with urgency -->
+          <td class="text-sm whitespace-nowrap" [ngClass]="deliveryDateClass(row)">
+            {{ fmtDate(row.deliveryDate) }}
+            <span *ngIf="(row.status==='pending'||row.status==='accepted') && isDueSoon(row.deliveryDate) && !isExpired(row.deliveryDate)"
+              class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600">Soon</span>
+            <span *ngIf="(row.status==='pending'||row.status==='accepted') && isExpired(row.deliveryDate)"
+              class="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600">Overdue</span>
+          </td>
+
+          <!-- 4. Total value -->
+          <td class="text-sm font-semibold text-[#224957] text-right whitespace-nowrap">
+            {{ fmtCurrency(row.total, row.currency) }}
+          </td>
+
+          <!-- 5. Status badge -->
+          <td><span [ngClass]="lpoBadge(row.status)">{{ row.status }}</span></td>
+
+        </ng-template>
+      </app-table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     LPO DETAIL SIDE PANEL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showLpoPanel && selectedLpo">
+  <div class="fixed inset-0 z-[1000]" style="background:rgba(15,30,36,0.4);backdrop-filter:blur(2px)" (click)="closeLpoPanel()"></div>
+  <aside class="fixed top-0 right-0 h-full z-[1001] w-[640px] max-w-[95vw] bg-white shadow-2xl flex flex-col panel-slide">
+
+    <!-- Head -->
+    <div class="px-6 pt-5 pb-4 border-b border-[#eef2f6] sticky top-0 bg-white z-10">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <h2 class="text-base font-bold text-[#1a2c35]">{{ selectedLpo.lpoNumber }}</h2>
+            <span [ngClass]="lpoBadge(selectedLpo.status)">{{ selectedLpo.status }}</span>
+          </div>
+          <p class="text-xs text-[#5a7380]">
+            {{ selectedLpo.clientName }}<span *ngIf="selectedLpo.clientEmail"> · {{ selectedLpo.clientEmail }}</span>
+          </p>
+        </div>
+        <button (click)="closeLpoPanel()" class="w-7 h-7 flex items-center justify-center rounded-md bg-[#f5f7f9] border border-[#e6edf2] text-[#5a7380] hover:bg-[#e6edf2] transition-colors shrink-0">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <!-- Meta strip -->
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+        <span class="text-[#5a7380]">Issued <strong class="text-[#1a2c35]">{{ fmtDate(selectedLpo.issuedDate) }}</strong></span>
+        <span [class.text-red-600]="isExpired(selectedLpo.deliveryDate)"
+              [class.text-amber-600]="!isExpired(selectedLpo.deliveryDate)&&isDueSoon(selectedLpo.deliveryDate)"
+              [class.text-[#5a7380]]="!isExpired(selectedLpo.deliveryDate)&&!isDueSoon(selectedLpo.deliveryDate)">
+          Delivery <strong>{{ fmtDate(selectedLpo.deliveryDate) }}</strong>
+          <span *ngIf="isExpired(selectedLpo.deliveryDate)"> · OVERDUE</span>
+          <span *ngIf="!isExpired(selectedLpo.deliveryDate)&&isDueSoon(selectedLpo.deliveryDate)"> · Due soon</span>
+        </span>
+        <span class="text-[#5a7380]">Payment: <strong class="text-[#1a2c35]">{{ selectedLpo.paymentTerms }}</strong></span>
+        <span *ngIf="selectedLpo.quotationNumber" class="text-[#5a7380]">Quot: <strong class="text-[#1a2c35]">{{ selectedLpo.quotationNumber }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+
+      <!-- Rejection reason banner -->
+      <div *ngIf="selectedLpo.status === 'rejected' && selectedLpo.rejectionReason"
+        class="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+        <svg class="shrink-0 mt-0.5 text-red-500" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>
+          <p class="text-xs font-bold text-red-600 mb-0.5">Rejection Reason</p>
+          <p class="text-sm text-red-700 leading-relaxed">{{ selectedLpo.rejectionReason }}</p>
+        </div>
+      </div>
+
+      <!-- Special conditions -->
+      <div *ngIf="selectedLpo.specialConditions">
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Special Conditions</h3>
+        <div class="bg-[#f9fcfd] border border-[#e6edf2] border-l-[3px] border-l-[#224957] rounded-xl px-4 py-3 text-sm text-[#1a2c35] leading-relaxed whitespace-pre-line">{{ selectedLpo.specialConditions }}</div>
+      </div>
+
+      <!-- Delivery info -->
+      <div>
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Delivery Details</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-0.5 col-span-2">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Delivery Address</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.deliveryAddress }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Payment Terms</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.paymentTerms }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[10px] text-[#94a9b3] font-medium uppercase tracking-wide">Currency</span>
+            <span class="text-sm text-[#1a2c35] font-medium">{{ selectedLpo.currency }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line items -->
+      <div>
+        <h3 class="text-[10px] font-bold uppercase tracking-[0.07em] text-[#5a7380] mb-1.5">Ordered Items ({{ selectedLpo.items.length }})</h3>
+        <div class="flex flex-col gap-2">
+          <div *ngFor="let item of selectedLpo.items; let i = index"
+            class="border border-[#e6edf2] rounded-xl p-3.5 flex items-center gap-3">
+            <span class="w-5 h-5 rounded-full bg-[#e8f2f7] text-[#224957] text-[9px] font-bold flex items-center justify-center shrink-0">{{ i+1 }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-[#1a2c35]">{{ item.name }}</p>
+              <p class="text-xs text-[#5a7380] mt-0.5">{{ item.description }}</p>
+              <p class="text-xs text-[#5a7380] mt-0.5">{{ item.quantity }} {{ item.unit }} × {{ fmtCurrency(item.unitPrice, selectedLpo.currency) }}</p>
+            </div>
+            <span class="text-sm font-bold text-[#224957] shrink-0">{{ fmtCurrency(item.totalPrice, selectedLpo.currency) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="bg-[#f9fcfd] border border-[#e6edf2] rounded-xl p-4 flex flex-col gap-1.5">
+        <div class="flex justify-between text-xs text-[#5a7380]"><span>Subtotal</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.subtotal, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-xs text-[#5a7380]"><span>VAT (7.5%)</span><span class="font-semibold text-[#1a2c35]">{{ fmtCurrency(selectedLpo.tax, selectedLpo.currency) }}</span></div>
+        <div class="flex justify-between text-sm font-bold border-t border-[#e6edf2] pt-1.5 mt-0.5"><span class="text-[#1a2c35]">Total</span><span class="text-base text-[#224957]">{{ fmtCurrency(selectedLpo.total, selectedLpo.currency) }}</span></div>
+      </div>
+
+    </div>
+
+    <!-- Footer actions -->
+    <div class="px-6 py-4 border-t border-[#eef2f6] bg-[#f9fafb] sticky bottom-0">
+      <div class="flex items-center gap-2 justify-end flex-wrap">
+        <button (click)="downloadLpo(selectedLpo, $event)"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e6edf2] bg-white text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">
+          ↓ Download LPO
+        </button>
+        <!-- Only show accept/reject for pending LPOs -->
+        <ng-container *ngIf="selectedLpo.status === 'pending'">
+          <button (click)="openRejectModal(selectedLpo)"
+            class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors">
+            Reject
+          </button>
+          <button (click)="openAcceptModal(selectedLpo)"
+            class="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#224957] text-white hover:bg-[#2d6478] transition-colors">
+            Accept LPO ✓
+          </button>
+        </ng-container>
+        <!-- Already decided -->
+        <span *ngIf="selectedLpo.status === 'accepted'" class="text-xs font-medium text-green-600 flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          You accepted this LPO
+        </span>
+        <span *ngIf="selectedLpo.status === 'rejected'" class="text-xs font-medium text-red-500 flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          You rejected this LPO
+        </span>
+        <span *ngIf="selectedLpo.status === 'fulfilled'" class="text-xs font-medium text-blue-600 flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Fulfilled
+        </span>
+      </div>
+    </div>
+
+  </aside>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     ACCEPT CONFIRM MODAL
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showAcceptModal && lpoToAccept">
+  <div class="fixed inset-0 z-[1050]" style="background:rgba(15,30,36,0.5);backdrop-filter:blur(2px)" (click)="closeAcceptModal()"></div>
+  <div class="fixed inset-0 z-[1051] flex items-center justify-center p-4 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-[420px] max-w-full p-8 text-center modal-pop pointer-events-auto" (click)="$event.stopPropagation()">
+      <div class="w-14 h-14 rounded-full bg-green-50 text-green-600 flex items-center justify-center mx-auto mb-4">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3 class="text-base font-bold text-[#1a2c35] mb-2">Accept this LPO?</h3>
+      <p class="text-sm text-[#5a7380] leading-relaxed mb-2">
+        You are about to accept <strong class="text-[#1a2c35]">{{ lpoToAccept.lpoNumber }}</strong> from
+        <strong class="text-[#1a2c35]">{{ lpoToAccept.clientName }}</strong>.
+      </p>
+      <p class="text-sm font-semibold text-[#224957] mb-6">Total value: {{ fmtCurrency(lpoToAccept.total, lpoToAccept.currency) }}</p>
+      <div class="flex gap-3 justify-center">
+        <button (click)="closeAcceptModal()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+        <button (click)="confirmAccept()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors">Yes, Accept It</button>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+
+<!-- ═══════════════════════════════════════════════════
+     REJECT MODAL (requires reason)
+════════════════════════════════════════════════════ -->
+<ng-container *ngIf="showRejectModal && lpoToReject">
+  <div class="fixed inset-0 z-[1050]" style="background:rgba(15,30,36,0.5);backdrop-filter:blur(2px)" (click)="closeRejectModal()"></div>
+  <div class="fixed inset-0 z-[1051] flex items-center justify-center p-4 pointer-events-none">
+    <div class="bg-white rounded-2xl shadow-2xl w-[460px] max-w-full modal-pop pointer-events-auto" (click)="$event.stopPropagation()">
+
+      <div class="px-6 pt-6 pb-4 border-b border-[#eef2f6]">
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-[#1a2c35]">Reject LPO</h3>
+            <p class="text-xs text-[#5a7380]">{{ lpoToReject.lpoNumber }} · {{ lpoToReject.clientName }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-5">
+        <label class="block text-xs font-bold uppercase tracking-[0.06em] text-[#5a7380] mb-1.5">
+          Reason for rejection <span class="text-red-500">*</span>
+        </label>
+        <textarea
+          [(ngModel)]="rejectionReason"
+          (input)="rejectionError = false"
+          placeholder="Explain why you are rejecting this LPO — this will be visible to the client…"
+          rows="4"
+          class="w-full border rounded-xl px-4 py-3 text-sm text-[#1a2c35] bg-[#f5f7f9] placeholder-[#94a9b3] leading-relaxed resize-none outline-none transition-all font-sans"
+          [class.border-red-400]="rejectionError"
+          [class.ring-2]="rejectionError"
+          [class.ring-red-100]="rejectionError"
+          [class.border-[#e6edf2]]="!rejectionError"
+          [class.focus:border-[#224957]]="!rejectionError"
+        ></textarea>
+        <p *ngIf="rejectionError" class="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          A rejection reason is required.
+        </p>
+      </div>
+
+      <div class="px-6 pb-6 flex gap-3 justify-end">
+        <button (click)="closeRejectModal()" class="px-5 py-2.5 text-sm font-medium rounded-xl border border-[#e6edf2] text-[#5a7380] hover:border-[#224957] hover:text-[#224957] transition-colors">Cancel</button>
+        <button (click)="confirmReject()" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors">Reject LPO</button>
+      </div>
+
+    </div>
+  </div>
+</ng-container>

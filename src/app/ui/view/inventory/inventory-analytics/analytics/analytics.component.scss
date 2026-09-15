@@ -1,0 +1,267 @@
+// analytics.component.scss
+// ============================================================
+// VARIABLES
+// ============================================================
+
+:host {
+    --p: #184440;
+    --p-lt: #e8f4f2;
+    --bg: #eef3f2;
+    --surface: #ffffff;
+    --border: #ccddd9;
+    --text: #1a2e2c;
+    --muted: #6a8e89;
+    --shadow: 0 1px 8px rgba(24, 68, 64, .08);
+
+    display: block;
+}
+
+// ============================================================
+// LAYOUT
+// ============================================================
+
+.ql-analytics-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    background: var(--bg);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100%;
+}
+
+.ql-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.ql-top-bar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ql-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0;
+}
+
+.ql-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+}
+
+// ============================================================
+// TABS
+// ============================================================
+
+.ql-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: 4px;
+    flex-shrink: 0;
+    width: fit-content;
+}
+
+.ql-tab {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+
+    &:hover {
+        background: var(--bg);
+        color: var(--text);
+    }
+
+    &--active {
+        background: var(--p);
+        color: #fff;
+
+        &:hover {
+            background: var(--p);
+            color: #fff;
+        }
+    }
+}
+
+.ql-tab-content {
+    flex: 1;
+    animation: ql-fadeIn .3s ease;
+}
+
+@keyframes ql-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ql-tab-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+// ============================================================
+// ENTITY SELECTOR
+// ============================================================
+
+.ql-entity-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    box-shadow: var(--shadow);
+    flex-shrink: 0;
+}
+
+.ql-flabel {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    flex-shrink: 0;
+}
+
+.ql-entity-select {
+    flex: 1;
+    max-width: 360px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fafbfc;
+    color: var(--text);
+
+    &:focus {
+        outline: none;
+        border-color: var(--p);
+    }
+}
+
+// ============================================================
+// LOADING & EMPTY
+// ============================================================
+
+.ql-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+}
+
+.ql-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--p);
+    border-radius: 50%;
+    animation: ql-spin .8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes ql-spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.ql-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 10px;
+    text-align: center;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.ql-empty-icon {
+    font-size: 40px;
+    color: var(--border);
+}
+
+.ql-empty-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+}
+
+.ql-empty-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+}
+
+// ============================================================
+// EMBEDDED ANALYTICS COMPONENTS
+// ============================================================
+// <app-product-analytics> / <app-branch-analytics> ship with their own full-page
+// ql-layout (sidebar + main). Give them a bounded, scrollable box here instead of
+// letting their internal 100vh assumptions fight this tab's own layout.
+
+app-product-analytics,
+app-branch-analytics,
+app-affordability-dashboard,
+app-stock-turnover,
+app-sell-likelihood,
+app-performance-report {
+    display: block;
+    height: 80vh;
+    border-radius: 10px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+// ============================================================
+// RESPONSIVE
+// ============================================================
+
+@media (max-width: 768px) {
+    .ql-analytics-shell {
+        padding: 12px;
+    }
+
+    .ql-entity-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ql-entity-select {
+        max-width: 100%;
+    }
+}

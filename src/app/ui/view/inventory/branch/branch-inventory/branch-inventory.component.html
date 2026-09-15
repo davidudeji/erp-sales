@@ -1,0 +1,374 @@
+<!-- branch-list.component.html -->
+<p-toast position="top-right"></p-toast>
+
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Filters</span>
+            <button class="ql-reset-link" (click)="resetFilters()" type="button">Reset</button>
+        </div>
+
+        <!-- Quick search -->
+        <div class="ql-filter-section">
+            <div class="ql-search-wrap">
+                <i class="fas fa-search ql-search-icon"></i>
+                <input type="text" class="ql-search-input" placeholder="Search branches…"
+                    [(ngModel)]="filters.searchTerm" (input)="applyFilters()">
+            </div>
+        </div>
+
+        <!-- Quick filter / jump to a single branch -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Branch</div>
+            <app-branch-selector [branches]="branches" [selectedBranchId]="filters.branchId"
+                [showAllOption]="true" allOptionLabel="All Branches"
+                (branchChange)="onBranchFilterChange($event)"></app-branch-selector>
+        </div>
+
+        <!-- Status filters -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Status</div>
+            <button class="ql-status-btn" type="button" [class.ql-status-btn--active]="filters.status === 'ALL'"
+                (click)="filters.status = 'ALL'; applyFilters()">
+                <i class="fas fa-layer-group"></i>
+                <span>All Branches</span>
+                <span class="ql-count-pill">{{ stats.total }}</span>
+            </button>
+            <button class="ql-status-btn" type="button" [class.ql-status-btn--active]="filters.status === 'ACTIVE'"
+                (click)="filters.status = 'ACTIVE'; applyFilters()">
+                <i class="fas fa-check-circle"></i>
+                <span>Active</span>
+                <span class="ql-count-pill ql-count-pill--green">{{ stats.active }}</span>
+            </button>
+            <button class="ql-status-btn" type="button" [class.ql-status-btn--active]="filters.status === 'INACTIVE'"
+                (click)="filters.status = 'INACTIVE'; applyFilters()">
+                <i class="fas fa-pause-circle"></i>
+                <span>Inactive</span>
+                <span class="ql-count-pill ql-count-pill--gray">{{ stats.inactive }}</span>
+            </button>
+            <button class="ql-status-btn" type="button"
+                [class.ql-status-btn--active]="filters.status === 'UNDER_CONSTRUCTION'"
+                (click)="filters.status = 'UNDER_CONSTRUCTION'; applyFilters()">
+                <i class="fas fa-hard-hat"></i>
+                <span>Under Construction</span>
+                <span class="ql-count-pill ql-count-pill--orange">{{ stats.underConstruction }}</span>
+            </button>
+        </div>
+
+        <!-- Branch Type -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Branch Type</div>
+            <select class="ql-search-input" [(ngModel)]="filters.type" (change)="applyFilters()">
+                <option *ngFor="let type of typeOptions" [value]="type">
+                    {{ type === 'ALL' ? 'All Types' : getBranchTypeLabel(type) }}
+                </option>
+            </select>
+        </div>
+
+        <!-- City -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">City</div>
+            <select class="ql-search-input" [(ngModel)]="filters.city" (change)="applyFilters()">
+                <option *ngFor="let city of cities" [value]="city">{{ city === 'ALL' ? 'All Cities' : city }}</option>
+            </select>
+        </div>
+
+        <!-- Products Range -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Products Count</div>
+            <div class="ql-field">
+                <label class="ql-flabel">Min</label>
+                <input type="number" class="ql-date-input" [(ngModel)]="filters.minProducts" (input)="applyFilters()"
+                    placeholder="0">
+            </div>
+            <div class="ql-field">
+                <label class="ql-flabel">Max</label>
+                <input type="number" class="ql-date-input" [(ngModel)]="filters.maxProducts" (input)="applyFilters()"
+                    placeholder="1000">
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <div class="ql-title-row">
+                    <h1 class="ql-title">Branch Directory</h1>
+                    <span class="ql-total-badge">{{ stats.total }}</span>
+                </div>
+                <p class="ql-subtitle">Browse and manage all branches, their stock levels, and locations.</p>
+            </div>
+            <div class="ql-top-bar-right">
+                <div class="ql-view-switcher">
+                    <button (click)="setViewMode('list')" [class.active]="viewMode === 'list'" class="ql-switch-btn"
+                        title="List View">
+                        <i class="fas fa-th-list"></i>
+                    </button>
+                    <button (click)="setViewMode('grid')" [class.active]="viewMode === 'grid'" class="ql-switch-btn"
+                        title="Grid View">
+                        <i class="fas fa-th"></i>
+                    </button>
+                </div>
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
+                    <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewBranch()">
+                    <i class="fas fa-plus"></i> Add Branch
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="ql-stats-row" *ngIf="!isLoading">
+            <div class="ql-stat-mini">
+                <span class="ql-stat-mini-value">{{ stats.total }}</span>
+                <span class="ql-stat-mini-label">Total Branches</span>
+            </div>
+            <div class="ql-stat-mini">
+                <span class="ql-stat-mini-value" style="color:#2EB270;">{{ stats.active }}</span>
+                <span class="ql-stat-mini-label">Active</span>
+            </div>
+            <div class="ql-stat-mini">
+                <span class="ql-stat-mini-value" style="color:#6B7280;">{{ stats.inactive }}</span>
+                <span class="ql-stat-mini-label">Inactive</span>
+            </div>
+            <div class="ql-stat-mini">
+                <span class="ql-stat-mini-value" style="color:#F59E0B;">{{ stats.underConstruction }}</span>
+                <span class="ql-stat-mini-label">Under Construction</span>
+            </div>
+            <div class="ql-stat-mini">
+                <span class="ql-stat-mini-value" style="color:#3B82F6;">{{ stats.totalProducts }}</span>
+                <span class="ql-stat-mini-label">Total Products</span>
+            </div>
+            <div class="ql-stat-mini">
+                <span class="ql-stat-mini-value" style="color:#184440;">{{ formatCurrency(stats.totalStockValue)
+                    }}</span>
+                <span class="ql-stat-mini-label">Stock Value</span>
+            </div>
+        </div>
+
+        <!-- AI Insight Banner -->
+        <div class="ql-ai-banner" *ngIf="!aiDismissed && (stats.underConstruction > 1 || stats.inactive > 2)">
+            <div class="ql-ai-icon"><i class="fas fa-robot"></i></div>
+            <div class="ql-ai-body">
+                <div class="ql-ai-title">AI Insight</div>
+                <div class="ql-ai-text">
+                    <ng-container *ngIf="stats.underConstruction > 1">
+                        <strong>{{ stats.underConstruction }}</strong> branch{{ stats.underConstruction > 1 ? 'es are' :
+                        ' is' }} under construction. Plan inventory allocation accordingly.
+                    </ng-container>
+                    <ng-container *ngIf="stats.inactive > 2 && stats.underConstruction === 0">
+                        <strong>{{ stats.inactive }}</strong> branch{{ stats.inactive > 1 ? 'es are' : ' is' }}
+                        inactive. Consider reviewing their status.
+                    </ng-container>
+                </div>
+            </div>
+            <button type="button" class="ql-ai-dismiss" (click)="aiDismissed = true" *ngIf="!aiDismissed"><i
+                    class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading branches...</span>
+        </div>
+
+        <!-- List View Table -->
+        <div class="ql-table-wrap" *ngIf="!isLoading && viewMode === 'list'">
+            <table class="ql-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Branch</th>
+                        <th>Code</th>
+                        <th>Type</th>
+                        <th>City</th>
+                        <th>Products</th>
+                        <th>Stock Value</th>
+                        <th>Status</th>
+                        <th class="ql-th-actions">Actions</th>
+                    </tr>
+                </thead>
+
+                <!-- Loading skeleton -->
+                <tbody *ngIf="isLoading">
+                    <tr class="ql-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+                        <td colspan="9">
+                            <div class="ql-skeleton-bar"></div>
+                        </td>
+                    </tr>
+                </tbody>
+
+                <!-- Empty state -->
+                <tbody *ngIf="!isLoading && filteredBranches.length === 0">
+                    <tr>
+                        <td colspan="9">
+                            <div class="ql-empty">
+                                <i class="fas fa-store ql-empty-icon"></i>
+                                <p class="ql-empty-title">No branches found</p>
+                                <p class="ql-empty-sub">Try adjusting your filters or add a new branch</p>
+                                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewBranch()">
+                                    <i class="fas fa-plus"></i> Add Branch
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+
+                <!-- Data rows -->
+                <tbody *ngIf="!isLoading && filteredBranches.length > 0">
+                    <tr *ngFor="let branch of pagedBranches; let i = index"
+                        [class.ql-row--inactive]="branch.status === 'INACTIVE'"
+                        [class.ql-row--construction]="branch.status === 'UNDER_CONSTRUCTION'">
+                        <td class="ql-td-num">{{ currentPage * pageSize + i + 1 }}</td>
+
+                        <td class="ql-td-branch">
+                            <div class="ql-branch-info">
+                                <div class="ql-branch-avatar">
+                                    {{ getInitials(branch.name) }}
+                                </div>
+                                <div>
+                                    <div class="ql-branch-name">{{ branch.name }}</div>
+                                    <div class="ql-branch-address">{{ branch.location.address }}</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="ql-td-code">{{ branch.code }}</td>
+
+                        <td class="ql-td-type">
+                            <span class="ql-type-badge" [class.ql-type--flagship]="branch.type === 'FLAGSHIP'"
+                                [class.ql-type--standard]="branch.type === 'STANDARD'"
+                                [class.ql-type--mini]="branch.type === 'MINI'"
+                                [class.ql-type--custom]="isCustomBranchType(branch.type)">
+                                {{ getBranchTypeLabel(branch.type) }}
+                            </span>
+                        </td>
+
+                        <td class="ql-td-city">{{ branch.location.city }}</td>
+
+                        <td class="ql-td-products">
+                            {{ getBranchSummary(branch.id)?.totalProducts || 0 }}
+                        </td>
+
+                        <td class="ql-td-amount">
+                            {{ formatCurrency(getBranchSummary(branch.id)?.totalStockValue || 0) }}
+                        </td>
+
+                        <td>
+                            <span class="ql-status-badge ql-status-badge--{{ branch.status?.toLowerCase() }}">
+                                <span class="ql-status-dot"
+                                    [style.background]="getBranchStatusColor(branch.status)"></span>
+                                {{ getStatusLabel(branch.status) }}
+                            </span>
+                        </td>
+
+                        <td class="ql-td-actions">
+                            <div class="ql-row-actions">
+                                <button type="button" class="ql-action-btn" (click)="navigateToBranch(branch.id)"
+                                    title="View">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="ql-action-btn" (click)="navigateToBranch(branch.id)"
+                                    title="Edit">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                                <button type="button" class="ql-action-btn"
+                                    (click)="$event.stopPropagation(); navigateToAddProduct(branch.id)"
+                                    title="Assign Product to Branch">
+                                    <i class="fas fa-box-open"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Grid View -->
+        <div class="ql-grid-container" *ngIf="!isLoading && viewMode === 'grid'">
+            <div class="ql-grid-card" *ngFor="let branch of pagedBranches"
+                [class.ql-grid--inactive]="branch.status === 'INACTIVE'"
+                [class.ql-grid--construction]="branch.status === 'UNDER_CONSTRUCTION'"
+                (click)="navigateToBranch(branch.id)">
+
+                <div class="ql-grid-top">
+                    <span class="ql-grid-type">{{ getBranchTypeLabel(branch.type) }}</span>
+                    <span class="ql-grid-status">
+                        <span class="ql-status-dot" [style.background]="getBranchStatusColor(branch.status)"></span>
+                        {{ getStatusLabel(branch.status) }}
+                    </span>
+                </div>
+
+                <div class="ql-grid-avatar">
+                    {{ getInitials(branch.name) }}
+                </div>
+
+                <div class="ql-grid-body">
+                    <h4 class="ql-grid-title">{{ branch.name }}</h4>
+                    <div class="ql-grid-code">{{ branch.code }}</div>
+                    <div class="ql-grid-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ branch.location.city }}, {{ branch.location.state }}
+                    </div>
+
+                    <app-branch-stock-summary [branchId]="branch.id" [compact]="true"
+                        [showActions]="false"></app-branch-stock-summary>
+                </div>
+
+                <div class="ql-grid-footer">
+                    <button type="button" class="ql-btn ql-btn--small ql-btn--primary"
+                        (click)="$event.stopPropagation(); navigateToBranch(branch.id)">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--small ql-btn--ghost"
+                        (click)="$event.stopPropagation(); navigateToAddProduct(branch.id)"
+                        title="Assign Product to Branch">
+                        <i class="fas fa-box-open"></i> Assign Product
+                    </button>
+                </div>
+            </div>
+
+            <!-- Empty grid state -->
+            <div *ngIf="filteredBranches.length === 0" class="ql-empty ql-empty--grid">
+                <i class="fas fa-store ql-empty-icon"></i>
+                <p class="ql-empty-title">No branches found</p>
+                <p class="ql-empty-sub">Try adjusting your filters or add a new branch</p>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewBranch()">
+                    <i class="fas fa-plus"></i> Add Branch
+                </button>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="ql-pagination" *ngIf="!isLoading && totalElements > 0">
+            <span class="ql-page-info">
+                Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, totalElements) }} of
+                {{ totalElements }}
+            </span>
+            <div class="ql-page-btns">
+                <button type="button" class="ql-page-btn" [disabled]="currentPage === 0"
+                    (click)="onPageChange(currentPage - 1)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" class="ql-page-btn" *ngFor="let p of getPageNumbers()"
+                    [class.ql-page-btn--active]="p === currentPage" [class.ql-page-btn--ellipsis]="p === -1"
+                    (click)="p !== -1 && onPageChange(p)">
+                    {{ p === -1 ? '…' : p + 1 }}
+                </button>
+                <button type="button" class="ql-page-btn" [disabled]="currentPage >= totalPages - 1"
+                    (click)="onPageChange(currentPage + 1)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>

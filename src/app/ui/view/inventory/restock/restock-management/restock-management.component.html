@@ -1,0 +1,426 @@
+<!-- restock-dashboard.component.html -->
+<p-toast position="top-right"></p-toast>
+
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Restock Dashboard</span>
+            <button class="ql-reset-link" (click)="refresh()" type="button">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Overview</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Requests</span>
+                <span class="ql-sidebar-stat-value">{{ stats.total }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Pending</span>
+                <span class="ql-sidebar-stat-value ql-sidebar-stat--warning">{{ stats.pending }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Critical</span>
+                <span class="ql-sidebar-stat-value ql-sidebar-stat--danger">{{ stats.critical }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Value</span>
+                <span class="ql-sidebar-stat-value">{{ formatCurrency(stats.totalValue) }}</span>
+            </div>
+        </div>
+
+        <!-- Urgency Breakdown -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Urgency</div>
+            <div class="ql-sidebar-stat" style="border-left: 3px solid #DC2626;">
+                <span class="ql-sidebar-stat-label">Critical</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ stats.critical }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-left: 3px solid #F97316;">
+                <span class="ql-sidebar-stat-label">High</span>
+                <span class="ql-sidebar-stat-value" style="color: #F97316;">{{ stats.high }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-left: 3px solid #F59E0B;">
+                <span class="ql-sidebar-stat-label">Medium</span>
+                <span class="ql-sidebar-stat-value" style="color: #F59E0B;">{{ stats.medium }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-left: 3px solid #3B82F6;">
+                <span class="ql-sidebar-stat-label">Low</span>
+                <span class="ql-sidebar-stat-value" style="color: #3B82F6;">{{ stats.low }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Quick Actions</div>
+            <button class="ql-sidebar-action" (click)="navigateToNewRequest()">
+                <i class="fas fa-plus"></i> New Restock Request
+            </button>
+            <button class="ql-sidebar-action" (click)="navigateToThresholds()">
+                <i class="fas fa-sliders-h"></i> Manage Thresholds
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <div class="ql-title-row">
+                    <h1 class="ql-title">Restock Dashboard</h1>
+                    <span class="ql-total-badge">{{ stats.total }} requests</span>
+                </div>
+                <p class="ql-subtitle">Manage restock requests, prioritize urgent items, and track fulfillment status.</p>
+            </div>
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
+                    <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
+                </button>
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="navigateToApprovals()">
+                    <i class="fas fa-clipboard-check"></i> Approvals
+                </button>
+                <button type="button" class="ql-btn ql-btn--secondary" (click)="navigateToSuggestions()">
+                    <i class="fas fa-lightbulb"></i> View Restock Suggestions
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewRequest()">
+                    <i class="fas fa-plus"></i> New Request
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Insight Banner -->
+        <div class="ql-ai-banner" *ngIf="!aiDismissed && getUrgentRestockCount() > 0">
+            <div class="ql-ai-icon"><i class="fas fa-robot"></i></div>
+            <div class="ql-ai-body">
+                <div class="ql-ai-title">AI Insight</div>
+                <div class="ql-ai-text">
+                    <strong>{{ getUrgentRestockCount() }}</strong> urgent restock request{{ getUrgentRestockCount() > 1
+                    ? 's are' : ' is' }} waiting for approval.
+                    <span *ngIf="stats.critical > 0">
+                        <strong>{{ stats.critical }}</strong> of these are critical — immediate attention required.
+                    </span>
+                    <a class="ql-ai-link" (click)="navigateToApprovals()">Review approvals</a>.
+                </div>
+            </div>
+            <button type="button" class="ql-ai-dismiss" (click)="aiDismissed = true" *ngIf="!aiDismissed"><i
+                    class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="ql-stats-row" *ngIf="!isLoading">
+            <div class="ql-stat-mini" (click)="filterForm.status = 'ALL'; applyFilters()">
+                <span class="ql-stat-mini-value">{{ stats.total }}</span>
+                <span class="ql-stat-mini-label">Total</span>
+            </div>
+            <div class="ql-stat-mini" (click)="filterForm.status = 'PENDING'; applyFilters()">
+                <span class="ql-stat-mini-value" style="color: #F59E0B;">{{ stats.pending }}</span>
+                <span class="ql-stat-mini-label">Pending</span>
+            </div>
+            <div class="ql-stat-mini" (click)="filterForm.status = 'APPROVED'; applyFilters()">
+                <span class="ql-stat-mini-value" style="color: #3B82F6;">{{ stats.approved }}</span>
+                <span class="ql-stat-mini-label">Approved</span>
+            </div>
+            <div class="ql-stat-mini" (click)="filterForm.status = 'ORDERED'; applyFilters()">
+                <span class="ql-stat-mini-value" style="color: #8B5CF6;">{{ stats.ordered }}</span>
+                <span class="ql-stat-mini-label">Ordered</span>
+            </div>
+            <div class="ql-stat-mini" (click)="filterForm.status = 'RECEIVED'; applyFilters()">
+                <span class="ql-stat-mini-value" style="color: #2EB270;">{{ stats.received }}</span>
+                <span class="ql-stat-mini-label">Received</span>
+            </div>
+            <div class="ql-stat-mini" (click)="filterForm.status = 'REJECTED'; applyFilters()">
+                <span class="ql-stat-mini-value" style="color: #DC2626;">{{ stats.rejected }}</span>
+                <span class="ql-stat-mini-label">Rejected</span>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="ql-filter-bar">
+            <div class="ql-filter-row">
+                <div class="ql-search-wrap">
+                    <i class="fas fa-search ql-search-icon"></i>
+                    <input type="text" class="ql-search-input" placeholder="Search products or branches..."
+                        [(ngModel)]="filterForm.search" (input)="applyFilters()">
+                </div>
+
+                <div class="ql-filter-group">
+                    <label class="ql-flabel">Status</label>
+                    <select class="ql-filter-select" [(ngModel)]="filterForm.status" (change)="applyFilters()">
+                        <option *ngFor="let status of statusOptions" [value]="status">
+                            {{ status === 'ALL' ? 'All Statuses' : getStatusLabel(status) }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="ql-filter-group">
+                    <label class="ql-flabel">Urgency</label>
+                    <select class="ql-filter-select" [(ngModel)]="filterForm.urgency" (change)="applyFilters()">
+                        <option *ngFor="let urgency of urgencyOptions" [value]="urgency">
+                            {{ urgency === 'ALL' ? 'All Urgencies' : getUrgencyLabel(urgency) }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="ql-filter-group">
+                    <label class="ql-flabel">Branch</label>
+                    <select class="ql-filter-select" [(ngModel)]="filterForm.branchId" (change)="applyFilters()">
+                        <option value="ALL">All Branches</option>
+                        <option *ngFor="let branch of branches" [value]="branch.id">
+                            {{ branch.name }}
+                        </option>
+                    </select>
+                </div>
+
+                <button class="ql-btn ql-btn--ghost-sm" (click)="clearFilters()" *ngIf="getActiveFilterCount() > 0">
+                    <i class="fas fa-undo-alt"></i> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading restock data...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refresh()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- Table -->
+        <div class="ql-table-wrap" *ngIf="!isLoading && !error">
+            <table class="ql-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Branch</th>
+                        <th>Current Stock</th>
+                        <th>Requested</th>
+                        <th>Urgency</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th class="ql-th-actions">Actions</th>
+                    </tr>
+                </thead>
+
+                <!-- Empty state -->
+                <tbody *ngIf="filteredRequests.length === 0">
+                    <tr>
+                        <td colspan="8">
+                            <div class="ql-empty">
+                                <i class="fas fa-truck-loading ql-empty-icon"></i>
+                                <p class="ql-empty-title">No restock requests found</p>
+                                <p class="ql-empty-sub">Try adjusting your filters or create a new request</p>
+                                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewRequest()">
+                                    <i class="fas fa-plus"></i> New Request
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+
+                <!-- Data rows -->
+                <tbody *ngIf="filteredRequests.length > 0">
+                    <tr *ngFor="let request of pagedRequests"
+                        [class.ql-row--critical]="request.urgency === 'CRITICAL'"
+                        [class.ql-row--pending]="request.status === 'PENDING'">
+                        <td class="ql-td-product">
+                            <div class="ql-product-info">
+                                <span class="ql-product-name">{{ request.productName }}</span>
+                                <span class="ql-product-sku">{{ request.sku }}</span>
+                            </div>
+                        </td>
+
+                        <td class="ql-td-branch">
+                            <div class="ql-branch-info">
+                                <i class="fas fa-store"></i>
+                                <span>{{ getBranchName(request.branchId) }}</span>
+                            </div>
+                        </td>
+
+                        <td class="ql-td-stock">
+                            <span class="ql-stock-badge"
+                                [class.ql-stock--critical]="getStockStatus(request.currentStock, request.reorderPoint, request.safetyStock) === 'CRITICAL'"
+                                [class.ql-stock--low]="getStockStatus(request.currentStock, request.reorderPoint, request.safetyStock) === 'LOW'"
+                                [class.ql-stock--normal]="getStockStatus(request.currentStock, request.reorderPoint, request.safetyStock) === 'NORMAL'">
+                                {{ request.currentStock }}
+                            </span>
+                            <span class="ql-stock-label">/ {{ request.reorderPoint }}</span>
+                        </td>
+
+                        <td class="ql-td-qty">
+                            <strong>{{ request.requestedQuantity }}</strong>
+                            <span class="ql-qty-unit">units</span>
+                        </td>
+
+                        <td class="ql-td-urgency">
+                            <span class="ql-urgency-badge" [style.background]="getUrgencyColor(request.urgency) + '20'"
+                                [style.color]="getUrgencyColor(request.urgency)">
+                                {{ getUrgencyLabel(request.urgency) }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="ql-status-badge ql-status-badge--{{ getStatusBadgeClass(request.status) }}">
+                                <span class="ql-status-dot" [style.background]="getStatusColor(request.status)"></span>
+                                {{ getStatusLabel(request.status) }}
+                            </span>
+                        </td>
+
+                        <td class="ql-td-date">
+                            <span class="ql-date">{{ formatDate(request.createdAt) }}</span>
+                            <span class="ql-time">{{ formatTime(request.createdAt) }}</span>
+                        </td>
+
+                        <td class="ql-td-actions">
+                            <div class="ql-row-actions">
+                                <button type="button" class="ql-action-btn"
+                                    (click)="navigateToRequestDetail(request.id)" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="ql-action-btn ql-action-btn--approve"
+                                    (click)="openApprovalModal(request, 'approve')" title="Approve"
+                                    *ngIf="request.status === 'PENDING'">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button type="button" class="ql-action-btn ql-action-btn--reject"
+                                    (click)="openApprovalModal(request, 'reject')" title="Reject"
+                                    *ngIf="request.status === 'PENDING'">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="ql-pagination" *ngIf="totalElements > 0">
+                <span class="ql-page-info">
+                    Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, totalElements) }}
+                    of {{ totalElements }}
+                </span>
+                <div class="ql-page-btns">
+                    <button type="button" class="ql-page-btn" [disabled]="currentPage === 0"
+                        (click)="onPageChange(currentPage - 1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button type="button" class="ql-page-btn" *ngFor="let p of getPageNumbers()"
+                        [class.ql-page-btn--active]="p === currentPage" [class.ql-page-btn--ellipsis]="p === -1"
+                        (click)="p !== -1 && onPageChange(p)">
+                        {{ p === -1 ? '…' : p + 1 }}
+                    </button>
+                    <button type="button" class="ql-page-btn" [disabled]="currentPage >= totalPages - 1"
+                        (click)="onPageChange(currentPage + 1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ============================================================
+APPROVAL MODAL
+============================================================ -->
+<div class="ql-modal-backdrop" *ngIf="showApprovalModal"
+    (click)="$event.target === $event.currentTarget && closeApprovalModal()">
+    <div class="ql-modal">
+        <div class="ql-modal-header">
+            <h3>
+                <i class="fas" [class.fa-check-circle]="approvalAction === 'approve'"
+                    [class.fa-times-circle]="approvalAction === 'reject'"
+                    [style.color]="approvalAction === 'approve' ? '#2EB270' : '#DC2626'"></i>
+                {{ approvalAction === 'approve' ? 'Approve' : 'Reject' }} Restock Request
+            </h3>
+            <button type="button" class="ql-modal-close" (click)="closeApprovalModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="ql-modal-body" *ngIf="selectedRequest">
+            <div class="ql-request-summary">
+                <div class="ql-request-item">
+                    <span class="ql-request-label">Product</span>
+                    <span class="ql-request-value">{{ selectedRequest.productName }}</span>
+                </div>
+                <div class="ql-request-item">
+                    <span class="ql-request-label">Branch</span>
+                    <span class="ql-request-value">{{ getBranchName(selectedRequest.branchId) }}</span>
+                </div>
+                <div class="ql-request-item">
+                    <span class="ql-request-label">Current Stock</span>
+                    <span class="ql-request-value">{{ selectedRequest.currentStock }} units</span>
+                </div>
+                <div class="ql-request-item">
+                    <span class="ql-request-label">Requested</span>
+                    <span class="ql-request-value"><strong>{{ selectedRequest.requestedQuantity }}</strong> units</span>
+                </div>
+                <div class="ql-request-item">
+                    <span class="ql-request-label">Urgency</span>
+                    <span class="ql-request-value">
+                        <span class="ql-urgency-badge"
+                            [style.background]="getUrgencyColor(selectedRequest.urgency) + '20'"
+                            [style.color]="getUrgencyColor(selectedRequest.urgency)">
+                            {{ getUrgencyLabel(selectedRequest.urgency) }}
+                        </span>
+                    </span>
+                </div>
+                <div class="ql-request-item" *ngIf="selectedRequest.costEstimate">
+                    <span class="ql-request-label">Cost Estimate</span>
+                    <span class="ql-request-value">{{ formatCurrency(selectedRequest.costEstimate) }}</span>
+                </div>
+                <div class="ql-request-item full-width" *ngIf="selectedRequest.notes">
+                    <span class="ql-request-label">Notes</span>
+                    <span class="ql-request-value">{{ selectedRequest.notes }}</span>
+                </div>
+            </div>
+
+            <div class="ql-field">
+                <label class="ql-flabel">
+                    {{ approvalAction === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason (Required)' }}
+                </label>
+                <textarea class="ql-input ql-textarea" [(ngModel)]="approvalNotes"
+                    placeholder="{{ approvalAction === 'approve' ? 'Add notes about this approval...' : 'Please provide a reason for rejection...' }}"
+                    rows="3"></textarea>
+            </div>
+
+            <div class="ql-confirmation" [class.ql-confirmation--approve]="approvalAction === 'approve'"
+                [class.ql-confirmation--reject]="approvalAction === 'reject'">
+                <i class="fas" [class.fa-info-circle]="approvalAction === 'approve'"
+                    [class.fa-exclamation-triangle]="approvalAction === 'reject'"></i>
+                <span *ngIf="approvalAction === 'approve'">
+                    This will approve the restock request and move it to the ordered status.
+                </span>
+                <span *ngIf="approvalAction === 'reject'">
+                    This will reject the restock request. The branch will be notified and can re-submit.
+                </span>
+            </div>
+        </div>
+
+        <div class="ql-modal-footer">
+            <button type="button" class="ql-btn ql-btn--ghost" (click)="closeApprovalModal()">Cancel</button>
+            <button type="button" class="ql-btn" [class.ql-btn--success]="approvalAction === 'approve'"
+                [class.ql-btn--danger]="approvalAction === 'reject'" (click)="submitApproval()"
+                [disabled]="isProcessing">
+                <i class="fas" [class.fa-spinner]="isProcessing"
+                    [class.fa-check]="!isProcessing && approvalAction === 'approve'"
+                    [class.fa-times]="!isProcessing && approvalAction === 'reject'"
+                    [class.ql-spinning]="isProcessing"></i>
+                {{ isProcessing ? 'Processing...' : (approvalAction === 'approve' ? 'Approve' : 'Reject') }}
+            </button>
+        </div>
+    </div>
+</div>

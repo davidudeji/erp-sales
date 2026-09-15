@@ -1,0 +1,204 @@
+<!-- activity/activity.component.html -->
+<div class="activity-container">
+
+    <!-- ============================================================
+    HEADER
+    ============================================================ -->
+    <div class="activity-header">
+        <div class="header-left">
+            <h3><i class="fas fa-history"></i> Lifecycle History</h3>
+            <span class="event-count">{{ filteredEvents.length }} events</span>
+        </div>
+        <div class="header-right">
+            <button class="btn-refresh" (click)="resetFilters()" *ngIf="getActiveFilterCount() > 0">
+                <i class="fas fa-times"></i> Clear Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    FILTERS
+    ============================================================ -->
+    <div class="filters-bar" [formGroup]="filterForm">
+        <div class="filter-group search-group">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" formControlName="search" placeholder="Search events..." class="search-input" />
+            <button class="clear-search" *ngIf="filterForm.get('search')?.value" 
+                    (click)="filterForm.patchValue({ search: '' })">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="filter-group">
+            <select formControlName="category" class="filter-select">
+                <option *ngFor="let cat of categories" [value]="cat.value">
+                    {{ cat.label }}
+                </option>
+            </select>
+        </div>
+
+        <div class="filter-group date-group">
+            <div class="date-input">
+                <label>From</label>
+                <input type="date" formControlName="dateFrom" />
+            </div>
+            <div class="date-input">
+                <label>To</label>
+                <input type="date" formControlName="dateTo" />
+            </div>
+        </div>
+
+        <div class="filter-actions" *ngIf="getActiveFilterCount() > 0">
+            <span class="filter-count">{{ getActiveFilterCount() }} active filters</span>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    ACTIVITY TIMELINE
+    ============================================================ -->
+    <div class="timeline-container">
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner-small"></div>
+            <p>Loading activity...</p>
+        </div>
+
+        <!-- No Results -->
+        <div *ngIf="!isLoading && filteredEvents.length === 0" class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h4>No Activity Found</h4>
+            <p *ngIf="getActiveFilterCount() > 0">
+                Try adjusting your filters or search terms
+            </p>
+            <p *ngIf="getActiveFilterCount() === 0">
+                No activity has been recorded for this vendor yet.
+            </p>
+            <button *ngIf="getActiveFilterCount() > 0" class="btn-primary-sm" (click)="resetFilters()">
+                Clear Filters
+            </button>
+        </div>
+
+        <!-- Timeline -->
+        <div *ngIf="!isLoading && filteredEvents.length > 0" class="timeline">
+            
+            <!-- Timeline Line -->
+            <div class="timeline-line"></div>
+
+            <!-- Events -->
+            <div *ngFor="let event of filteredEvents; let i = index" 
+                 class="timeline-item" 
+                 [class.first]="i === 0"
+                 (click)="openEventDetail(event)">
+                
+                <!-- Date Badge -->
+                <div class="timeline-date-badge">
+                    <span class="date-day">{{ formatDate(event.timestamp) }}</span>
+                    <span class="date-time">{{ formatTime(event.timestamp) }}</span>
+                </div>
+
+                <!-- Event Dot -->
+                <div class="timeline-dot" [style.background]="event.color">
+                    <i class="fas" [class]="event.icon"></i>
+                </div>
+
+                <!-- Event Content -->
+                <div class="timeline-content">
+                    <div class="event-card">
+                        <div class="event-header">
+                            <div class="event-title-group">
+                                <span class="event-icon" [style.color]="event.color">
+                                    <i class="fas" [class]="event.icon"></i>
+                                </span>
+                                <span class="event-title">{{ event.typeLabel || event.event }}</span>
+                            </div>
+                            <span class="event-badge" [style]="getEventBadgeStyle(event)">
+                                {{ event.category | titlecase }}
+                            </span>
+                        </div>
+
+                        <p class="event-description">{{ event.description }}</p>
+
+                        <div class="event-footer">
+                            <span class="event-actor">
+                                <i class="fas fa-user"></i>
+                                {{ event.performedBy || 'System' }}
+                            </span>
+                            <span class="event-time">
+                                <i class="fas fa-clock"></i>
+                                {{ formatDateTime(event.timestamp) }}
+                            </span>
+                            <button class="event-detail-btn">
+                                View Details <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    EVENT DETAIL MODAL
+    ============================================================ -->
+    <div class="modal-overlay" *ngIf="showEventDetail" (click)="closeEventDetail()">
+        <div class="modal-content detail-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header detail-header">
+                <div class="header-left">
+                    <span class="event-icon-large" [style.color]="selectedEvent?.color">
+                        <i class="fas" [class]="selectedEvent?.icon || 'fa-circle'"></i>
+                    </span>
+                    <div>
+                        <h3>{{ selectedEvent?.typeLabel || selectedEvent?.event }}</h3>
+                        <span class="event-meta">
+                            {{ selectedEvent?.category | titlecase }} •
+                            {{ formatDate(selectedEvent?.timestamp ?? '') }}
+                        </span>
+                    </div>
+                </div>
+                <button class="modal-close" (click)="closeEventDetail()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body detail-body" *ngIf="selectedEvent as event">
+                <div class="detail-grid">
+                    <div class="detail-item full-width">
+                        <span class="detail-label">Description</span>
+                        <span class="detail-value">{{ event.description || 'No description available' }}</span>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Event Type</span>
+                        <span class="detail-value">{{ event.event }}</span>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Category</span>
+                        <span class="detail-value">{{ event.category | titlecase }}</span>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Performed By</span>
+                        <span class="detail-value">{{ event.performedBy || 'System' }}</span>
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">Timestamp</span>
+                        <span class="detail-value">{{ formatDateTime(event.timestamp) }}</span>
+                    </div>
+
+                    <div class="detail-item full-width" *ngIf="event.metadata">
+                        <span class="detail-label">Additional Information</span>
+                        <pre class="detail-metadata">{{ event.metadata | json }}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer detail-footer">
+                <button class="btn-secondary" (click)="closeEventDetail()">Close</button>
+            </div>
+        </div>
+    </div>
+
+</div>

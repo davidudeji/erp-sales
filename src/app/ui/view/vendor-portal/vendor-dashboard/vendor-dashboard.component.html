@@ -1,0 +1,547 @@
+<!-- ═══════════════════════════════════════════════════════════════════════
+     VENDOR DASHBOARD — Command Centre
+
+     Design language: monochrome-first, colour reserved strictly for meaning
+     (an urgent deadline, a status, the one accent brand colour) — never
+     spent decoratively on four different icon-chip hues. No drop shadows;
+     a single hairline border does all the separation work. Numbers use
+     tabular figures so columns of amounts actually align.
+═══════════════════════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-[#fbfcfd] px-6 py-7 max-w-[1360px] mx-auto font-sans text-[#14181b]">
+  <!-- ── Page header ─────────────────────────────────────────────────────── -->
+  <div class="flex items-start justify-between flex-wrap gap-4 mb-5">
+    <div>
+      <div class="flex items-center gap-2.5 mb-0.5">
+        <h1 class="text-[1.375rem] font-semibold tracking-[-0.01em]">Command Centre</h1>
+        <span
+          *ngIf="perfStats"
+          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#fdf1e0] text-[#8a5a00] text-[11px] font-semibold"
+          title="Overall client rating"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2 14.9 8.6 22 9.3 16.6 14.1 18.2 21.2 12 17.5 5.8 21.2 7.4 14.1 2 9.3 9.1 8.6z"
+            />
+          </svg>
+          {{ ratingLabel(perfStats.overallRating) }}
+        </span>
+      </div>
+      <p class="text-[13px] text-[#71828a]">Pipeline, quotations, and key metrics at a glance</p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button (click)="navigateTo('rfq')" class="vp-btn vp-btn--ghost">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.1"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        View RFQs
+        <span *ngIf="stats && stats.unreadRfqs > 0" class="vp-btn__count">{{
+          stats.unreadRfqs
+        }}</span>
+      </button>
+
+      <button (click)="navigateTo('quotation')" class="vp-btn vp-btn--ghost">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.1"
+        >
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        New Quotation
+      </button>
+
+      <button (click)="navigateTo('lpo')" class="vp-btn vp-btn--primary">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.1"
+        >
+          <path d="M9 17H5a2 2 0 0 0-2 2" />
+          <path d="M9 3H5a2 2 0 0 0-2 2v4" />
+          <rect x="9" y="11" width="14" height="10" rx="2" />
+          <rect x="9" y="3" width="14" height="7" rx="2" />
+        </svg>
+        Check Orders
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       KPI STRIP — one hero (revenue, with a quiet sparkline) + four slim,
+       divided stat cells. One bordered rail reads as a single instrument
+       panel rather than five repeated boxes competing for attention.
+  ═════════════════════════════════════════════════════════════════════════ -->
+  <div
+    class="flex flex-wrap items-stretch bg-white border border-[#e5eaed] rounded-xl overflow-hidden mb-4"
+    *ngIf="stats && perfStats"
+  >
+    <!-- Hero: Revenue YTD, with sparkline -->
+    <div
+      class="relative flex-1 min-w-[240px] bg-[#1a2c35] px-6 py-5 flex flex-col justify-center overflow-hidden"
+    >
+      <svg
+        *ngIf="(perfStats.monthlyMetrics?.length ?? 0) > 1"
+        class="absolute bottom-0 left-0 w-full h-[34px] opacity-[0.35]"
+        viewBox="0 0 100 32"
+        preserveAspectRatio="none"
+      >
+        <polyline
+          [attr.points]="sparklinePoints(perfStats.monthlyMetrics)"
+          fill="none"
+          stroke="#7fb3c7"
+          stroke-width="1.6"
+          vector-effect="non-scaling-stroke"
+        />
+      </svg>
+      <p
+        class="relative text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8ca3ac] mb-1.5"
+      >
+        Revenue (Year to Date)
+      </p>
+      <p
+        class="relative text-[1.75rem] leading-none font-semibold text-white tracking-[-0.02em] tabular-nums"
+      >
+        {{ fmtCurrencyShort(perfStats.totalRevenueYtd) }}
+      </p>
+      <p class="relative text-[12px] text-[#8ca3ac] mt-2">
+        <span
+          class="font-semibold"
+          [class.text-emerald-400]="perfStats.revenueGrowthPct >= 0"
+          [class.text-red-400]="perfStats.revenueGrowthPct < 0"
+        >
+          {{ perfStats.revenueGrowthPct >= 0 ? '↑' : '↓' }} {{ perfStats.revenueGrowthPct }}%
+        </span>
+        &nbsp;from won orders
+      </p>
+    </div>
+
+    <div class="hidden sm:block w-px bg-[#e5eaed]"></div>
+
+    <!-- Open RFQs -->
+    <div class="flex-1 min-w-[150px] px-5 py-5 flex items-center gap-3">
+      <span class="vp-icon-chip">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+      </span>
+      <div class="min-w-0">
+        <p class="vp-kpi-label">Open RFQs</p>
+        <p class="text-xl font-semibold tracking-[-0.01em] tabular-nums leading-tight">
+          {{ stats.openRfqs }}
+        </p>
+        <p class="text-[11px] text-[#9aa7ae] truncate">of {{ stats.totalRfqs }} total</p>
+      </div>
+    </div>
+
+    <div class="hidden sm:block w-px bg-[#e5eaed]"></div>
+
+    <!-- Closing soon -->
+    <div class="flex-1 min-w-[150px] px-5 py-5 flex items-center gap-3">
+      <span class="vp-icon-chip" [class.vp-icon-chip--danger]="stats.pendingResponseDueSoon > 0">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      </span>
+      <div class="min-w-0">
+        <p class="vp-kpi-label">Closing Soon</p>
+        <p
+          class="text-xl font-semibold tracking-[-0.01em] tabular-nums leading-tight"
+          [class.text-[#c02c2c]]="stats.pendingResponseDueSoon > 0"
+        >
+          {{ stats.pendingResponseDueSoon }}
+        </p>
+        <p class="text-[11px] text-[#9aa7ae] truncate">within 3 days</p>
+      </div>
+    </div>
+
+    <div class="hidden sm:block w-px bg-[#e5eaed]"></div>
+
+    <!-- Win rate (mini ring) -->
+    <div class="flex-1 min-w-[160px] px-5 py-5 flex items-center gap-3">
+      <div class="relative shrink-0 w-10 h-10">
+        <svg class="w-full h-full -rotate-90" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="26" fill="none" stroke="#eef2f5" stroke-width="7" />
+          <circle
+            cx="30"
+            cy="30"
+            r="26"
+            fill="none"
+            stroke="#224957"
+            stroke-width="7"
+            stroke-linecap="round"
+            [attr.stroke-dasharray]="2 * 3.14159 * 26"
+            [attr.stroke-dashoffset]="winRateOffset(stats.conversionRate)"
+            style="transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1)"
+          />
+        </svg>
+        <span
+          class="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-[#1a2c35] tabular-nums"
+          >{{ stats.conversionRate }}%</span
+        >
+      </div>
+      <div class="min-w-0">
+        <p class="vp-kpi-label">Win Rate</p>
+        <p class="text-xl font-semibold tracking-[-0.01em] tabular-nums leading-tight">
+          {{ stats.acceptedQuotations }}<span class="text-xs font-medium text-[#9aa7ae]"> won</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="hidden sm:block w-px bg-[#e5eaed]"></div>
+
+    <!-- Draft quotations -->
+    <div class="flex-1 min-w-[150px] px-5 py-5 flex items-center gap-3">
+      <span class="vp-icon-chip">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+      </span>
+      <div class="min-w-0">
+        <p class="vp-kpi-label">Drafts</p>
+        <p class="text-xl font-semibold tracking-[-0.01em] tabular-nums leading-tight">
+          {{ stats.draftQuotations }}
+        </p>
+        <p class="text-[11px] text-[#9aa7ae] truncate">not yet submitted</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       OPERATIONAL HEALTH — response time / response rate / on-time delivery.
+       This data (PerformanceStats.avgRfqResponseHours, rfqResponseRate,
+       onTimeDeliveryRate) was already being fetched on this page but never
+       rendered anywhere in the portal. It's exactly the kind of thing a
+       vendor checks daily, so it gets a quiet, single-line home here rather
+       than another dashboard scroll away.
+  ═════════════════════════════════════════════════════════════════════════ -->
+  <div
+    class="flex items-stretch bg-white border border-[#e5eaed] rounded-xl overflow-hidden mb-5 text-[12px]"
+    *ngIf="perfStats"
+  >
+    <div class="flex-1 flex items-center gap-2 px-5 py-3">
+      <span class="text-[#9aa7ae]">Avg. response time</span>
+      <span class="font-semibold text-[#14181b] tabular-nums"
+        >{{ perfStats.avgRfqResponseHours }}h</span
+      >
+    </div>
+    <div class="w-px bg-[#eef2f5]"></div>
+    <div class="flex-1 flex items-center gap-2 px-5 py-3">
+      <span class="text-[#9aa7ae]">RFQ response rate</span>
+      <span class="font-semibold text-[#14181b] tabular-nums"
+        >{{ perfStats.rfqResponseRate }}%</span
+      >
+    </div>
+    <div class="w-px bg-[#eef2f5]"></div>
+    <div class="flex-1 flex items-center gap-2 px-5 py-3">
+      <span class="text-[#9aa7ae]">On-time delivery</span>
+      <span class="font-semibold text-[#14181b] tabular-nums"
+        >{{ perfStats.onTimeDeliveryRate }}%</span
+      >
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       CHARTS — the pipeline's shape, told visually instead of via more tiles.
+  ═════════════════════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+    <!-- Performance trend -->
+    <div class="lg:col-span-2 bg-white border border-[#e5eaed] rounded-xl p-5">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-[13px] font-semibold text-[#14181b]">Performance Trend</h2>
+        <span class="text-[11px] font-medium text-[#9aa7ae]">Last 6 months</span>
+      </div>
+      <div *ngIf="trendChart.series">
+        <apx-chart
+          [series]="trendChart.series!"
+          [chart]="trendChart.chart!"
+          [xaxis]="trendChart.xaxis!"
+          [yaxis]="trendChart.yaxis!"
+          [colors]="trendChart.colors!"
+          [stroke]="trendChart.stroke!"
+          [dataLabels]="trendChart.dataLabels!"
+          [legend]="trendChart.legend!"
+          [grid]="trendChart.grid!"
+          [tooltip]="trendChart.tooltip!"
+        ></apx-chart>
+      </div>
+    </div>
+
+    <!-- Quotation pipeline donut -->
+    <div class="lg:col-span-1 bg-white border border-[#e5eaed] rounded-xl p-5">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-[13px] font-semibold text-[#14181b]">Quotation Pipeline</h2>
+      </div>
+      <div *ngIf="pipelineChart.series">
+        <apx-chart
+          [series]="pipelineChart.series!"
+          [chart]="pipelineChart.chart!"
+          [labels]="pipelineChart.labels!"
+          [colors]="pipelineChart.colors!"
+          [stroke]="pipelineChart.stroke!"
+          [dataLabels]="pipelineChart.dataLabels!"
+          [legend]="pipelineChart.legend!"
+          [plotOptions]="pipelineChart.plotOptions!"
+          [tooltip]="pipelineChart.tooltip!"
+        ></apx-chart>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       UPCOMING RFQ DEADLINES  +  TOP CLIENTS
+  ═════════════════════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+    <!-- ── Upcoming RFQ deadlines ── -->
+    <div class="bg-white border border-[#e5eaed] rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-[#eef2f5]">
+        <div class="flex items-center gap-2">
+          <h2 class="text-[13px] font-semibold text-[#14181b]">Upcoming RFQ Deadlines</h2>
+          <span
+            *ngIf="stats && stats.pendingResponseDueSoon > 0"
+            class="inline-flex items-center justify-center min-w-[17px] h-[17px] px-1 rounded-full text-[10px] font-bold bg-[#c02c2c] text-white"
+            >{{ stats.pendingResponseDueSoon }}</span
+          >
+        </div>
+        <button
+          (click)="navigateTo('rfq')"
+          class="text-[12px] text-[#224957] font-medium hover:underline shrink-0"
+        >
+          View all →
+        </button>
+      </div>
+
+      <div class="p-3">
+        <app-table
+          [columns]="upcomingRfqColumns"
+          [rows]="upcomingRfqs"
+          [actions]="[]"
+          [rowClickable]="true"
+          emptyMessage="No upcoming RFQ deadlines"
+          (rowClick)="navigateTo('rfq')"
+        >
+          <ng-template appTableBody let-rfq>
+            <td class="app-table-main-col">
+              <div class="flex items-center gap-2.5">
+                <span
+                  class="w-[7px] h-[7px] rounded-full shrink-0"
+                  [class.bg-[#c02c2c]]="daysUntil(rfq.dueDate) <= 1"
+                  [class.bg-[#b3690a]]="daysUntil(rfq.dueDate) > 1 && daysUntil(rfq.dueDate) <= 3"
+                  [class.bg-[#9aa7ae]]="daysUntil(rfq.dueDate) > 3"
+                ></span>
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-[#14181b] truncate">{{ rfq.rfqNumber }}</p>
+                  <p class="text-[10.5px] text-[#9aa7ae] truncate">{{ rfq.category }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="text-sm text-[#566670]">{{ rfq.clientName }}</td>
+            <td class="text-right whitespace-nowrap">
+              <p
+                class="text-xs font-semibold tabular-nums"
+                [class.text-[#c02c2c]]="daysUntil(rfq.dueDate) <= 1"
+                [class.text-[#b3690a]]="daysUntil(rfq.dueDate) > 1 && daysUntil(rfq.dueDate) <= 3"
+                [class.text-[#14181b]]="daysUntil(rfq.dueDate) > 3"
+              >
+                {{ daysUntil(rfq.dueDate) === 0 ? 'Today' : daysUntil(rfq.dueDate) + 'd left' }}
+              </p>
+              <p class="text-[10.5px] text-[#9aa7ae]">{{ fmtDate(rfq.dueDate) }}</p>
+            </td>
+            <td class="text-right">
+              <app-vp-status
+                [tone]="rfqStatusTone(rfq.status)"
+                [icon]="rfqStatusIcon(rfq.status)"
+                [label]="rfq.status"
+              ></app-vp-status>
+            </td>
+          </ng-template>
+        </app-table>
+      </div>
+    </div>
+
+    <!-- ── Top clients ── -->
+    <div class="bg-white border border-[#e5eaed] rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-[#eef2f5]">
+        <h2 class="text-[13px] font-semibold text-[#14181b]">Top Clients</h2>
+        <span class="text-[11px] font-medium text-[#9aa7ae]">By revenue, YTD</span>
+      </div>
+
+      <div *ngIf="perfStats as p">
+        <div class="divide-y divide-[#eef2f5]" *ngIf="p.topClients.length > 0; else noClients">
+          <div
+            *ngFor="let c of p.topClients | slice: 0 : 5"
+            class="flex items-center gap-3 px-5 py-2.5 hover:bg-[#fafbfc] transition-colors"
+          >
+            <span
+              class="w-7 h-7 rounded-full bg-[#eef5f7] text-[#224957] text-[10.5px] font-semibold flex items-center justify-center shrink-0 ring-1 ring-[#e5eaed]"
+              >{{ initials(c.clientName) }}</span
+            >
+            <div class="flex-1 min-w-0">
+              <p class="text-[13px] font-semibold text-[#14181b] truncate">{{ c.clientName }}</p>
+              <p class="text-[10.5px] text-[#9aa7ae] truncate">
+                {{ c.totalOrders }} orders · {{ c.onTimeRate }}% on-time
+              </p>
+            </div>
+            <p class="text-[13px] font-semibold text-[#14181b] tabular-nums shrink-0">
+              {{ fmtCurrencyShort(c.totalRevenue) }}
+            </p>
+          </div>
+        </div>
+        <ng-template #noClients>
+          <div class="px-5 py-10 text-center">
+            <p class="text-[13px] text-[#71828a]">No client history yet</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       QUICK ACCESS — recent Orders (LPOs) / Quotations, without leaving the page
+  ═════════════════════════════════════════════════════════════════════════ -->
+  <div class="bg-white border border-[#e5eaed] rounded-xl overflow-hidden">
+    <div
+      class="flex items-center justify-between px-4 py-3 border-b border-[#eef2f5] flex-wrap gap-2"
+    >
+      <div class="flex items-center gap-0.5 bg-[#f6f8fa] border border-[#e5eaed] rounded-lg p-0.5">
+        <button
+          (click)="setQuickAccessView('orders')"
+          class="px-3 py-1.5 rounded-md text-[12px] font-semibold transition-colors"
+          [class.bg-white]="quickAccessView === 'orders'"
+          [class.text-[#14181b]]="quickAccessView === 'orders'"
+          [class.text-[#71828a]]="quickAccessView !== 'orders'"
+        >
+          Recent Orders
+        </button>
+        <button
+          (click)="setQuickAccessView('quotations')"
+          class="px-3 py-1.5 rounded-md text-[12px] font-semibold transition-colors"
+          [class.bg-white]="quickAccessView === 'quotations'"
+          [class.text-[#14181b]]="quickAccessView === 'quotations'"
+          [class.text-[#71828a]]="quickAccessView !== 'quotations'"
+        >
+          Recent Quotations
+        </button>
+      </div>
+      <button
+        (click)="navigateTo(quickAccessView === 'orders' ? 'lpo' : 'quotation')"
+        class="text-[12px] text-[#224957] font-medium hover:underline"
+      >
+        View all →
+      </button>
+    </div>
+
+    <!-- Orders (LPO) table -->
+    <div class="p-3" *ngIf="quickAccessView === 'orders'">
+      <app-table
+        [columns]="recentLpoColumns"
+        [rows]="recentLpos"
+        [actions]="[]"
+        [rowClickable]="true"
+        emptyMessage="No orders yet"
+        (rowClick)="navigateTo('lpo')"
+      >
+        <ng-template appTableBody let-lpo>
+          <td class="app-table-main-col">
+            <p class="text-sm font-semibold text-[#14181b]">{{ lpo.lpoNumber }}</p>
+            <p class="text-[10.5px] text-[#9aa7ae]">{{ fmtDate(lpo.issuedDate) }}</p>
+          </td>
+          <td class="text-sm text-[#566670]">{{ lpo.clientName }}</td>
+          <td class="text-sm text-[#566670] whitespace-nowrap">
+            {{ lpo.items.length }} item{{ lpo.items.length === 1 ? '' : 's' }}
+          </td>
+          <td
+            class="text-right text-sm font-semibold text-[#14181b] tabular-nums whitespace-nowrap"
+          >
+            {{ fmtCurrencyShort(lpo.total) }}
+          </td>
+          <td class="text-right text-xs text-[#566670] whitespace-nowrap">
+            {{ fmtDate(lpo.deliveryDate) }}
+          </td>
+          <td class="text-right">
+            <app-vp-status
+              [tone]="lpoStatusTone(lpo.status)"
+              [icon]="lpoStatusIcon(lpo.status)"
+              [label]="lpoStatusLabel(lpo.status)"
+            ></app-vp-status>
+          </td>
+        </ng-template>
+      </app-table>
+    </div>
+
+    <!-- Quotations table -->
+    <div class="p-3" *ngIf="quickAccessView === 'quotations'">
+      <app-table
+        [columns]="recentQuotationColumns"
+        [rows]="recentQuotations"
+        [actions]="[]"
+        [rowClickable]="true"
+        emptyMessage="No quotations yet"
+        (rowClick)="navigateTo('quotation')"
+      >
+        <ng-template appTableBody let-q>
+          <td class="app-table-main-col">
+            <p class="text-sm font-semibold text-[#14181b]">{{ q.quotationNumber }}</p>
+            <p class="text-[10.5px] text-[#9aa7ae]">{{ fmtDate(q.createdDate) }}</p>
+          </td>
+          <td class="text-sm text-[#566670]">{{ q.clientName }}</td>
+          <td class="text-right text-xs text-[#566670] whitespace-nowrap">
+            {{ fmtDate(q.validUntil) }}
+          </td>
+          <td
+            class="text-right text-sm font-semibold text-[#14181b] tabular-nums whitespace-nowrap"
+          >
+            {{ q.total > 0 ? fmtCurrencyShort(q.total) : '—' }}
+          </td>
+          <td class="text-right">
+            <app-vp-status
+              [tone]="quotStatusTone(q.status)"
+              [icon]="quotStatusIcon(q.status)"
+              [label]="quotStatusLabel(q.status)"
+            ></app-vp-status>
+          </td>
+        </ng-template>
+      </app-table>
+    </div>
+  </div>
+</div>
+n

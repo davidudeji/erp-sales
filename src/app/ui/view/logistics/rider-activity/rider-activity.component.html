@@ -1,0 +1,188 @@
+<div class="lg-page">
+
+  <div class="lg-header">
+    <div>
+      <h1 class="lg-title">Rider Activity</h1>
+      <p class="lg-subtitle">Manage and monitor rider roster and performance.</p>
+    </div>
+    <button *ngIf="activeTab === 'audit'" type="button" class="btn btn-outline" (click)="exportCsv()">
+      Export CSV
+    </button>
+    <button *ngIf="activeTab === 'roster'" type="button" class="btn btn-primary" (click)="openAddRider()">
+      + Add Rider
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="lg-tabs">
+    <button type="button" class="lg-tab" [class.active]="activeTab === 'roster'" (click)="setTab('roster')">
+      Rider Roster
+      <span class="lg-tab-badge">{{ riders.length }}</span>
+    </button>
+    <button type="button" class="lg-tab" [class.active]="activeTab === 'performance'" (click)="setTab('performance')">
+      Performance
+    </button>
+    <button type="button" class="lg-tab" [class.active]="activeTab === 'audit'" (click)="setTab('audit')">
+      Audit Log
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- RIDER ROSTER -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'roster'">
+    <div class="lg-table-card">
+      <app-table [columns]="rosterColumns" [rows]="riders" [actions]="[]" [rowClickable]="true" (rowClick)="openRiderDetail($event)" emptyMessage="">
+        <ng-template appTableBody let-rider>
+          <td class="app-table-main-col">
+            <div class="flex items-center gap-2.5">
+              <span class="lg-avatar">{{ rider.initials }}</span>
+              <div>
+                <p class="text-[13.5px] font-semibold text-[#14181b]">{{ rider.name }}</p>
+                <p class="text-[11.5px] text-[#9aa7ae]">ID: {{ rider.riderCode }}</p>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="lg-pill" [ngClass]="getRiderStatusBadgeClass(rider.activeStatus)">{{ rider.activeStatus | titlecase }}</span>
+          </td>
+          <td class="text-[13px] text-[#566670] capitalize">{{ rider.vehicleType | lowercase }}</td>
+          <td class="text-[13px] text-[#14181b]">{{ rider.currentLoad }} orders</td>
+          <td class="text-[13px] text-[#00a191]">{{ rider.email }}</td>
+        </ng-template>
+      </app-table>
+
+      <div *ngIf="!isRosterLoading && !riders.length" class="lg-empty">
+        <p class="text-[14px] font-medium text-[#14181b]">No rider activity yet</p>
+      </div>
+      <div *ngIf="isRosterLoading" class="lg-empty">
+        <p class="text-[13px] text-[#9aa7ae]">Loading roster…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PERFORMANCE -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'performance'">
+
+    <div class="lg-stat-row mb-5">
+      <div class="lg-stat-card">
+        <p class="lg-stat-label">Active Riders</p>
+        <p class="lg-stat-value">{{ activeRidersCount }}</p>
+      </div>
+      <div class="lg-stat-card">
+        <p class="lg-stat-label">Avg Delivery Rate</p>
+        <p class="lg-stat-value">{{ avgDeliveryRate }}%</p>
+      </div>
+      <div class="lg-stat-card">
+        <p class="lg-stat-label">Avg Time / Order</p>
+        <p class="lg-stat-value">{{ avgTimePerOrder }}m</p>
+      </div>
+      <div class="lg-stat-card">
+        <p class="lg-stat-label">Hoarding Risks</p>
+        <p class="lg-stat-value lg-stat-value--alert">{{ hoardingRiskCount }}</p>
+      </div>
+    </div>
+
+    <div class="lg-table-card">
+      <app-table [columns]="performanceColumns" [rows]="performanceStats" [actions]="[]" emptyMessage="">
+        <ng-template appTableBody let-stat>
+          <td class="app-table-main-col" [class.ra-hoard-row]="stat.isHoardingRisk">
+            <div class="flex items-center gap-2">
+              <span *ngIf="stat.isHoardingRisk" class="lg-aging-bar"></span>
+              <span class="text-[13.5px] font-semibold text-[#14181b]">{{ stat.riderName }}</span>
+              <span *ngIf="stat.isHoardingRisk" class="lg-pill lg-pill--alert">Alert</span>
+            </div>
+          </td>
+          <td class="text-[13px] text-[#14181b]">{{ stat.ordersClaimedWeek }}</td>
+          <td class="text-[13px] text-[#16a34a]">{{ stat.delivered }}</td>
+          <td class="text-[13px]" [ngClass]="stat.failed > 3 ? 'text-[#dc2626]' : 'text-[#14181b]'">{{ stat.failed }}</td>
+          <td class="text-[13px] text-[#566670]">{{ stat.avgTimeMinutes }}m</td>
+          <td class="text-[13px]" [ngClass]="stat.avgApprovalWaitMinutes > 5 ? 'text-[#f97316] font-semibold' : 'text-[#566670]'">
+            {{ stat.avgApprovalWaitMinutes }}m
+          </td>
+        </ng-template>
+      </app-table>
+
+      <div *ngIf="!isPerformanceLoading && !performanceStats.length" class="lg-empty">
+        <p class="text-[14px] font-medium text-[#14181b]">No rider activity yet</p>
+      </div>
+      <div *ngIf="isPerformanceLoading" class="lg-empty">
+        <p class="text-[13px] text-[#9aa7ae]">Loading performance…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- AUDIT LOG -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'audit'">
+
+    <div class="flex items-center gap-2.5 mb-4 flex-wrap">
+      <div class="relative flex-1 min-w-[220px] max-w-xs">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9aa7ae]" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <input
+          type="text"
+          placeholder="Search order ID..."
+          class="lg-search-input"
+          [ngModel]="auditFilter.orderId"
+          (ngModelChange)="onAuditSearchChange($event)"
+        />
+      </div>
+      <select class="lg-select">
+        <option>Date Range (Today)</option>
+      </select>
+      <select class="lg-select">
+        <option>Actor Type (All Actors)</option>
+      </select>
+      <select class="lg-select">
+        <option>Action (All Actions)</option>
+      </select>
+    </div>
+
+    <div *ngIf="activeOrderFilterChip" class="mb-3">
+      <span class="lg-pill lg-pill--info inline-flex items-center gap-1.5 !py-1.5 !px-3">
+        Order {{ activeOrderFilterChip }}
+        <button type="button" (click)="clearOrderFilter()" class="hover:opacity-70">×</button>
+      </span>
+    </div>
+
+    <div class="lg-table-card">
+      <app-table [columns]="auditColumns" [rows]="auditEntries" [actions]="[]" emptyMessage="">
+        <ng-template appTableBody let-entry>
+          <td class="app-table-main-col whitespace-nowrap">
+            <p class="text-[12.5px] font-semibold text-[#14181b]">{{ entry.timestamp | date: 'h:mm:ss a' }}</p>
+            <p class="text-[11px] text-[#9aa7ae]">{{ entry.timestamp | date: 'MMM d, y' }}</p>
+          </td>
+          <td>
+            <span class="lg-pill" [ngClass]="entry.actorType === 'admin' ? 'lg-pill--info' : 'lg-pill--neutral'">{{ entry.actor }}</span>
+          </td>
+          <td class="text-[12.5px] text-[#14181b] max-w-md">{{ entry.action }}</td>
+          <td class="whitespace-nowrap">
+            <span class="lg-pill lg-pill--neutral">{{ entry.fromStatus }}</span>
+            <span class="text-[#9aa7ae] mx-1">→</span>
+            <span class="lg-pill" [ngClass]="entry.toStatus === 'FAILED' ? 'lg-pill--error' : 'lg-pill--success'">{{ entry.toStatus }}</span>
+          </td>
+        </ng-template>
+      </app-table>
+
+      <div *ngIf="!isAuditLoading && !auditEntries.length" class="lg-empty">
+        <p class="text-[14px] font-medium text-[#14181b]">No activity recorded</p>
+      </div>
+      <div *ngIf="isAuditLoading" class="lg-empty">
+        <p class="text-[13px] text-[#9aa7ae]">Loading audit log…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add rider -->
+  <app-add-rider-form *ngIf="showAddRider" (closed)="closeAddRider()" (created)="onRiderCreated($event)"></app-add-rider-form>
+
+  <!-- Rider detail -->
+  <app-rider-detail-drawer *ngIf="selectedRider" [rider]="selectedRider" (closed)="closeRiderDetail()"></app-rider-detail-drawer>
+
+</div>

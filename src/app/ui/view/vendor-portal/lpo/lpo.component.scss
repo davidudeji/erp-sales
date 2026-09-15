@@ -1,0 +1,49 @@
+// Shared with dashboard — animations and badge/text helpers
+// (if you extract these to a shared file you can remove the duplication)
+
+.panel-slide {
+  animation: panelSlide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+@keyframes panelSlide {
+  from { transform: translateX(32px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.modal-pop {
+  animation: modalPop 0.22s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.text-danger  { color: #dc2626; }
+.text-warning { color: #d97706; font-weight: 500; }
+
+// Status badges — same pattern as dashboard
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+  white-space: nowrap;
+
+  &-pending   { background: #fffbeb; color: #d97706; }
+  &-accepted  { background: #f0fdf4; color: #16a34a; }
+  &-rejected  { background: #fef2f2; color: #dc2626; }
+  &-fulfilled { background: #eff6ff; color: #2563eb; }
+  &-closed    { background: #f3f4f6; color: #6b7280; }
+}
+
+:host ::ng-deep {
+  .p-datatable .p-datatable-tbody > tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    &:hover td { background-color: #f5f7f9 !important; }
+  }
+  .app-table-actions-col:empty { display: none; }
+}

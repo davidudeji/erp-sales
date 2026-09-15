@@ -1,0 +1,268 @@
+<!-- src/app/ui/view/sales-module/customer-form/customer-form.component.html -->
+<div class="customer-form-container">
+  <div class="form-wrapper">
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner-glow"></div>
+      <p>Loading customer data...</p>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="customerForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" class="customer-form">
+      
+      <!-- ══ TOP ACTION BAR ════════════════════════════════════════════════ -->
+      <div class="qf-topbar">
+        <div class="qf-topbar-left">
+          <app-back-button (click)="cancel()"></app-back-button>
+          <nav class="qf-breadcrumb">
+            <span>Sales</span><i class="fas fa-chevron-right"></i>
+            <span>Customers</span><i class="fas fa-chevron-right"></i>
+            <span class="qf-breadcrumb-active">{{ isEditMode ? 'Edit #' + customerId : 'New Customer' }}</span>
+          </nav>
+        </div>
+        <div class="qf-topbar-right">
+          <button type="button" class="qf-btn qf-btn--ghost" (click)="cancel()">
+            <i class="fas fa-times"></i> Discard
+          </button>
+          <button type="submit" class="qf-btn qf-btn--primary" [disabled]="isSubmitting">
+            <i class="fas fa-circle-notch fa-spin" *ngIf="isSubmitting"></i>
+            <i class="fas fa-check" *ngIf="!isSubmitting"></i>
+            <span>{{ isSubmitting ? 'Saving…' : (isEditMode ? 'Update Customer' : 'Create Customer') }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ TWO-COLUMN FORM BODY ══════════════════════════════════════════ -->
+      <div class="qf-body">
+        
+        <!-- LEFT COLUMN -->
+        <div class="qf-form-col">
+          
+          <!-- Section 1: Personal Information -->
+          <div class="qf-card">
+            <div class="qf-card-head">
+              <i class="fas fa-user"></i>
+              <span>Personal Information</span>
+            </div>
+            <div class="qf-card-body">
+              <div class="qf-field">
+                <label class="qf-label">Full Name <span class="qf-req">*</span></label>
+                <input class="qf-input" [class.qf-input--err]="isFieldInvalid('name')" 
+                       formControlName="name" placeholder="Customer's full name">
+                <span class="qf-field-err" *ngIf="isFieldInvalid('name')">{{ getFieldError('name') }}</span>
+              </div>
+
+              <div class="qf-grid-2">
+                <div class="qf-field">
+                  <label class="qf-label">Email Address <span class="qf-req">*</span></label>
+                  <input class="qf-input" [class.qf-input--err]="isFieldInvalid('email')" 
+                         formControlName="email" type="email" placeholder="customer@example.com">
+                  <span class="qf-field-err" *ngIf="isFieldInvalid('email')">{{ getFieldError('email') }}</span>
+                </div>
+                <div class="qf-field">
+                  <label class="qf-label">Phone Number <span class="qf-req">*</span></label>
+                  <input class="qf-input" [class.qf-input--err]="isFieldInvalid('phone')" 
+                         formControlName="phone" type="tel" placeholder="+234 800 000 0000">
+                  <span class="qf-field-err" *ngIf="isFieldInvalid('phone')">{{ getFieldError('phone') }}</span>
+                </div>
+              </div>
+
+              <div class="qf-field">
+                <label class="qf-label">Street Address <span class="qf-req">*</span></label>
+                <input class="qf-input" [class.qf-input--err]="isFieldInvalid('address')" 
+                       formControlName="address" placeholder="Enter street address">
+                <span class="qf-field-err" *ngIf="isFieldInvalid('address')">{{ getFieldError('address') }}</span>
+              </div>
+
+              <div class="qf-grid-2">
+                <div class="qf-field">
+                  <label class="qf-label">City</label>
+                  <input class="qf-input" placeholder="City">
+                </div>
+                <div class="qf-field">
+                  <label class="qf-label">State/Province</label>
+                  <input class="qf-input" placeholder="State">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Business Details -->
+          <div class="qf-card">
+            <div class="qf-card-head">
+              <i class="fas fa-building"></i>
+              <span>Business Details</span>
+            </div>
+            <div class="qf-card-body">
+              <div class="qf-grid-2">
+                <div class="qf-field">
+                  <label class="qf-label">Tax ID / VAT Number</label>
+                  <input class="qf-input" [class.qf-input--err]="isFieldInvalid('taxId')" 
+                         formControlName="taxId" placeholder="Enter Tax ID or VAT number">
+                  <span class="qf-field-err" *ngIf="isFieldInvalid('taxId')">{{ getFieldError('taxId') }}</span>
+                </div>
+                <div class="qf-field">
+                  <label class="qf-label">Status <span class="qf-req">*</span></label>
+                  <select class="qf-select" formControlName="status">
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                    <option value="BLACKLISTED">Blacklisted</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Customer Bank Accounts -->
+          <div class="qf-card">
+            <div class="qf-card-head">
+              <i class="fas fa-university"></i>
+              <span>Bank Accounts</span>
+              <button type="button" class="qf-card-action" (click)="addBankAccount()">
+                <i class="fas fa-plus"></i> Add Account
+              </button>
+            </div>
+            <div class="qf-card-body">
+              <div formArrayName="bankAccounts" class="bank-accounts-list">
+                <div *ngFor="let account of bankAccounts.controls; let idx = index" 
+                     [formGroupName]="idx" class="qf-bank-account-item">
+                  <div class="qf-bank-account-header">
+                    <span class="qf-bank-account-label">Account #{{ idx + 1 }}</span>
+                    <button type="button" class="qf-del-btn" (click)="removeBankAccount(idx)">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                  <div class="qf-grid-2">
+                    <div class="qf-field">
+                      <label class="qf-label">Bank Name <span class="qf-req">*</span></label>
+                      <input class="qf-input" formControlName="bankName" placeholder="e.g. Stanbic IBTC">
+                    </div>
+                    <div class="qf-field">
+                      <label class="qf-label">Account Name <span class="qf-req">*</span></label>
+                      <input class="qf-input" formControlName="accountName" placeholder="e.g. Emirates Corporate">
+                    </div>
+                  </div>
+                  <div class="qf-grid-2">
+                    <div class="qf-field">
+                      <label class="qf-label">Account Number <span class="qf-req">*</span></label>
+                      <input class="qf-input qf-input--mono" formControlName="accountNumber" placeholder="e.g. 0013604661">
+                    </div>
+                    <div class="qf-field">
+                      <label class="qf-label">Routing / Sort Code</label>
+                      <input class="qf-input" formControlName="routingNumber" placeholder="Optional">
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="bankAccounts.length === 0" class="qf-empty-hint" style="text-align:center;padding:1rem 0;">
+                  <i class="fas fa-university" style="font-size:1.5rem;color:var(--muted);display:block;margin-bottom:0.5rem;"></i>
+                  No bank accounts added yet
+                  <br>
+                  <span style="font-size:0.85rem;">Click "Add Account" to configure one or more</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="qf-preview-col">
+          
+          <!-- Customer Summary Card -->
+          <div class="qf-doc-card" style="margin:0;">
+            <div class="qf-doc-header">
+              <div class="qf-doc-brand">
+                <span class="qf-doc-company-name" style="font-size:1.1rem;">
+                  <i class="fas fa-user-circle" style="color:var(--p);font-size:1.4rem;margin-right:0.5rem;"></i>
+                  {{ customerForm.get('name')?.value || 'New Customer' }}
+                </span>
+                <span class="qf-doc-company-sub" *ngIf="customerForm.get('email')?.value">
+                  {{ customerForm.get('email')?.value }}
+                </span>
+                <span class="qf-doc-company-sub" *ngIf="customerForm.get('phone')?.value">
+                  {{ customerForm.get('phone')?.value }}
+                </span>
+              </div>
+              <div class="qf-doc-badge-wrap">
+                <div class="qf-doc-badge" style="font-size:0.8rem;color:var(--muted);">
+                  {{ isEditMode ? 'EDITING' : 'NEW' }}
+                </div>
+                <div class="qf-doc-badge-num">
+                  <span class="qf-status-badge" [class]="'status-' + getStatusClass(customerForm.get('status')?.value)">
+                    <span class="status-dot"></span>
+                    {{ customerForm.get('status')?.value | titlecase }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="qf-doc-section">
+              <div class="qf-doc-section-label">CUSTOMER DETAILS</div>
+              <div class="qf-doc-billto">
+                <strong>{{ customerForm.get('name')?.value || '—' }}</strong>
+                <span class="qf-doc-party-addr">{{ customerForm.get('address')?.value || 'No address provided' }}</span>
+              </div>
+            </div>
+
+            <!-- Stats (Edit Mode) -->
+            <div *ngIf="isEditMode && customerStats" class="qf-doc-section">
+              <div class="qf-doc-section-label">LIFETIME STATISTICS</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                <div style="background:var(--p-lt);padding:0.5rem;border-radius:6px;text-align:center;">
+                  <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Total Orders</div>
+                  <div style="font-size:1.1rem;font-weight:700;color:var(--p);">{{ customerStats.totalOrders || 0 }}</div>
+                </div>
+                <div style="background:var(--p-lt);padding:0.5rem;border-radius:6px;text-align:center;">
+                  <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Total Spent</div>
+                  <div style="font-size:1.1rem;font-weight:700;color:var(--p);">{{ formatCurrency(customerStats.totalSpent || 0) }}</div>
+                </div>
+                <div style="background:var(--p-lt);padding:0.5rem;border-radius:6px;text-align:center;grid-column:1 / -1;">
+                  <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Customer Since</div>
+                  <div style="font-size:1rem;font-weight:600;color:var(--text);">{{ formatDate(customerStats.createdAt) || 'N/A' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="qf-doc-section">
+              <div class="qf-doc-section-label">NOTES</div>
+              <div class="qf-doc-notes">
+                <p style="white-space:pre-line;min-height:2rem;color:var(--text);">
+                  {{ customerForm.get('notes')?.value || 'No notes added yet' }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Bank Accounts Preview -->
+            <div class="qf-doc-section" *ngIf="bankAccounts.length > 0">
+              <div class="qf-doc-section-label">BANK ACCOUNTS</div>
+              <div *ngFor="let account of bankAccounts.controls; let idx = index" style="padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.8rem;">
+                <div style="display:flex;justify-content:space-between;">
+                  <span style="font-weight:600;">{{ account.get('bankName')?.value || '—' }}</span>
+                  <span class="qf-doc-bank-num">{{ account.get('accountNumber')?.value || '—' }}</span>
+                </div>
+                <div style="color:var(--muted);font-size:0.7rem;">{{ account.get('accountName')?.value || '—' }}</div>
+              </div>
+            </div>
+
+            <div class="qf-doc-footer">
+              <span>OptimaX • Customer Profile</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons (Mobile) -->
+          <div class="qf-mobile-actions" style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <button type="button" class="qf-btn qf-btn--ghost" style="flex:1;" (click)="cancel()">
+              <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="submit" class="qf-btn qf-btn--primary" style="flex:2;" [disabled]="isSubmitting">
+              <i class="fas fa-circle-notch fa-spin" *ngIf="isSubmitting"></i>
+              <i class="fas fa-check" *ngIf="!isSubmitting"></i>
+              {{ isSubmitting ? 'Saving…' : (isEditMode ? 'Update' : 'Create') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,416 @@
+// rfq-template-selector.component.scss
+// Damilola: complete redesign — large cards, white doc-paper on teal bg, gradient fade
+$primary:   #184440;
+$primary-lt: #1a6b64;
+$orange:    #d97706;
+$bg:        #f5f7fa;
+$border:    #e5e7eb;
+$text:      #111827;
+$muted:     #6b7280;
+$dark-doc:  #2d4a47;
+
+.rfq-template-selector {
+  background: $bg;
+  min-height: 100vh;
+  padding-bottom: 4rem;
+}
+
+// ── Shared page-header + stepper (same pattern as the product form) ────────────
+.page-header {
+  background: white;
+  border-bottom: 1px solid $border;
+  position: sticky; top: 0; z-index: 100;
+
+  .header-main-row { display: flex; align-items: center; gap: .9rem; padding: 1rem 2rem; }
+  .page-icon {
+    width: 42px; height: 42px; background: #edf4f3; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; color: $primary; font-size: 1.1rem; flex-shrink: 0;
+  }
+  .page-title {
+    h2 { font-size: 1.3rem; font-weight: 700; color: $text; margin: 0 0 .1rem; }
+    p  { font-size: .95rem; color: $muted; margin: 0; }
+  }
+}
+
+.step-bar {
+  background: white; border-bottom: 1px solid $border;
+  padding: .8rem 2rem; display: flex; align-items: center; justify-content: center;
+}
+.step-list { display: flex; align-items: center; }
+.step-item {
+  display: flex; align-items: center; gap: .45rem;
+  .step-circle {
+    width: 32px; height: 32px; border-radius: 50%; border: 2px solid #d1d5db;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .88rem; font-weight: 700; color: #9ca3af; background: white; flex-shrink: 0;
+  }
+  .step-name { font-size: .9rem; color: #9ca3af; font-weight: 500; white-space: nowrap; }
+  &.active {
+    .step-circle { border-color: $primary; background: $primary; color: white; box-shadow: 0 0 0 3px rgba(24,68,64,.15); }
+    .step-name   { color: $primary; font-weight: 700; }
+  }
+  &.completed {
+    .step-circle { border-color: $primary; background: #edf4f3; color: $primary; }
+    .step-name   { color: #374151; font-weight: 600; }
+  }
+}
+.step-connector { width: 48px; height: 2px; background: #e5e7eb; margin: 0 .4rem; &.done { background: $primary; } }
+
+// ── Body ───────────────────────────────────────────────────────────────────────
+.selector-body { max-width: 1100px; margin: 0 auto; padding: 2.25rem 1.75rem; }
+.loading-state { text-align: center; padding: 4rem; color: $muted; font-size: 1rem; }
+
+// ── Grid — Damilola: 2-column, generous gap so cards feel spacious ─────────────
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.75rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 760px) { grid-template-columns: 1fr; }
+}
+
+// ── Card shell — Damilola: tall card, vertical flex, big rounded corners ────────
+.tpl-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 18px;
+  border: 2px solid $border;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 460px;   // Damilola: tall enough that the preview content is clearly visible
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.12);
+    border-color: #aac5c3;
+  }
+
+  // Damilola: selected state — teal border + glow ring
+  &.tpl-card--selected {
+    border-color: $primary;
+    box-shadow: 0 0 0 4px rgba(24,68,64,.16), 0 12px 36px rgba(24,68,64,.12);
+  }
+}
+
+// ── Preview area — Damilola: teal-tinted bg, "paper" floats inside ─────────────
+.tpl-preview {
+  position: relative;
+  height: 300px;   // Damilola: fixed height — content shows, overflow fades
+  padding: 1.4rem 1.5rem 0;
+  overflow: hidden;
+
+  // Per-layout background tint for visual differentiation
+  &.tpl-preview--standard   { background: linear-gradient(155deg, #e8f2f1 0%, #d5e8e6 100%); }
+  &.tpl-preview--centrifuge  { background: linear-gradient(155deg, #dff0ee 0%, #cce4e2 100%); }
+  &.tpl-preview--minimal    { background: linear-gradient(155deg, #eef0f4 0%, #e0e4ec 100%); }
+  &.tpl-preview--detailed   { background: linear-gradient(155deg, #e8f2f1 0%, #d5e8e6 100%); }
+
+  // Damilola: selected teal overlay so selected card's preview looks highlighted
+  &::after {
+    content: '';
+    display: none;
+    position: absolute; inset: 0;
+    background: rgba(24,68,64,.04);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .tpl-card--selected & { &::after { display: block; } }
+
+  // Damilola: checkmark badge — top-right of preview area
+  .tpl-check {
+    position: absolute; top: 14px; right: 14px; z-index: 5;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: $primary;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(24,68,64,.45);
+    i { color: white; font-size: .9rem; }
+  }
+
+  // Damilola: gradient fades from transparent → bg-color so overflow is invisible
+  .preview-fade {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 100px; z-index: 3;
+    pointer-events: none;
+  }
+  &.tpl-preview--standard   .preview-fade { background: linear-gradient(to bottom, transparent, #d5e8e6); }
+  &.tpl-preview--centrifuge  .preview-fade { background: linear-gradient(to bottom, transparent, #cce4e2); }
+  &.tpl-preview--minimal    .preview-fade { background: linear-gradient(to bottom, transparent, #e0e4ec); }
+  &.tpl-preview--detailed   .preview-fade { background: linear-gradient(to bottom, transparent, #d5e8e6); }
+}
+
+// ── White document paper — Damilola: elevated white card resembling a real doc ──
+.doc-paper {
+  position: relative;
+  background: white;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 6px 24px rgba(0,0,0,.14), 0 1px 4px rgba(0,0,0,.06);
+  padding: 1.1rem 1.3rem;
+  overflow: hidden;
+  z-index: 2;
+  // Damilola: font base for the mini-document — 10px renders cleanly at card width
+  font-size: 10px;
+  line-height: 1.4;
+  color: #1a1a2e;
+}
+
+// ── Document elements — prefixed dp- (document-paper) ─────────────────────────
+
+// Shared header row (logo + org name)
+.dp-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 7px;
+  .dp-logo {
+    width: 26px; height: 26px; border-radius: 5px;
+    background: $dark-doc; flex-shrink: 0; opacity: .85;
+  }
+  .dp-org {
+    .dp-org-name { font-size: 11px; font-weight: 700; color: $dark-doc; }
+    .dp-org-sub  { font-size: 8.5px; color: #6b7280; margin-top: 1px; }
+  }
+}
+
+.dp-rule {
+  height: 2.5px; border-radius: 2px; margin: 6px 0;
+  &.orange { background: $orange; }
+}
+.dp-thin-rule { height: 1px; background: #d1d5db; margin: 7px 0; }
+
+// Meta band (3 dark cells)
+.dp-meta {
+  display: flex; gap: 2px; border-radius: 4px; overflow: hidden;
+  border: 1px solid rgba(0,0,0,.06); margin-bottom: 7px;
+
+  .dp-meta-cell {
+    flex: 1; padding: 5px 7px;
+    &.dark  { background: $dark-doc; }
+    &.accent { background: darken($dark-doc, 6%); }
+    .dp-mc-lbl {
+      font-size: 6.5px; font-weight: 700; text-transform: uppercase;
+      color: rgba(255,255,255,.55); letter-spacing: .06em;
+    }
+    .dp-mc-val {
+      font-size: 9.5px; font-weight: 700; color: white; margin-top: 2px;
+      .tpl-preview--centrifuge & { } // inherits
+    }
+    &.accent .dp-mc-val { color: $orange; }
+  }
+}
+
+// Two-column section
+.dp-two-col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 7px;
+  .dp-col-box {
+    border: 1px solid rgba(0,0,0,.09); border-radius: 4px; padding: 5px 7px; background: #fafafa;
+    .dp-col-lbl { font-size: 6.5px; font-weight: 700; text-transform: uppercase; color: $orange; letter-spacing: .05em; }
+    .dp-col-val { font-size: 9px; font-weight: 600; color: #1a1a2e; margin-top: 2px; }
+  }
+}
+
+// Table
+.dp-table {
+  border: 1px solid rgba(0,0,0,.08); border-radius: 4px; overflow: hidden; margin-bottom: 7px;
+  .dp-thead {
+    display: flex; background: $dark-doc; padding: 5px 8px; gap: 6px;
+    span { flex: 1; font-size: 7.5px; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,.75); }
+    span.sn  { flex: 0 0 18px; }
+    span.num { flex: 0 0 42px; text-align: right; }
+  }
+  .dp-trow {
+    display: flex; padding: 5px 8px; gap: 6px; border-top: 1px solid #eef2f1; align-items: center;
+    background: white;
+    &.alt { background: #f7faf9; }
+    span { flex: 1; font-size: 8.5px; color: #374151; }
+    span.sn  { flex: 0 0 18px; color: #9ca3af; }
+    span.num { flex: 0 0 42px; text-align: right; font-weight: 600; }
+  }
+}
+
+// Total bar
+.dp-total {
+  display: flex; justify-content: space-between; align-items: center;
+  background: $dark-doc; padding: 6px 9px; border-radius: 4px;
+  span { font-size: 9.5px; font-weight: 700; color: white; }
+  .amt { color: $orange; font-size: 11px; }
+}
+
+// Corporate — big "Quotation" heading
+.dp-corp-top {
+  display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px;
+  .dp-corp-word  { font-size: 20px; font-weight: 300; color: $dark-doc; letter-spacing: -.4px; }
+  .dp-corp-brand { font-size: 9.5px; font-weight: 700; color: $dark-doc; text-align: right; line-height: 1.3;
+    strong { color: $primary; }
+  }
+}
+
+// Corporate banner
+.dp-banner {
+  background: $dark-doc; color: white; padding: 5px 8px; border-radius: 3px;
+  font-size: 8.5px; font-weight: 700; margin-bottom: 7px;
+}
+
+// Amount in words
+.dp-words {
+  border-left: 3.5px solid $orange; background: #fffbeb;
+  padding: 5px 8px; border-radius: 0 4px 4px 0; margin-top: 5px;
+  .dp-words-lbl { font-size: 6.5px; font-weight: 700; text-transform: uppercase; color: $orange; letter-spacing: .05em; }
+  .dp-words-val { font-size: 8.5px; font-style: italic; color: #374151; margin-top: 2px; }
+}
+
+// Minimal — large heading
+.dp-min-head { font-size: 15px; font-weight: 700; color: $dark-doc; margin-bottom: 4px; }
+
+.dp-field {
+  display: flex; gap: 7px; align-items: baseline; margin-bottom: 4px;
+  .dp-field-lbl { font-size: 8.5px; font-weight: 700; color: #374151; white-space: nowrap; }
+  .dp-field-val { font-size: 8.5px; color: $muted; }
+}
+
+.dp-footnote { font-size: 8px; color: $muted; font-style: italic; margin-top: 5px; }
+
+// Detailed — qualifications block
+.dp-qual {
+  border: 1px solid rgba(0,0,0,.08); border-radius: 4px;
+  padding: 5px 8px; background: #fafff9; margin-top: 5px;
+  .dp-qual-lbl { font-size: 6.5px; font-weight: 700; text-transform: uppercase; color: $primary; letter-spacing: .05em; margin-bottom: 3px; }
+  .dp-qual-val { font-size: 8.5px; color: #374151; }
+}
+
+// ── Card info section — Damilola: white, below preview, has name/desc/tags/button
+.tpl-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.3rem 1.5rem 1.4rem;
+  border-top: 1px solid $border;
+  gap: .8rem;
+}
+
+.tpl-info-main { display: flex; flex-direction: column; gap: .45rem; }
+
+.tpl-name-row {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+}
+
+.tpl-name {
+  font-size: 1.1rem; font-weight: 700; color: $text; margin: 0;
+}
+
+.tpl-default {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .2rem .65rem; background: #fef9c3; color: #92400e;
+  border-radius: 20px; font-size: .73rem; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+  i { font-size: .62rem; }
+}
+
+.tpl-desc {
+  font-size: .9rem; color: $muted; line-height: 1.6; margin: 0;
+}
+
+// Tags row
+.tpl-tags {
+  display: flex; flex-wrap: wrap; gap: .3rem;
+  .tpl-tag {
+    font-size: .73rem; background: #f0f4f3; color: $primary;
+    border-radius: 5px; padding: .15rem .55rem; font-weight: 600;
+    text-transform: capitalize; border: 1px solid rgba(24,68,64,.12);
+  }
+}
+
+// Damilola: select button row pinned to bottom of the card info section
+.tpl-select-row { margin-top: auto; }
+
+.tpl-select-btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .55rem 1.3rem;
+  border-radius: 22px;
+  border: 1.5px solid $border;
+  font-size: .88rem; font-weight: 600; color: $muted;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+  i { font-size: .8rem; }
+
+  // Damilola: active (selected) — solid teal pill
+  &.active {
+    background: $primary;
+    border-color: $primary;
+    color: white;
+    box-shadow: 0 4px 14px rgba(24,68,64,.3);
+  }
+
+  // Non-selected hover
+  .tpl-card:not(.tpl-card--selected) &:hover {
+    border-color: $primary; color: $primary; background: #edf4f3;
+  }
+}
+
+// ── Customisation panel ────────────────────────────────────────────────────────
+.config-panel {
+  background: white; border: 1px solid $border; border-radius: 14px;
+  padding: 1.5rem 1.75rem; margin-bottom: 1.5rem;
+
+  .panel-title-row {
+    display: flex; align-items: center; gap: .7rem;
+    margin-bottom: 1.2rem; padding-bottom: .9rem; border-bottom: 1px solid #f3f4f6;
+  }
+  .panel-icon {
+    width: 36px; height: 36px; background: #edf4f3; color: $primary;
+    border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: .95rem;
+  }
+  .panel-title { font-size: 1.05rem; font-weight: 700; color: $text; margin: 0; }
+}
+
+.config-form {
+  .toggle-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1.2rem;
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+  }
+  .toggle-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .65rem .95rem; background: #f9fafb; border: 1px solid $border;
+    border-radius: 9px; cursor: pointer;
+    .toggle-label { font-size: .9rem; font-weight: 500; color: #374151; }
+  }
+  .switch {
+    position: relative; display: inline-block; width: 38px; height: 20px; flex-shrink: 0;
+    input { opacity: 0; width: 0; height: 0; &:checked + .slider { background: $primary; } }
+    .slider {
+      position: absolute; cursor: pointer; inset: 0; background: #d1d5db; border-radius: 20px; transition: .3s;
+      &::before { content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
+    }
+    input:checked + .slider::before { transform: translateX(18px); }
+  }
+  .field-group {
+    label { display: block; font-size: .95rem; font-weight: 600; color: #374151; margin-bottom: .45rem; }
+    .optional { color: #9ca3af; font-weight: 400; font-size: .82rem; }
+  }
+  .field-input {
+    width: 100%; padding: .7rem 1rem; border: 1.5px solid $border; border-radius: 9px;
+    font-size: 1rem; resize: vertical; font-family: inherit; box-sizing: border-box; background: #fafafa;
+    &:focus { outline: none; border-color: $primary; box-shadow: 0 0 0 3px rgba(24,68,64,.08); background: white; }
+  }
+}
+
+// ── Page actions ───────────────────────────────────────────────────────────────
+.template-actions {
+  display: flex; justify-content: space-between; gap: 1rem;
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .72rem 1.45rem; background: white; color: #374151;
+    border: 1.5px solid $border; border-radius: 9px; font-size: 1rem; font-weight: 500; cursor: pointer;
+    transition: background .18s;
+    &:hover { background: #f3f4f6; }
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .72rem 1.75rem; background: $primary; color: white;
+    border: none; border-radius: 9px; font-size: 1rem; font-weight: 600; cursor: pointer;
+    transition: all .18s;
+    &:hover:not(:disabled) { background: #0d2e2a; box-shadow: 0 5px 16px rgba(24,68,64,.3); transform: translateY(-1px); }
+    &:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  }
+}

@@ -1,0 +1,184 @@
+<!-- rfq-preview.component.html -->
+<p-toast position="top-right"></p-toast>
+
+<div class="rfq-preview-container" *ngIf="!isLoading && request">
+  <div class="preview-header">
+    <div class="header-content">
+      <h2>RFQ Preview & Submit</h2>
+      <p class="subtitle">Review the quotation request document and selected vendors before sending</p>
+    </div>
+    <div class="form-progress">
+      <span class="step-badge">Step 5 of 5 (Final Step)</span>
+    </div>
+  </div>
+
+  <div class="preview-grid">
+    <!-- Left Column: Document Preview -->
+    <div class="document-section">
+      <div class="section-actions">
+        <button type="button" class="btn-download" (click)="downloadPDF()" [disabled]="isDownloading">
+          <i class="fas" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"
+            [class.fa-file-pdf]="!isDownloading"></i>
+          {{ isDownloading ? 'Generating PDF...' : 'Download PDF' }}
+        </button>
+      </div>
+
+      <div class="document-wrapper" id="rfq-preview-document" [class]="getTemplateClass()">
+        <div class="doc-header">
+          <div class="doc-logo-title">
+            <div class="doc-logo">
+              <i class="fas fa-file-contract"></i>
+            </div>
+            <div class="doc-title-group">
+              <h1 class="doc-main-title">REQUEST FOR QUOTATION</h1>
+              <p class="doc-id">Reference: #{{ request.id }}</p>
+            </div>
+          </div>
+          <div class="doc-meta">
+            <div class="meta-row"><strong>Date:</strong> <span>{{ formatDate(request.createdAt) }}</span></div>
+            <div class="meta-row"><strong>Deadline:</strong> <span>{{ formatDate(request.deliveryDeadline) }}</span>
+            </div>
+            <div class="meta-row"><strong>Currency:</strong> <span>{{ request.currency }}</span></div>
+          </div>
+        </div>
+
+        <hr class="doc-divider">
+
+        <div class="doc-section-block">
+          <h3>1. General Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Title</span>
+              <span class="info-value">{{ request.title }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Procurement Type</span>
+              <span class="info-value type-badge">{{ request.procurementType ? request.procurementType.toLowerCase() :
+                'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Delivery Location</span>
+              <span class="info-value">{{ request.deliveryLocation }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Total Estimated Budget</span>
+              <span class="info-value font-semibold">{{ formatBudget(request.totalBudget || 0) }}</span>
+            </div>
+          </div>
+
+          <div class="info-description">
+            <span class="info-label">Scope Description</span>
+            <p class="description-text">{{ request.description }}</p>
+          </div>
+        </div>
+
+        <div class="doc-section-block">
+          <h3>2. Requested Items / Services</h3>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Unit</th>
+                <th class="text-right" *ngIf="request.procurementType === 'PRODUCT'">Est. Budget</th>
+                <th class="text-right" *ngIf="request.procurementType === 'SERVICE'">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of request.items">
+                <td class="font-semibold">
+                  <div>{{ item.name }}</div>
+                  <div class="item-attachments-preview" *ngIf="item.attachments && item.attachments.length > 0">
+                    <div class="item-attachment-thumb" *ngFor="let att of item.attachments">
+                      <img *ngIf="att.type?.includes('image') && att.fileUrl" [src]="att.fileUrl"
+                        class="item-img-preview" alt="attachment">
+                      <span *ngIf="!att.type?.includes('image')" class="item-doc-link">
+                        <i class="fas fa-file-alt"></i> {{ att.fileName }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div>{{ item.description }}</div>
+                  <div class="item-meta-details" style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                    <span *ngIf="item.deliveryLocation"><i class="fas fa-map-marker-alt"></i> Location: {{ item.deliveryLocation }}</span>
+                    <span *ngIf="item.deliveryLocation && item.deliveryDeadline" style="margin: 0 0.5rem;">|</span>
+                    <span *ngIf="item.deliveryDeadline"><i class="fas fa-calendar-alt"></i> Deadline: {{ formatDate(item.deliveryDeadline) }}</span>
+                    <span *ngIf="(item.deliveryLocation || item.deliveryDeadline) && item.deliveryMode" style="margin: 0 0.5rem;">|</span>
+                    <span *ngIf="item.deliveryMode"><i class="fas fa-shipping-fast"></i> Mode: {{ item.deliveryMode }}</span>
+                  </div>
+                </td>
+                <td class="text-right">{{ item.quantity }}</td>
+                <td class="text-right">{{ item.unit || 'Units' }}</td>
+                <td class="text-right" *ngIf="request.procurementType === 'PRODUCT'">{{
+                  formatBudget(item.estimatedBudget, item.currency) }}</td>
+                <td class="text-right" *ngIf="request.procurementType === 'SERVICE'">{{ item.serviceDuration || 'N/A' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="doc-section-block" *ngIf="request.attachments?.length">
+          <h3>3. Attachments</h3>
+          <ul class="doc-attachments-list">
+            <li *ngFor="let att of request.attachments || []">
+              <i class="fas fa-paperclip"></i> {{ att.fileName }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Selected Vendors -->
+    <div class="vendors-section">
+      <div class="vendors-card">
+        <h3 class="vendors-title"><i class="fas fa-users"></i> Selected Vendors</h3>
+        <p class="vendors-subtitle">These vendors will receive this Request for Quotation upon submission</p>
+
+        <div class="vendors-list" *ngIf="vendors.length">
+          <div class="vendor-item" *ngFor="let vendor of vendors">
+            <div class="vendor-avatar">
+              <i class="fas fa-building"></i>
+            </div>
+            <div class="vendor-details">
+              <h4>{{ vendor.vendorName }}</h4>
+              <div class="vendor-rating">
+                <span class="stars">★ {{ vendor.rating }}</span>
+                <span class="match-score">Match: {{ vendor.matchScore }}%</span>
+              </div>
+              <p class="vendor-reason" *ngIf="vendor.reason">{{ vendor.reason }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="no-vendors" *ngIf="!vendors.length">
+          <i class="fas fa-user-slash"></i>
+          <p>No vendors selected. Please go back and select at least one vendor.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-actions">
+    <button type="button" class="btn-secondary" (click)="onBack()">
+      <i class="fas fa-arrow-left"></i> Back
+    </button>
+    <button type="button" class="btn-primary submission"
+      [disabled]="!(request?.vendorsToNotify?.length) || isSubmitting"
+      (click)="onSubmit()">
+      <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-spin]="isSubmitting"
+        [class.fa-paper-plane]="!isSubmitting"></i>
+      {{ isSubmitting ? 'Submitting…' : 'Submit for Approval' }}
+    </button>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" *ngIf="isLoading">
+  <div class="spinner-container">
+    <i class="fas fa-spinner fa-spin"></i>
+    <p>Preparing RFQ preview...</p>
+  </div>
+</div>

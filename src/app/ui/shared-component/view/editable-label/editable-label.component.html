@@ -1,0 +1,5 @@
+<div>
+    <span *ngIf="!isEditing" (click)="edit()">{{ text }}</span>
+    <input *ngIf="isEditing" [value]="text" (blur)="save($event)" (keydown.enter)="save($event)" />
+</div>
+  

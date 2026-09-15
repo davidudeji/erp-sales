@@ -1,0 +1,338 @@
+<div class="payment-tracking">
+  <div class="page-wrapper">
+
+    <!-- ── Header Banner ──────────────────────────────────────────────── -->
+    <div class="page-header">
+      <div class="header-left">
+        <div class="header-icon-wrap">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <div class="header-text">
+          <h1 class="page-title">Payment Tracking</h1>
+          <p class="page-subtitle">Monitor and record payments against outstanding invoices</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-refresh" (click)="loadPayments()" title="Refresh">
+          <i class="fas fa-sync-alt" [class.fa-spin]="isLoading"></i>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Summary Cards ──────────────────────────────────────────────── -->
+    <div class="summary-cards">
+
+      <div class="summary-card card-payable">
+        <div class="card-icon-wrap">
+          <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <div class="card-body">
+          <span class="card-label">Total Payable</span>
+          <span class="card-amount">{{ formatCurrency(totalPayable) }}</span>
+          <span class="card-count">{{ payments.length }} invoice{{ payments.length !== 1 ? 's' : '' }}</span>
+        </div>
+      </div>
+
+      <div class="summary-card card-paid">
+        <div class="card-icon-wrap">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="card-body">
+          <span class="card-label">Total Paid</span>
+          <span class="card-amount">{{ formatCurrency(totalPaid) }}</span>
+          <span class="card-count">{{ countByStatus['PAID'] || 0 }} fully paid</span>
+        </div>
+      </div>
+
+      <div class="summary-card card-pending">
+        <div class="card-icon-wrap">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="card-body">
+          <span class="card-label">Pending</span>
+          <span class="card-amount">{{ formatCurrency(totalPending) }}</span>
+          <span class="card-count">{{ (countByStatus['PENDING'] || 0) + (countByStatus['PARTIAL'] || 0) }} outstanding</span>
+        </div>
+      </div>
+
+      <div class="summary-card card-overdue">
+        <div class="card-icon-wrap">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="card-body">
+          <span class="card-label">Overdue</span>
+          <span class="card-amount">{{ formatCurrency(totalOverdue) }}</span>
+          <span class="card-count">{{ countByStatus['OVERDUE'] || 0 }} overdue</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Filter Tabs + Search ───────────────────────────────────────── -->
+    <div class="filter-bar">
+      <div class="filter-tabs">
+        <button class="filter-tab" [class.active]="filterStatus === 'ALL'" (click)="setFilter('ALL')">
+          All <span class="tab-count">{{ payments.length }}</span>
+        </button>
+        <button class="filter-tab" [class.active]="filterStatus === 'PENDING'" (click)="setFilter('PENDING')">
+          Pending <span class="tab-count">{{ countByStatus['PENDING'] || 0 }}</span>
+        </button>
+        <button class="filter-tab" [class.active]="filterStatus === 'PARTIAL'" (click)="setFilter('PARTIAL')">
+          Partial <span class="tab-count">{{ countByStatus['PARTIAL'] || 0 }}</span>
+        </button>
+        <button class="filter-tab" [class.active]="filterStatus === 'PAID'" (click)="setFilter('PAID')">
+          Paid <span class="tab-count">{{ countByStatus['PAID'] || 0 }}</span>
+        </button>
+        <button class="filter-tab" [class.active]="filterStatus === 'OVERDUE'" (click)="setFilter('OVERDUE')">
+          Overdue <span class="tab-count">{{ countByStatus['OVERDUE'] || 0 }}</span>
+        </button>
+        <button class="filter-tab" [class.active]="filterStatus === 'DISPUTED'" (click)="setFilter('DISPUTED')">
+          Disputed <span class="tab-count">{{ countByStatus['DISPUTED'] || 0 }}</span>
+        </button>
+      </div>
+
+      <div class="search-wrap">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search invoice, vendor, LPO..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+        />
+      </div>
+    </div>
+
+    <!-- ── Loading State ──────────────────────────────────────────────── -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading payment records...</p>
+    </div>
+
+    <!-- ── Payment Table ──────────────────────────────────────────────── -->
+    <div class="table-card" *ngIf="!isLoading">
+
+      <!-- Empty State -->
+      <div *ngIf="filteredPayments.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <h3>No Payment Records Found</h3>
+        <p *ngIf="filterStatus === 'ALL' && !searchTerm">No invoices have been loaded yet. Click Refresh to load data.</p>
+        <p *ngIf="filterStatus !== 'ALL' || searchTerm">Try adjusting your filters or search term.</p>
+        <button class="btn-primary" (click)="loadPayments()">
+          <i class="fas fa-sync-alt"></i> Load Payments
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div *ngIf="filteredPayments.length > 0" class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Vendor / Customer</th>
+              <th>Request Title</th>
+              <th>Invoice Date</th>
+              <th>Due Date</th>
+              <th class="text-right">Amount</th>
+              <th class="text-right">Paid</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let payment of filteredPayments" [class.row-overdue]="payment.status === 'OVERDUE'">
+
+              <td class="cell-invoice-no">
+                <span class="invoice-badge">#{{ payment.invoiceNumber }}</span>
+                <span *ngIf="payment.lpoNumber" class="lpo-tag">LPO: {{ payment.lpoNumber }}</span>
+              </td>
+
+              <td class="cell-vendor">
+                <div class="vendor-avatar">{{ payment.vendorName.charAt(0).toUpperCase() }}</div>
+                <span class="vendor-name">{{ payment.vendorName }}</span>
+              </td>
+
+              <td class="cell-title">
+                <span class="request-title" [title]="payment.requestTitle">
+                  {{ payment.requestTitle || '—' }}
+                </span>
+              </td>
+
+              <td class="cell-date">{{ formatDate(payment.invoiceDate) }}</td>
+
+              <td class="cell-due-date" [class.overdue-date]="payment.status === 'OVERDUE'">
+                {{ formatDate(payment.dueDate) }}
+                <span *ngIf="payment.status === 'OVERDUE'" class="days-overdue">
+                  {{ getDaysOverdue(payment.dueDate) }}d overdue
+                </span>
+              </td>
+
+              <td class="cell-amount text-right">{{ formatCurrency(payment.amount, payment.currency) }}</td>
+
+              <td class="cell-paid text-right">
+                <span [class.fully-paid]="payment.status === 'PAID'">
+                  {{ formatCurrency(payment.amountPaid, payment.currency) }}
+                </span>
+              </td>
+
+              <td class="cell-status">
+                <span class="status-badge" [ngClass]="'status-' + payment.status.toLowerCase()">
+                  <span class="status-dot"></span>
+                  {{ payment.status === 'PARTIAL' ? 'Partial' : (payment.status | titlecase) }}
+                </span>
+              </td>
+
+              <td class="cell-progress">
+                <div class="progress-wrap">
+                  <div class="progress-bar-track">
+                    <div
+                      class="progress-bar-fill"
+                      [class.fill-paid]="payment.status === 'PAID'"
+                      [class.fill-partial]="payment.status === 'PARTIAL'"
+                      [class.fill-overdue]="payment.status === 'OVERDUE'"
+                      [style.width.%]="getProgressPercent(payment)"
+                    ></div>
+                  </div>
+                  <span class="progress-label">{{ getProgressPercent(payment) }}%</span>
+                </div>
+              </td>
+
+              <td class="cell-action text-center">
+                <button
+                  *ngIf="canRecordPayment(payment)"
+                  class="btn-record"
+                  (click)="openPaymentModal(payment)"
+                  title="Record Payment"
+                >
+                  <i class="fas fa-plus"></i> Record
+                </button>
+                <span *ngIf="!canRecordPayment(payment)" class="paid-label">
+                  <i class="fas fa-check"></i> Paid
+                </span>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Record Payment Modal ───────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="showPaymentModal" (click)="closePaymentModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <div class="modal-icon">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <div>
+          <h3 class="modal-title">Record Payment</h3>
+          <p class="modal-subtitle" *ngIf="selectedPayment">
+            Invoice #{{ selectedPayment.invoiceNumber }} &mdash; {{ selectedPayment.vendorName }}
+          </p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="closePaymentModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-summary" *ngIf="selectedPayment">
+      <div class="summary-item">
+        <span class="si-label">Total Amount</span>
+        <span class="si-value">{{ formatCurrency(selectedPayment.amount, selectedPayment.currency) }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="si-label">Already Paid</span>
+        <span class="si-value si-paid">{{ formatCurrency(selectedPayment.amountPaid, selectedPayment.currency) }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="si-label">Balance Due</span>
+        <span class="si-value si-due">{{ formatCurrency(selectedPayment.amount - selectedPayment.amountPaid, selectedPayment.currency) }}</span>
+      </div>
+    </div>
+
+    <form [formGroup]="paymentForm" (ngSubmit)="submitPayment()" class="modal-form">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount Paid (₦) <span class="required">*</span></label>
+          <div class="input-prefix-wrap">
+            <span class="input-prefix">₦</span>
+            <input
+              type="number"
+              class="form-input input-with-prefix"
+              formControlName="amount"
+              min="0.01"
+              step="0.01"
+              placeholder="0.00"
+            />
+          </div>
+          <span class="field-error" *ngIf="paymentForm.get('amount')?.invalid && paymentForm.get('amount')?.touched">
+            Please enter a valid amount.
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Payment Method <span class="required">*</span></label>
+          <select class="form-select" formControlName="paymentMethod">
+            <option value="BANK_TRANSFER">Bank Transfer</option>
+            <option value="CASH">Cash</option>
+            <option value="CHEQUE">Cheque</option>
+            <option value="ONLINE">Online Payment</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Payment Date <span class="required">*</span></label>
+        <input
+          type="date"
+          class="form-input"
+          formControlName="paymentDate"
+          [max]="todayDateString"
+        />
+        <span class="field-error" *ngIf="paymentForm.get('paymentDate')?.invalid && paymentForm.get('paymentDate')?.touched">
+          <ng-container *ngIf="paymentForm.get('paymentDate')?.errors?.['required']">Please select a payment date.</ng-container>
+          <ng-container *ngIf="paymentForm.get('paymentDate')?.errors?.['futureDate']">Payment date cannot be in the future.</ng-container>
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes / Reference</label>
+        <textarea
+          class="form-textarea"
+          formControlName="notes"
+          rows="3"
+          placeholder="e.g. Bank transfer ref: TXN123456..."
+        ></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closePaymentModal()" [disabled]="isSaving">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="paymentForm.invalid || isSaving"
+        >
+          <i class="fas fa-spinner fa-spin" *ngIf="isSaving"></i>
+          <i class="fas fa-check" *ngIf="!isSaving"></i>
+          {{ isSaving ? 'Saving...' : 'Confirm Payment' }}
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>

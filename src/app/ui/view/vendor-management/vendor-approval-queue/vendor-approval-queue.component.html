@@ -1,0 +1,447 @@
+<!-- vendor-approval-queue.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Vendor Approvals</span>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Overview</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Pending</span>
+                <span class="ql-sidebar-stat-value">{{ stats.total }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #F59E0B;">Pending Review</span>
+                <span class="ql-sidebar-stat-value" style="color: #F59E0B;">{{ stats.pending }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #3B82F6;">Under Review</span>
+                <span class="ql-sidebar-stat-value" style="color: #3B82F6;">{{ stats.underReview }}</span>
+            </div>
+            <div class="ql-sidebar-stat"
+                style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label" style="color: #2EB270;">Approved Today</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ stats.approvedToday }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #DC2626;">Rejected Today</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ stats.rejectedToday }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refresh()" [disabled]="isLoading">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+                {{ isLoading ? 'Loading...' : 'Refresh' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="loadPendingVendors()" [disabled]="isLoading">
+                <i class="fas fa-list"></i> Pending Queue
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading pending vendors...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refresh()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">Vendor Approvals</h1>
+                    <span class="ql-total-badge">Queue</span>
+                    <span class="ql-pending-badge" style="background: #F59E0B20; color: #F59E0B;">
+                        <i class="fas fa-clock"></i>
+                        {{ stats.pending }} pending
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
+                        <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+                        {{ isLoading ? 'Loading...' : 'Refresh' }}
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="loadPendingVendors()" [disabled]="isLoading">
+                        <i class="fas fa-list"></i> Pending Queue
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="ql-stats-row">
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value">{{ stats.total }}</span>
+                    <span class="ql-stat-mini-label">Total Pending</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #F59E0B;">{{ stats.pending }}</span>
+                    <span class="ql-stat-mini-label">Pending Review</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #3B82F6;">{{ stats.underReview }}</span>
+                    <span class="ql-stat-mini-label">Under Review</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #2EB270;">{{ stats.approvedToday }}</span>
+                    <span class="ql-stat-mini-label">Approved Today</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #DC2626;">{{ stats.rejectedToday }}</span>
+                    <span class="ql-stat-mini-label">Rejected Today</span>
+                </div>
+                <div class="ql-stat-mini" *ngIf="getSelectedCount() > 0">
+                    <span class="ql-stat-mini-value" style="color: #184440;">{{ getSelectedCount() }}</span>
+                    <span class="ql-stat-mini-label">Selected</span>
+                </div>
+            </div>
+
+            <!-- Filters Bar -->
+            <div class="ql-filters-bar">
+                <div class="ql-filter-group">
+                    <input type="text" class="ql-search-input" placeholder="Search vendors by name, email, or ID..."
+                        (input)="onSearchInput($event)" [value]="filterForm.get('search')?.value || ''">
+                    <i class="fas fa-search ql-search-icon"></i>
+                    <button class="ql-search-clear" *ngIf="filterForm.get('search')?.value" (click)="clearSearch()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" (change)="onFilterChange($event)"
+                        [value]="filterForm.get('status')?.value || ''">
+                        <option value="">All Statuses</option>
+                        <option *ngFor="let status of VendorStatus | keyvalue" [value]="status.value">
+                            {{ getStatusLabel(status.value) }}
+                        </option>
+                    </select>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" (change)="onFilterChange($event)"
+                        [value]="filterForm.get('tier')?.value || ''">
+                        <option value="">All Tiers</option>
+                        <option *ngFor="let tier of VendorTier | keyvalue" [value]="tier.value">
+                            {{ getTierLabel(tier.value) }}
+                        </option>
+                    </select>
+                </div>
+                <button class="ql-clear-filters" (click)="clearFilters()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <div class="ql-bulk-bar" *ngIf="getSelectedCount() > 0">
+                <span class="ql-bulk-count">{{ getSelectedCount() }} selected</span>
+                <button class="ql-bulk-btn ql-bulk-btn--approve" (click)="bulkAction('approve')">
+                    <i class="fas fa-check-circle"></i> Approve All
+                </button>
+                <button class="ql-bulk-btn ql-bulk-btn--reject" (click)="bulkAction('reject')">
+                    <i class="fas fa-times-circle"></i> Reject All
+                </button>
+                <button class="ql-bulk-btn ql-bulk-btn--clear" (click)="clearSelection()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+
+            <!-- Table -->
+            <div class="ql-table-wrap">
+                <table class="ql-table">
+                    <thead>
+                        <tr>
+                            <th class="ql-th-chk">
+                                <input type="checkbox" [checked]="selectAll && filteredVendors.length > 0"
+                                    (change)="toggleSelectAll()" [disabled]="filteredVendors.length === 0">
+                            </th>
+                            <th (click)="toggleSort('companyName')">
+                                # <i class="fas" [class]="getSortIcon('companyName')"></i>
+                            </th>
+                            <th (click)="toggleSort('companyName')">
+                                Company <i class="fas" [class]="getSortIcon('companyName')"></i>
+                            </th>
+                            <th (click)="toggleSort('joinedDate')">
+                                Registered <i class="fas" [class]="getSortIcon('joinedDate')"></i>
+                            </th>
+                            <th>Documents</th>
+                            <th (click)="toggleSort('status')">
+                                Status <i class="fas" [class]="getSortIcon('status')"></i>
+                            </th>
+                            <th class="ql-th-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Loading State -->
+                        <ng-container *ngIf="isLoading">
+                            <tr class="ql-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+                                <td colspan="7">
+                                    <div class="ql-skeleton-bar"></div>
+                                </td>
+                            </tr>
+                        </ng-container>
+
+                        <!-- No Results -->
+                        <tr *ngIf="!isLoading && filteredVendors.length === 0">
+                            <td colspan="7">
+                                <div class="ql-empty">
+                                    <i class="fas fa-check-circle ql-empty-icon" style="color: #2EB270;"></i>
+                                    <h4 class="ql-empty-title">All caught up!</h4>
+                                    <p class="ql-empty-sub">No pending vendor registrations to review</p>
+                                    <button class="ql-btn ql-btn--primary" (click)="refresh()">
+                                        <i class="fas fa-sync-alt"></i> Refresh
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Vendor Rows -->
+                        <tr *ngFor="let vendor of filteredVendors; let i = index"
+                            [class.ql-row--selected]="isSelected(vendor.id)">
+                            <td class="ql-td-chk">
+                                <input type="checkbox" [checked]="isSelected(vendor.id)"
+                                    (change)="toggleSelectVendor(vendor.id)">
+                            </td>
+                                <td class="ql-td-num">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+                                <td>
+                                    <div class="ql-company-info">
+                                        <div class="ql-company-avatar">
+                                            {{ vendor.companyName?.charAt(0) || '?' }}
+                                        </div>
+                                        <div>
+                                            <div class="ql-company-name">{{ vendor.companyName }}</div>
+                                            <div class="ql-company-email">{{ vendor.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="ql-registration-info">
+                                        <span class="ql-reg-date">{{ formatDate(vendor.joinedDate) }}</span>
+                                        <span class="ql-reg-time">{{ formatDateTime(vendor.joinedDate) }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="ql-doc-status" *ngIf="getDocumentStatusSummary(vendor) as docStats">
+                                        <span class="ql-doc-dot ql-doc-dot--verified" *ngIf="docStats.verified > 0"
+                                            title="{{ docStats.verified }} verified"></span>
+                                        <span class="ql-doc-dot ql-doc-dot--pending" *ngIf="docStats.pending > 0"
+                                            title="{{ docStats.pending }} pending"></span>
+                                        <span class="ql-doc-count">{{ docStats.total }} files</span>
+                                        <span class="ql-doc-status-text ql-doc-status-text--verified"
+                                            *ngIf="docStats.verified === docStats.total && docStats.total > 0">
+                                            ✓ Verified
+                                        </span>
+                                        <span class="ql-doc-status-text ql-doc-status-text--pending"
+                                            *ngIf="docStats.pending > 0">
+                                            ⏳ Pending
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="ql-status-badge"
+                                        [class.ql-status-badge--pending]="vendor.status === VendorStatus.PENDING_ONBOARDING"
+                                        [class.ql-status-badge--review]="vendor.status === VendorStatus.UNDER_REVIEW">
+                                        <span class="ql-status-dot"></span>
+                                        {{ getStatusLabel(vendor.status) }}
+                                    </span>
+                                </td>
+                                <td class="ql-td-actions">
+                                    <div class="ql-row-actions">
+                                        <button class="ql-action-btn ql-action-btn--view" (click)="viewVendor(vendor.id)"
+                                            title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="ql-action-btn ql-action-btn--approve"
+                                            (click)="openReviewModal(vendor, 'approve')" title="Approve">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="ql-action-btn ql-action-btn--reject"
+                                            (click)="openReviewModal(vendor, 'reject')" title="Reject">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Pagination -->
+                    <div class="ql-pagination" *ngIf="filteredVendors.length > 0">
+                        <span class="ql-page-info">
+                            Showing {{ (currentPage - 1) * pageSize + 1 }} to
+                            {{ Math.min(currentPage * pageSize, totalVendors) }} of
+                            {{ totalVendors }} pending vendors
+                        </span>
+                        <div class="ql-page-btns">
+                            <button type="button" class="ql-page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button type="button" class="ql-page-btn" *ngFor="let page of getPageNumbers()"
+                                [class.ql-page-btn--active]="page === currentPage"
+                                [class.ql-page-btn--ellipsis]="page === '...'" (click)="page !== '...' && goToPage(page)">
+                                {{ page }}
+                            </button>
+                            <button type="button" class="ql-page-btn" [disabled]="currentPage === totalPages"
+                                (click)="goToPage(currentPage + 1)">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        REVIEW MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showReviewModal"
+            (click)="$event.target === $event.currentTarget && !isProcessing && closeReviewModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3>
+                        <i class="fas" [class.fa-check-circle]="reviewAction === 'approve'"
+                            [class.fa-times-circle]="reviewAction === 'reject'"
+                            [style.color]="reviewAction === 'approve' ? '#2EB270' : '#DC2626'">
+                        </i>
+                        {{ reviewAction === 'approve' ? 'Approve' : 'Reject' }} Vendor
+                    </h3>
+                    <button class="ql-modal-close" (click)="closeReviewModal()" [disabled]="isProcessing">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <!-- Vendor Summary -->
+                    <div class="ql-vendor-summary" *ngIf="selectedVendor">
+                        <div class="ql-vendor-avatar">
+                            {{ selectedVendor.companyName?.charAt(0) || '?' }}
+                        </div>
+                        <div class="ql-vendor-info">
+                            <h4>{{ selectedVendor.companyName || 'Unknown Vendor' }}</h4>
+                            <p><i class="fas fa-envelope"></i> {{ selectedVendor.email || 'N/A' }}</p>
+                            <p><i class="fas fa-phone"></i> {{ selectedVendor.phone || 'N/A' }}</p>
+                            <p><i class="fas fa-id-card"></i> {{ selectedVendor.registrationNumber || 'N/A' }}</p>
+                            <p *ngIf="selectedVendor.categories?.length">
+                                <i class="fas fa-tags"></i> {{ selectedVendor.categories.join(', ') }}
+                            </p>
+                            <button class="ql-view-full-btn" (click)="viewVendor(selectedVendor.id)">
+                                <i class="fas fa-eye"></i> View full registration
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Copilot Panel -->
+                    <div class="ql-copilot-panel" *ngIf="isLoadingCopilot || copilotSession">
+                        <div *ngIf="isLoadingCopilot" class="ql-copilot-loading">
+                            <i class="fas fa-spinner fa-spin"></i> Loading AI-extracted fields…
+                        </div>
+                        <ng-container *ngIf="!isLoadingCopilot && copilotSession as session">
+                            <div class="ql-copilot-header">
+                                <span><i class="fas fa-wand-magic-sparkles"></i> AI-Extracted Fields</span>
+                                <span class="ql-copilot-confidence">{{ session.overallExtractionConfidence }}%
+                                    confidence</span>
+                            </div>
+                            <div class="ql-copilot-risk">
+                                <span>Proposed risk classification:</span>
+                                <span [style.color]="getRiskLevelColor(session.proposedRiskClassification)">
+                                    {{ session.proposedRiskClassification }}
+                                </span>
+                            </div>
+                            <div *ngFor="let field of session.extractedFields" class="ql-copilot-field">
+                                <span class="ql-copilot-field-name">{{ field.fieldName }}</span>
+                                <span class="ql-copilot-field-value" *ngIf="editingFieldName !== field.fieldName">
+                                    {{ field.extractedValue }}
+                                    <i *ngIf="field.corrected" class="fas fa-pen" title="Corrected by staff"></i>
+                                </span>
+                                <input *ngIf="editingFieldName === field.fieldName" type="text"
+                                    [(ngModel)]="editFieldValue" class="ql-copilot-edit-input">
+                                <span class="ql-copilot-confidence-badge"
+                                    [style.background]="field.confidence >= 90 ? '#2EB27020' : field.confidence >= 70 ? '#F59E0B20' : '#DC262620'"
+                                    [style.color]="field.confidence >= 90 ? '#2EB270' : field.confidence >= 70 ? '#F59E0B' : '#DC2626'">
+                                    {{ field.confidence }}%
+                                </span>
+                                <div class="ql-copilot-actions">
+                                    <ng-container *ngIf="editingFieldName === field.fieldName; else fieldActions">
+                                        <button class="ql-copilot-btn ql-copilot-btn--save"
+                                            (click)="confirmField(field, editFieldValue)">Save</button>
+                                        <button class="ql-copilot-btn ql-copilot-btn--cancel"
+                                            (click)="cancelEditingField()">Cancel</button>
+                                    </ng-container>
+                                    <ng-template #fieldActions>
+                                        <i *ngIf="field.confirmed" class="fas fa-check-circle" style="color: #2EB270;"
+                                            title="Confirmed"></i>
+                                        <button *ngIf="!field.confirmed" class="ql-copilot-btn ql-copilot-btn--confirm"
+                                            (click)="confirmField(field)">Confirm</button>
+                                        <button class="ql-copilot-btn ql-copilot-btn--edit"
+                                            (click)="startEditingField(field)" title="Correct this value">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    </ng-template>
+                                </div>
+                            </div>
+                        </ng-container>
+                    </div>
+
+                    <!-- Review Notes -->
+                    <div class="ql-review-notes">
+                        <label>
+                            {{ reviewAction === 'approve' ? 'Approval Notes (Optional)' : 'Rejection Reason (Required)'
+                            }}
+                        </label>
+                        <textarea [(ngModel)]="reviewNotes"
+                            placeholder="{{ reviewAction === 'approve' ? 'Add any notes about this approval...' : 'Please provide a reason for rejection...' }}"
+                            rows="4"></textarea>
+                        <span class="ql-char-count">{{ reviewNotes.length || 0 }}/500</span>
+                    </div>
+
+                    <!-- Confirmation Text -->
+                    <div class="ql-confirmation-text" [class.ql-confirmation-text--approve]="reviewAction === 'approve'"
+                        [class.ql-confirmation-text--reject]="reviewAction === 'reject'">
+                        <i class="fas" [class.fa-exclamation-triangle]="reviewAction === 'reject'"
+                            [class.fa-info-circle]="reviewAction === 'approve'"></i>
+                        <span *ngIf="reviewAction === 'approve'">
+                            This will activate the vendor account and allow them to participate in the marketplace.
+                        </span>
+                        <span *ngIf="reviewAction === 'reject'">
+                            This will reject the vendor registration. The vendor will be notified and can re-apply.
+                        </span>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button class="ql-btn ql-btn--ghost" (click)="closeReviewModal()" [disabled]="isProcessing">
+                        Cancel
+                    </button>
+                    <button class="ql-btn" [class.ql-btn--approve]="reviewAction === 'approve'"
+                        [class.ql-btn--reject]="reviewAction === 'reject'" (click)="submitReview()"
+                        [disabled]="isProcessing">
+                        <i class="fas" [class.fa-spinner]="isProcessing"
+                            [class.fa-check]="!isProcessing && reviewAction === 'approve'"
+                            [class.fa-times]="!isProcessing && reviewAction === 'reject'"
+                            [class.ql-spinning]="isProcessing"></i>
+                        {{ isProcessing ? 'Processing...' : (reviewAction === 'approve' ? 'Approve Vendor' : 'Reject
+                        Vendor') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

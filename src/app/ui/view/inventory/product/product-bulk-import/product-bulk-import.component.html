@@ -1,0 +1,355 @@
+<!-- product-bulk-import.component.html -->
+<p-toast position="top-right"></p-toast>
+
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Bulk Import</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Steps</div>
+            <div class="ql-sidebar-step" [class.ql-sidebar-step--active]="currentStep === 1"
+                                       [class.ql-sidebar-step--complete]="getStepStatus(1) === 'complete'">
+                <span class="ql-sidebar-step-number">1</span>
+                <span class="ql-sidebar-step-label">Upload File</span>
+                <i class="fas fa-check" *ngIf="getStepStatus(1) === 'complete'"></i>
+            </div>
+            <div class="ql-sidebar-step" [class.ql-sidebar-step--active]="currentStep === 2"
+                                       [class.ql-sidebar-step--complete]="getStepStatus(2) === 'complete'">
+                <span class="ql-sidebar-step-number">2</span>
+                <span class="ql-sidebar-step-label">Review Data</span>
+                <i class="fas fa-check" *ngIf="getStepStatus(2) === 'complete'"></i>
+            </div>
+            <div class="ql-sidebar-step" [class.ql-sidebar-step--active]="currentStep === 3"
+                                       [class.ql-sidebar-step--complete]="getStepStatus(3) === 'complete'">
+                <span class="ql-sidebar-step-number">3</span>
+                <span class="ql-sidebar-step-label">Complete</span>
+                <i class="fas fa-check" *ngIf="getStepStatus(3) === 'complete'"></i>
+            </div>
+        </div>
+
+        <!-- Import Info -->
+        <div class="ql-filter-section" *ngIf="parsedData.length > 0">
+            <div class="ql-filter-heading">File Info</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Rows</span>
+                <span class="ql-sidebar-stat-value">{{ parsedData.length }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">File</span>
+                <span class="ql-sidebar-stat-value" style="font-size: 11px;">{{ fileName }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Help</div>
+            <button class="ql-sidebar-action" type="button" (click)="downloadTemplate('csv')">
+                <i class="fas fa-download"></i> Download CSV Template
+            </button>
+            <button class="ql-sidebar-action" type="button" (click)="downloadTemplate('xlsx')">
+                <i class="fas fa-download"></i> Download Excel Template
+            </button>
+            <button class="ql-sidebar-action" (click)="removeFile()" *ngIf="selectedFile">
+                <i class="fas fa-trash"></i> Remove File
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <h1 class="ql-title">Bulk Import Products</h1>
+                <span class="ql-total-badge">Step {{ currentStep }} of {{ totalSteps }}</span>
+            </div>
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="goBack()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" 
+                        (click)="nextStep()" 
+                        [disabled]="!isStepValid(currentStep) || isProcessing"
+                        *ngIf="currentStep < 3">
+                    <i class="fas" [class.fa-spinner]="isProcessing" [class.fa-chevron-right]="!isProcessing" 
+                       [class.ql-spinning]="isProcessing"></i>
+                    {{ isProcessing ? 'Processing...' : 'Next' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Error banner -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- ============================================================
+        STEP 1: UPLOAD FILE
+        ============================================================ -->
+        <div *ngIf="currentStep === 1" class="ql-step-content">
+            <div class="ql-form-container">
+                <div class="ql-form-section">
+                    <h3 class="ql-section-title"><i class="fas fa-file-upload"></i> Upload File</h3>
+                    <p class="ql-section-desc">Upload a CSV or Excel (.xlsx) file containing your product data.</p>
+
+                    <!-- Upload Zone -->
+                    <div class="ql-upload-zone"
+                         (dragover)="onDragOver($event)"
+                         (dragleave)="onDragLeave($event)"
+                         (drop)="onDrop($event)"
+                         (click)="fileInput.click()"
+                         [class.ql-upload-zone--has-file]="selectedFile">
+                        <input type="file" #fileInput id="fileInput" accept=".csv,.tsv,.xlsx,.xls"
+                               (change)="onFileSelected($event)" style="display: none;">
+
+                        <div *ngIf="!selectedFile" class="ql-upload-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h4>Drag & Drop or Click to Upload</h4>
+                            <span>Supported formats: CSV, TSV, Excel (.xlsx, .xls)</span>
+                        </div>
+
+                        <div *ngIf="selectedFile" class="ql-upload-file-info">
+                            <i class="fas" [class.fa-file-csv]="!selectedFile.name.match('\\.xlsx?$')" [class.fa-file-excel]="selectedFile.name.match('\\.xlsx?$')"></i>
+                            <div class="ql-upload-file-details">
+                                <span class="ql-upload-file-name">{{ fileName }}</span>
+                                <span class="ql-upload-file-size">{{ getFileSize(selectedFile.size) }}</span>
+                            </div>
+                            <button class="ql-btn ql-btn--icon ql-btn--danger-sm"
+                                    (click)="$event.stopPropagation(); removeFile()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Template Download -->
+                    <div class="ql-template-download">
+                        <p>
+                            Need a template? Download a pre-filled sample with all the supported columns:
+                            <a href="javascript:void(0)" (click)="downloadTemplate('csv')">CSV template</a>
+                            &nbsp;or&nbsp;
+                            <a href="javascript:void(0)" (click)="downloadTemplate('xlsx')">Excel template</a>
+                        </p>
+                    </div>
+
+                    <!-- Parsing Progress -->
+                    <div *ngIf="isProcessing" class="ql-processing">
+                        <div class="ql-spinner"></div>
+                        <span>Processing file...</span>
+                    </div>
+
+                    <!-- Preview Summary -->
+                    <div class="ql-preview-summary" *ngIf="!isProcessing && parsedData.length > 0">
+                        <div class="ql-preview-stat">
+                            <span class="ql-preview-stat-value">{{ parsedData.length }}</span>
+                            <span class="ql-preview-stat-label">Rows Found</span>
+                        </div>
+                        <div class="ql-preview-stat">
+                            <span class="ql-preview-stat-value">{{ Object.keys(parsedData[0] || {}).length }}</span>
+                            <span class="ql-preview-stat-label">Columns</span>
+                        </div>
+                        <div class="ql-preview-stat">
+                            <span class="ql-preview-stat-value" style="color: #2EB270;">{{ parsedData.length }}</span>
+                            <span class="ql-preview-stat-label">Valid Rows</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        STEP 2: REVIEW DATA
+        ============================================================ -->
+        <div *ngIf="currentStep === 2" class="ql-step-content">
+            <div class="ql-form-container">
+                <div class="ql-form-section">
+                    <div class="ql-review-header">
+                        <h3 class="ql-section-title"><i class="fas fa-clipboard-list"></i> Review Data</h3>
+                        <span class="ql-row-count">{{ parsedData.length }} rows</span>
+                    </div>
+                    <p class="ql-section-desc">Review your data before importing. Make sure all required fields are filled.</p>
+
+                    <!-- Import Settings -->
+                    <div class="ql-import-settings" [formGroup]="importForm">
+                        <div class="ql-form-row">
+                            <div class="ql-field">
+                                <label class="ql-flabel">Default Category</label>
+                                <select formControlName="defaultCategory" class="ql-input">
+                                    <option value="">Select default category</option>
+                                    <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+                                </select>
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Default Unit</label>
+                                <select formControlName="defaultUnit" class="ql-input">
+                                    <option *ngFor="let unit of measurementUnits" [value]="unit.name">{{ unit.name }}</option>
+                                </select>
+                            </div>
+                            <div class="ql-field">
+                                <label class="ql-flabel">Default Supplier</label>
+                                <select formControlName="defaultSupplier" class="ql-input">
+                                    <option value="">Select default supplier</option>
+                                    <option *ngFor="let sup of suppliers" [value]="sup.id">{{ sup.name }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="ql-form-row">
+                            <div class="ql-field" style="flex-direction: row; align-items: center; gap: 12px;">
+                                <label class="ql-checkbox">
+                                    <input type="checkbox" formControlName="overwriteExisting">
+                                    <span class="ql-checkbox-custom"></span>
+                                    Overwrite existing products
+                                </label>
+                                <label class="ql-checkbox">
+                                    <input type="checkbox" formControlName="skipErrors">
+                                    <span class="ql-checkbox-custom"></span>
+                                    Skip errors
+                                </label>
+                                <label class="ql-checkbox">
+                                    <input type="checkbox" formControlName="validateOnly">
+                                    <span class="ql-checkbox-custom"></span>
+                                    Validate only (don't import)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Preview Table -->
+                    <div class="ql-table-wrap">
+                        <table class="ql-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th *ngFor="let key of Object.keys(parsedData[0] || {})">
+                                        {{ getColumnName(key) }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let row of previewData; let i = index">
+                                    <td>{{ i + 1 }}</td>
+                                    <td *ngFor="let key of Object.keys(row)">
+                                        {{ row[key] }}
+                                    </td>
+                                </tr>
+                                <tr *ngIf="parsedData.length > 10">
+                                    <td [attr.colspan]="Object.keys(parsedData[0] || {}).length + 1" class="ql-more-rows">
+                                        + {{ parsedData.length - 10 }} more rows
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Sample Data Info -->
+                    <div class="ql-sample-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Showing first {{ Math.min(10, parsedData.length) }} rows of {{ parsedData.length }} total rows.</span>
+                    </div>
+                </div>
+
+                <div class="ql-form-actions">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="prevStep()">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--success" (click)="executeImport()" [disabled]="isProcessing">
+                        <i class="fas" [class.fa-spinner]="isProcessing" [class.fa-upload]="!isProcessing" 
+                           [class.ql-spinning]="isProcessing"></i>
+                        {{ isProcessing ? 'Importing...' : 'Import Products' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        STEP 3: COMPLETE
+        ============================================================ -->
+        <div *ngIf="currentStep === 3" class="ql-step-content">
+            <div class="ql-form-container">
+                <div class="ql-form-section">
+                    <div class="ql-complete" *ngIf="importResults">
+                        <div class="ql-complete-icon" [class.ql-complete-icon--success]="importResults.failed === 0"
+                                                     [class.ql-complete-icon--warning]="importResults.failed > 0">
+                            <i class="fas" [class.fa-check-circle]="importResults.failed === 0"
+                                         [class.fa-exclamation-triangle]="importResults.failed > 0"></i>
+                        </div>
+                        <h2 class="ql-complete-title">
+                            {{ importResults.failed === 0 ? 'Import Complete!' : 'Import Complete with Errors' }}
+                        </h2>
+                        <p class="ql-complete-desc">
+                            {{ importResults.successful }} products imported successfully
+                            <span *ngIf="importResults.failed > 0">, {{ importResults.failed }} failed</span>
+                        </p>
+
+                        <div class="ql-complete-stats">
+                            <div class="ql-complete-stat">
+                                <span class="ql-complete-stat-value">{{ importResults.total }}</span>
+                                <span class="ql-complete-stat-label">Total</span>
+                            </div>
+                            <div class="ql-complete-stat">
+                                <span class="ql-complete-stat-value" style="color: #2EB270;">{{ importResults.successful }}</span>
+                                <span class="ql-complete-stat-label">Successful</span>
+                            </div>
+                            <div class="ql-complete-stat" *ngIf="importResults.failed > 0">
+                                <span class="ql-complete-stat-value" style="color: #dc2626;">{{ importResults.failed }}</span>
+                                <span class="ql-complete-stat-label">Failed</span>
+                            </div>
+                            <div class="ql-complete-stat">
+                                <span class="ql-complete-stat-value">{{ getSuccessRate().toFixed(0) }}%</span>
+                                <span class="ql-complete-stat-label">Success Rate</span>
+                            </div>
+                        </div>
+
+                        <!-- Errors List -->
+                        <div class="ql-complete-errors" *ngIf="importResults.errors.length > 0">
+                            <h4><i class="fas fa-exclamation-circle"></i> Errors</h4>
+                            <div class="ql-complete-error-item" *ngFor="let error of importResults.errors">
+                                <span class="ql-complete-error-row">Row {{ error.row }}</span>
+                                <span class="ql-complete-error-message">{{ error.message }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Created Products — the product catalog is alphabetically sorted and
+                        paginated, so a freshly imported batch can land anywhere in it with no
+                        visible confirmation. Link straight to each one instead. -->
+                        <div class="ql-complete-created" *ngIf="createdProducts.length > 0">
+                            <h4><i class="fas fa-box-open"></i> Imported Products</h4>
+                            <div class="ql-complete-created-item" *ngFor="let product of createdProducts">
+                                <div class="ql-complete-created-info">
+                                    <span class="ql-complete-created-name">{{ product.name }}</span>
+                                    <span class="ql-complete-created-sku">{{ product.sku }}</span>
+                                </div>
+                                <button type="button" class="ql-btn ql-btn--ghost" (click)="viewCreatedProduct(product.id)">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ql-form-actions">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="goBack()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="finishImport()">
+                        <i class="fas fa-check"></i> View Products
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

@@ -1,0 +1,55 @@
+
+    
+    <div class="main">
+      <div class="table-width">
+          <table id="inventory-table">
+              <thead>
+                  <tr>
+                      <th>Item</th>
+                      <th>Part No</th>
+                      <th>Initial Stock</th>
+                      <th>Buying Price</th>
+                      <th>Selling Price</th>
+                      <th>Inventory Ledger</th>
+                      <th>Purchase Ledger</th>
+                      <th>Sales Ledger</th>
+                      <th>Tax Rate</th>
+                      <th>HSN</th>
+                      <th>Current Stock</th>
+                      <th>Total Sold Quantity</th>
+                      <th>Total Purchase Quantity</th>
+                      <th>Tag</th>
+                  </tr>
+              </thead>
+              <tbody class="tbody">
+                  <tr class="top-products-table-row" *ngFor="let item of inventory; let i = index">
+                      <td class="top-products-table-data item-cell">
+                          {{ item.itemName }}
+                          <div class="tooltip-content">
+                            <label for="" class="mb-2"><b>Item Image</b></label>
+                            <br>
+                            <img [src]="item.image" alt="{{ item.itemName }}" />
+                            <br>
+                            <label for="" class="mb-2"><b>Description</b></label>
+                            <p>{{ item.description | stripHtml }}</p>
+                          </div>
+                      </td>
+                      <td class="top-products-table-data">{{ item.partNo }}</td>
+                      <td class="top-products-table-data">{{ item.initialStock }}</td>
+                      <td class="top-products-table-data">{{ item.buyingPrice }}</td>
+                      <td class="top-products-table-data">{{ item.sellingPrice }}</td>
+                      <td class="top-products-table-data">{{ item.inventoryLedger }}</td>
+                      <td class="top-products-table-data">{{ item.purchaseLedger }}</td>
+                      <td class="top-products-table-data">{{ item.salesLedger }}</td>
+                      <td class="top-products-table-data">{{ item.taxRate }}</td>
+                      <td class="top-products-table-data">{{ item.hsn }}</td>
+                      <td class="top-products-table-data">{{ item.currentStock }}</td>
+                      <td class="top-products-table-data">{{ item.totalSoldQuantity }}</td>
+                      <td class="top-products-table-data">{{ item.totalPurchaseQuantity }}</td>
+                      <td class="top-products-table-data">{{ item.tag }}</td>
+                  </tr>
+              </tbody>
+          </table>
+      </div>
+    </div>
+    

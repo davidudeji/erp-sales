@@ -1,0 +1,77 @@
+<div class="procurement-requests-container">
+  <div class="requests-wrapper">
+
+    <!-- Header - Premium #184440 Card -->
+    <div class="dashboard-header">
+      <div class="header-left">
+        <div class="header-badge">
+          <span class="pulse-dot"></span>
+          Draft Requests
+        </div>
+        <h1 class="page-title">Incomplete RFQs (Drafts)</h1>
+        <p class="page-subtitle">Review, edit, and continue submitting your saved procurement drafts</p>
+      </div>
+      <div class="header-actions">
+        <button (click)="goBack()" class="btn-secondary-action">
+          <i class="fas fa-arrow-left"></i> View All Requests
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-container">
+      <div class="table-wrapper">
+        <div class="loading-overlay" *ngIf="isLoading">
+          <i class="fas fa-circle-notch fa-spin"></i> Loading drafts...
+        </div>
+        
+        <table class="advance-loans-table" *ngIf="drafts.length > 0 && !isLoading">
+          <thead>
+            <tr>
+              <th class="sn-header text-center" style="width: 4rem;">S/N</th>
+              <th>Request ID</th>
+              <th>Type</th>
+              <th>Product / Service Name</th>
+              <th class="text-right">Budget</th>
+              <th>Delivery Location</th>
+              <th>Deadline</th>
+              <th>Created</th>
+              <th class="text-center" style="width: 12rem;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of drafts; let i = index">
+              <td class="sn-cell text-center">{{ i + 1 }}</td>
+              <td class="loan-id-cell">{{ row.id }}</td>
+              <td>
+                <span class="type-badge" [ngClass]="row.procurementType ? row.procurementType.toLowerCase() : 'product'">
+                  {{ row.procurementType ? (row.procurementType | titlecase) : 'Product' }}
+                </span>
+              </td>
+              <td class="employee-name-cell">{{ truncate(row.title, 40) }}</td>
+              <td class="text-right font-semibold text-teal-600">{{ formatBudget(row) }}</td>
+              <td class="purpose-cell" [title]="row.deliveryLocation">{{ truncate(row.deliveryLocation, 30) }}</td>
+              <td>{{ formatDate(row.deliveryDeadline) }}</td>
+              <td>{{ formatDate(row.createdAt) }}</td>
+              <td class="actions-col justify-center">
+                <button class="action-btn continue-btn" (click)="continueDraft(row)" title="Continue Completing Details">
+                  <i class="fas fa-play"></i> Continue
+                </button>
+                <button class="action-btn cancel-btn" (click)="deleteDraft(row)" title="Delete Draft">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="empty-state" *ngIf="drafts.length === 0 && !isLoading">
+          <i class="fas fa-file-signature"></i>
+          <h3>No Draft Requests Found</h3>
+          <p>You don't have any incomplete RFQ drafts. Click "Save as Draft" in the creation forms to save your progress for later completion.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

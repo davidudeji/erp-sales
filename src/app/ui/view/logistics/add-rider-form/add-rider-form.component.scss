@@ -1,0 +1,75 @@
+.arf-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #14181b;
+  margin-bottom: 6px;
+}
+.arf-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #14181b;
+
+  &:focus {
+    outline: none;
+    border-color: #00a191;
+    box-shadow: 0 0 0 3px rgba(0, 161, 145, 0.12);
+  }
+  &::placeholder {
+    color: #9aa7ae;
+  }
+}
+.arf-option {
+  padding: 10px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #566670;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: #00a191;
+  }
+  &.selected {
+    border-color: #00a191;
+    background: rgba(0, 161, 145, 0.06);
+    color: #00a191;
+  }
+}
+.arf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+.arf-btn-primary {
+  background: #00a191;
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: #018e80;
+  }
+}
+.arf-btn-outline {
+  background: #fff;
+  color: #566670;
+  border-color: #e2e8f0;
+  &:hover:not(:disabled) {
+    background: #f7f9fa;
+  }
+}

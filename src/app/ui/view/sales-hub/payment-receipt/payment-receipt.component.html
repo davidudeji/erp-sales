@@ -1,0 +1,222 @@
+<div class="receipt-overlay">
+  <div class="receipt-modal-container">
+    
+    <!-- Action Toolbar (Hidden during print) -->
+    <div class="receipt-toolbar no-print">
+      <div class="toolbar-left">
+        <button class="btn-icon-back" (click)="close()" title="Close Receipt">
+          <i class="fas fa-arrow-left"></i> Back to Sales Hub
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn-toolbar-secondary" (click)="sendEmail()" [disabled]="isSendingEmail">
+          <i class="fas" [class.fa-paper-plane]="!isSendingEmail" [class.fa-spinner]="isSendingEmail" [class.fa-spin]="isSendingEmail"></i>
+          {{ isSendingEmail ? 'Sending...' : 'Email Receipt' }}
+        </button>
+        <button class="btn-toolbar-secondary" (click)="printReceipt()">
+          <i class="fas fa-print"></i> Print Receipt
+        </button>
+        <button class="btn-toolbar-primary" (click)="downloadPDF()" [disabled]="isDownloading">
+          <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading" [class.fa-spin]="isDownloading"></i>
+          {{ isDownloading ? 'Generating PDF...' : 'Download PDF' }}
+        </button>
+        <button class="btn-icon-close" (click)="close()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div *ngIf="emailSentSuccess" class="email-alert no-print">
+      <i class="fas fa-check-circle"></i>
+      Receipt email dispatched successfully to <strong>{{ receipt?.customer?.email || receipt?.payment?.customerName }}</strong>!
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="receipt-loading-state">
+      <div class="spinner"></div>
+      <p>Generating Official Receipt...</p>
+    </div>
+
+    <!-- MAIN RECEIPT DOCUMENT -->
+    <div *ngIf="!isLoading && receipt" class="receipt-paper-wrapper">
+      <div id="receipt-sheet" class="receipt-paper">
+        
+        <!-- Watermark / Stamp -->
+        <div class="stamp-container">
+          <div class="official-stamp" [class.partial]="$any(receipt.invoice).balanceDue > 0">
+            <i class="fas" [class.fa-check-double]="$any(receipt.invoice).balanceDue === 0" [class.fa-clock]="$any(receipt.invoice).balanceDue > 0"></i>
+            <span>{{ $any(receipt.invoice).balanceDue === 0 ? 'PAID IN FULL' : 'PAYMENT RECEIVED' }}</span>
+            <small>VERIFIED MERCHANT</small>
+          </div>
+        </div>
+
+        <!-- Receipt Header -->
+        <div class="receipt-header">
+          <div class="merchant-branding">
+            <div class="merchant-logo">
+              <i class="fas fa-building-columns"></i>
+            </div>
+            <div class="merchant-details">
+              <h2>{{ receipt.merchantInfo.name }}</h2>
+              <p><i class="fas fa-location-dot"></i> {{ receipt.merchantInfo.address }}</p>
+              <p><i class="fas fa-envelope"></i> {{ receipt.merchantInfo.email }} | <i class="fas fa-phone"></i> {{ receipt.merchantInfo.phone }}</p>
+              <p *ngIf="receipt.merchantInfo.taxId"><span class="tax-badge">Tax ID: {{ receipt.merchantInfo.taxId }}</span></p>
+            </div>
+          </div>
+          <div class="receipt-meta">
+            <div class="receipt-title-badge">OFFICIAL PAYMENT RECEIPT</div>
+            <div class="meta-row">
+              <span class="meta-label">Receipt No:</span>
+              <span class="meta-value highlight">{{ receipt.receiptNumber }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Date Issued:</span>
+              <span class="meta-value">{{ formatDateTime(receipt.issuedAt) }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Payment Method:</span>
+              <span class="meta-value">{{ (receipt.payment.paymentMethod || 'CASH').replace('_', ' ') }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Reference ID:</span>
+              <span class="meta-value font-mono">{{ receipt.payment.reference }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Billed & Payment Summary Cards -->
+        <div class="receipt-parties-grid">
+          <!-- Customer Info -->
+          <div class="party-card">
+            <h4><i class="fas fa-user-circle"></i> Customer Details</h4>
+            <div class="party-info">
+              <strong>{{ receipt.payment.customerName?.name || receipt.payment.customerName }}</strong>
+              <p *ngIf="receipt.customer?.email">{{ receipt.customer?.email }}</p>
+              <p *ngIf="receipt.customer?.phone">{{ receipt.customer?.phone }}</p>
+              <p *ngIf="receipt.customer?.address">{{ receipt.customer?.address }}</p>
+              <p *ngIf="receipt.customer?.taxId" class="text-muted">Tax ID: {{ receipt.customer?.taxId }}</p>
+            </div>
+          </div>
+
+          <!-- Invoice Link Info -->
+          <div class="party-card">
+            <h4><i class="fas fa-file-invoice"></i> Linked Invoice Reference</h4>
+            <div class="party-info">
+              <div class="info-line">
+                <span>Invoice Number:</span>
+                <strong>{{ receipt.invoice.invoiceNumber }}</strong>
+              </div>
+              <div class="info-line">
+                <span>Invoice Date:</span>
+                <span>{{ formatDate(receipt.invoice.issueDate) }}</span>
+              </div>
+              <div class="info-line">
+                <span>Payment Terms:</span>
+                <span>{{ receipt.invoice.paymentTerms || 'Standard Terms' }}</span>
+              </div>
+              <div class="info-line" *ngIf="receipt.payment.transactionNotes">
+                <span>Payment Note:</span>
+                <span class="note-text">{{ receipt.payment.transactionNotes }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Line Items Table -->
+        <div class="items-table-wrapper" *ngIf="receipt.invoice.items && receipt.invoice.items.length > 0">
+          <table class="receipt-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Item / Description</th>
+                <th class="text-center">Qty</th>
+                <th class="text-right">Unit Price</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of receipt.invoice.items; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>
+                  <strong>{{ item.productName }}</strong>
+                  <span class="item-desc" *ngIf="item.description">{{ item.description }}</span>
+                </td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-right">{{ formatCurrency(item.unitPrice, receipt.invoice.currency) }}</td>
+                <td class="text-right font-semibold">{{ formatCurrency(item.total, receipt.invoice.currency) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Financial Breakdown -->
+        <div class="receipt-totals-container">
+          <div class="totals-spacer">
+            <div class="payment-verification-box">
+              <div class="verification-badge">
+                <i class="fas fa-shield-halved"></i>
+                <span>Electronic Transaction Verified</span>
+              </div>
+              <p class="verification-text">This receipt serves as proof of payment received by {{ receipt.merchantInfo.name }}. Thank you for your business!</p>
+            </div>
+          </div>
+          <div class="totals-table">
+            <div class="totals-row" *ngIf="receipt.invoice.subtotal">
+              <span>Invoice Subtotal:</span>
+              <span>{{ formatCurrency(receipt.invoice.subtotal, receipt.invoice.currency) }}</span>
+            </div>
+            <div class="totals-row" *ngIf="receipt.invoice.taxAmount">
+              <span>Tax Amount:</span>
+              <span>{{ formatCurrency(receipt.invoice.taxAmount, receipt.invoice.currency) }}</span>
+            </div>
+            <div class="totals-row total-highlight">
+              <span>Invoice Total Amount:</span>
+              <span>{{ formatCurrency(receipt.invoice.totalAmount, receipt.invoice.currency) }}</span>
+            </div>
+
+            <div class="totals-divider"></div>
+
+            <div class="totals-row paid-highlight">
+              <span><i class="fas fa-check-circle"></i> Amount Received (This Payment):</span>
+              <span class="amount-paid-val">{{ formatCurrency(receipt.payment.paidAmount || receipt.payment.totalAmount || 0, receipt.payment.currency) }}</span>
+            </div>
+            <div class="totals-row" *ngIf="$any(receipt.invoice).amountPaid">
+              <span>Total Paid to Date:</span>
+              <span>{{ formatCurrency($any(receipt.invoice).amountPaid, receipt.invoice.currency) }}</span>
+            </div>
+            <div class="totals-row balance-row" [class.zero-balance]="$any(receipt.invoice).balanceDue === 0">
+              <span>Remaining Balance Due:</span>
+              <span class="balance-val">{{ formatCurrency($any(receipt.invoice).balanceDue, receipt.invoice.currency) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer / Signature -->
+        <div class="receipt-footer">
+          <div class="footer-sign">
+            <div class="signature-line">
+              <i class="fas fa-signature font-signature"></i>
+            </div>
+            <span>Authorized Signature / Stamp</span>
+          </div>
+          <div class="footer-copy">
+            <p>Computer-generated receipt • Valid without physical signature • {{ receipt.merchantInfo.website }}</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!isLoading && !receipt" class="receipt-error-state">
+      <i class="fas fa-triangle-exclamation"></i>
+      <h3>Receipt Not Available</h3>
+      <p>Could not locate the receipt record for transaction ID: {{ paymentId }}.</p>
+      <button class="btn-toolbar-primary" (click)="close()">Close</button>
+    </div>
+
+  </div>
+</div>

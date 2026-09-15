@@ -1,0 +1,289 @@
+<!-- stock-movement-detail.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <button type="button" class="ql-back-btn" (click)="goBack()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div>
+                    <h1 class="ql-title">Movement Details</h1>
+                    <span class="ql-movement-id">#{{ movement?.id || 'Loading...' }}</span>
+                </div>
+                <span class="ql-status-badge ql-status-badge--{{ getStatusBadgeClass(movement?.status || '') }}"
+                    *ngIf="movement">
+                    <span class="ql-status-dot" [style.background]="getStatusColor(movement.status)"></span>
+                    {{ getMovementStatusLabel(movement.status) }}
+                </span>
+            </div>
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
+                    <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="editMovement()" *ngIf="canEdit()">
+                    <i class="fas fa-pencil-alt"></i> Edit
+                </button>
+                <button type="button" class="ql-btn ql-btn--success" (click)="openStatusModal()"
+                    *ngIf="canUpdateStatus()">
+                    <i class="fas fa-exchange-alt"></i> Update Status
+                </button>
+                <button type="button" class="ql-btn ql-btn--danger" (click)="deleteMovement()" *ngIf="canDelete()">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+
+        <!-- Error banner -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading movement details...</span>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading && movement">
+
+            <!-- Stats Row -->
+            <div class="ql-stats-row">
+                <div class="ql-stat">
+                    <span class="ql-stat-value">{{ movement.quantity }}</span>
+                    <span class="ql-stat-label">Quantity</span>
+                </div>
+                <div class="ql-stat">
+                    <span class="ql-stat-value">{{ formatCurrency(movement.cost || 0) }}</span>
+                    <span class="ql-stat-label">Cost</span>
+                </div>
+                <div class="ql-stat">
+                    <span class="ql-stat-value">{{ formatCurrency(movement.sellingPrice || 0) }}</span>
+                    <span class="ql-stat-label">Selling Price</span>
+                </div>
+                <div class="ql-stat">
+                    <span class="ql-stat-value">{{ formatDate(movement.createdAt) }}</span>
+                    <span class="ql-stat-label">Created</span>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'details'"
+                    (click)="setActiveTab('details')">
+                    <i class="fas fa-info-circle"></i> Details
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'history'"
+                    (click)="setActiveTab('history')">
+                    <i class="fas fa-history"></i> History
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
+
+                <!-- Details Tab -->
+                <div *ngIf="activeTab === 'details'" class="ql-tab-panel">
+                    <div class="ql-detail-grid">
+                        <!-- Left Column -->
+                        <div class="ql-detail-left">
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-truck"></i> Movement Information</h3>
+                                <div class="ql-info-grid">
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Movement Type</span>
+                                        <span class="ql-info-value">
+                                            <i class="fas" [class]="getMovementTypeIcon(movement.movementType)"></i>
+                                            {{ getMovementTypeLabel(movement.movementType) }}
+                                        </span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Status</span>
+                                        <span class="ql-info-value">
+                                            <span
+                                                class="ql-status-badge ql-status-badge--{{ getStatusBadgeClass(movement.status) }}">
+                                                <span class="ql-status-dot"
+                                                    [style.background]="getStatusColor(movement.status)"></span>
+                                                {{ getMovementStatusLabel(movement.status) }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Product</span>
+                                        <span class="ql-info-value">{{ movement.productName }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">SKU</span>
+                                        <span class="ql-info-value">{{ movement.sku }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Quantity</span>
+                                        <span class="ql-info-value">{{ movement.quantity }} units</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Batch Number</span>
+                                        <span class="ql-info-value">{{ movement.batchNumber || '—' }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Expiry Date</span>
+                                        <span class="ql-info-value">{{ movement.expiryDate ?
+                                            formatDate(movement.expiryDate) : '—' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="ql-detail-right">
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-location-dot"></i> Location Details</h3>
+                                <div class="ql-location-flow">
+                                    <div class="ql-location-box">
+                                        <span class="ql-location-label">From</span>
+                                        <div class="ql-location-value">
+                                            <span class="ql-location-type">{{ movement.fromLocation.type }}</span>
+                                            <span class="ql-location-name">{{ movement.fromLocation.name }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="ql-location-arrow">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </div>
+                                    <div class="ql-location-box">
+                                        <span class="ql-location-label">To</span>
+                                        <div class="ql-location-value">
+                                            <span class="ql-location-type">{{ movement.toLocation.type }}</span>
+                                            <span class="ql-location-name">{{ movement.toLocation.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ql-info-card">
+                                <h3 class="ql-info-title"><i class="fas fa-user"></i> People</h3>
+                                <div class="ql-info-grid">
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Created By</span>
+                                        <span class="ql-info-value">{{ movement.createdByName || '—' }}</span>
+                                    </div>
+                                    <div class="ql-info-item">
+                                        <span class="ql-info-label">Created At</span>
+                                        <span class="ql-info-value">{{ formatDateTime(movement.createdAt) }}</span>
+                                    </div>
+                                    <div class="ql-info-item" *ngIf="movement.approvedByName">
+                                        <span class="ql-info-label">Approved By</span>
+                                        <span class="ql-info-value">{{ movement.approvedByName }}</span>
+                                    </div>
+                                    <div class="ql-info-item" *ngIf="movement.approvedAt">
+                                        <span class="ql-info-label">Approved At</span>
+                                        <span class="ql-info-value">{{ formatDateTime(movement.approvedAt) }}</span>
+                                    </div>
+                                    <div class="ql-info-item full-width" *ngIf="movement.notes">
+                                        <span class="ql-info-label">Notes</span>
+                                        <span class="ql-info-value">{{ movement.notes }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div *ngIf="activeTab === 'history'" class="ql-tab-panel">
+                    <div class="ql-history-container">
+                        <div class="ql-timeline">
+                            <div *ngFor="let event of timeline; let last = last" class="ql-timeline-item">
+                                <div class="ql-timeline-dot" [style.background]="event.color">
+                                    <i class="fas" [class]="event.icon"></i>
+                                </div>
+                                <div class="ql-timeline-line" *ngIf="!last"></div>
+                                <div class="ql-timeline-content">
+                                    <span class="ql-timeline-status">{{ event.status }}</span>
+                                    <span class="ql-timeline-description">{{ event.description }}</span>
+                                    <span class="ql-timeline-date">{{ formatDateTime(event.timestamp) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        STATUS UPDATE MODAL
+        ============================================================ -->
+        <div class="ql-confirm-backdrop" *ngIf="showStatusModal"
+            (click)="$event.target === $event.currentTarget && closeStatusModal()">
+            <div class="ql-confirm-modal ql-modal--large">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-exchange-alt"></i> Update Status</h3>
+                    <button class="ql-modal-close" (click)="closeStatusModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p class="ql-modal-desc">Select the new status for this movement</p>
+
+                    <div class="ql-status-options">
+                        <button *ngFor="let option of statusOptions" class="ql-status-option"
+                            [class.ql-status-option--active]="isStatusSelected(option.value)"
+                            (click)="selectStatus(option.value)">
+                            <span class="ql-status-option-dot" [style.background]="option.color"></span>
+                            <span class="ql-status-option-label">{{ option.label }}</span>
+                            <i class="fas fa-check" *ngIf="isStatusSelected(option.value)"></i>
+                        </button>
+                    </div>
+
+                    <div class="ql-field">
+                        <label class="ql-flabel">Note (Optional)</label>
+                        <textarea class="ql-input ql-textarea" [(ngModel)]="statusNote"
+                            placeholder="Add a note about this status change..." rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeStatusModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="updateStatus()"
+                        [disabled]="!selectedStatus || isUpdating">
+                        <i class="fas" [class.fa-spinner]="isUpdating" [class.fa-check]="!isUpdating"
+                            [class.ql-spinning]="isUpdating"></i>
+                        {{ isUpdating ? 'Updating...' : 'Update Status' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        DELETE CONFIRM DIALOG
+        ============================================================ -->
+        <div class="ql-confirm-backdrop" *ngIf="showDeleteConfirm"
+            (click)="$event.target === $event.currentTarget && cancelDelete()">
+            <div class="ql-confirm-modal">
+                <div class="ql-confirm-icon" style="color:#dc2626"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="ql-confirm-title">Delete Movement?</div>
+                <div class="ql-confirm-sub">
+                    Are you sure you want to delete this movement? This action cannot be undone.
+                </div>
+                <div class="ql-confirm-actions">
+                    <button type="button" class="ql-btn ql-btn--ghost-sm" (click)="cancelDelete()">Cancel</button>
+                    <button type="button" class="ql-btn"
+                        style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer"
+                        (click)="confirmDelete()" [disabled]="isUpdating">
+                        <i class="fas" [class.fa-spinner]="isUpdating" [class.fa-trash]="!isUpdating"
+                            [class.ql-spinning]="isUpdating"></i>
+                        {{ isUpdating ? 'Deleting...' : 'Delete' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

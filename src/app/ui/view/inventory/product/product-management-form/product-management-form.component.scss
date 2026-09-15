@@ -1,0 +1,949 @@
+// product-management-form.component.scss
+// ============================================================
+// VARIABLES
+// ============================================================
+
+:host {
+    --p: #184440;
+    --p-lt: #e8f4f2;
+    --bg: #eef3f2;
+    --surface: #ffffff;
+    --border: #ccddd9;
+    --text: #1a2e2c;
+    --muted: #6a8e89;
+    --shadow: 0 1px 8px rgba(24, 68, 64, .08);
+}
+
+// ============================================================
+// LAYOUT
+// ============================================================
+
+.ql-layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Outfit', sans-serif;
+}
+
+.ql-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px;
+    gap: 12px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+// ============================================================
+// TOP BAR
+// ============================================================
+
+.ql-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    box-shadow: var(--shadow);
+}
+
+.ql-top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .ql-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 7px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+        transition: all .15s;
+
+        &:hover {
+            background: var(--bg);
+        }
+    }
+
+    .ql-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text);
+        margin: 0;
+    }
+
+    .ql-subtitle {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: -2px;
+    }
+
+    .ql-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 12px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+
+        &--primary {
+            background: var(--p-lt);
+            color: var(--p);
+        }
+
+        &--success {
+            background: #dcfce7;
+            color: #166534;
+        }
+    }
+
+    .ql-sku-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        background: var(--bg);
+        padding: 2px 10px;
+        border-radius: 6px;
+        font-family: monospace;
+
+        i {
+            font-size: 11px;
+        }
+    }
+}
+
+.ql-top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ql-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+
+    &--primary {
+        background: var(--p);
+        color: #fff;
+        &:hover:not(:disabled) { background: #0f2d2a; }
+        &:disabled { opacity: .6; cursor: not-allowed; }
+    }
+
+    &--ghost {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+        &:hover { background: var(--bg); }
+    }
+
+    &--icon {
+        padding: 6px 8px;
+        font-size: 13px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--muted);
+        cursor: pointer;
+
+        &:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        &.ql-btn--success {
+            border-color: #6ee7b7;
+            color: #065f46;
+            &:hover { background: #ecfdf5; }
+        }
+
+        &.ql-btn--primary {
+            border-color: var(--p);
+            color: var(--p);
+            &:hover { background: var(--p-lt); }
+        }
+
+        &.ql-btn--danger-sm {
+            border-color: #fca5a5;
+            color: #dc2626;
+            &:hover { background: #fee2e2; }
+        }
+
+        &.ql-btn--ghost-sm {
+            border-color: var(--border);
+            color: var(--muted);
+            padding: 4px 6px;
+            &:hover { background: var(--bg); }
+        }
+    }
+
+    &--sm {
+        padding: 4px 12px;
+        font-size: 12px;
+    }
+
+    .ql-spinning {
+        animation: ql-spin 1s linear infinite;
+    }
+}
+
+@keyframes ql-spin {
+    100% { transform: rotate(360deg); }
+}
+
+// ============================================================
+// ERROR BANNER
+// ============================================================
+
+.ql-error-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 7px;
+    padding: 10px 14px;
+    color: #991b1b;
+    font-size: 13px;
+    flex-shrink: 0;
+
+    i { font-size: 16px; flex-shrink: 0; }
+    span { flex: 1; }
+
+    .ql-error-dismiss {
+        background: none;
+        border: none;
+        color: #991b1b;
+        cursor: pointer;
+        opacity: .6;
+        font-size: 14px;
+        padding: 4px;
+
+        &:hover { opacity: 1; }
+    }
+}
+
+// ============================================================
+// LOADING
+// ============================================================
+
+.ql-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    flex: 1;
+    gap: 16px;
+}
+
+.ql-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--p);
+    border-radius: 50%;
+    animation: ql-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+// ============================================================
+// FORM LAYOUT
+// ============================================================
+
+.ql-form-layout {
+    flex: 1;
+}
+
+.ql-form-grid {
+    display: grid;
+    grid-template-columns: 1.8fr 1.2fr;
+    gap: 16px;
+    align-items: start;
+
+    @media (max-width: 1200px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ql-form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+// ============================================================
+// FORM CARDS
+// ============================================================
+
+.ql-form-card {
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: all .2s;
+
+    &:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, .06);
+    }
+}
+
+.ql-form-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #f8faf9;
+    border-bottom: 1px solid var(--border);
+
+    .ql-form-card-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        background: var(--p-lt);
+        color: var(--p);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        i {
+            font-size: 14px;
+        }
+    }
+
+    h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+        flex: 1;
+    }
+}
+
+.ql-form-card-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+// ============================================================
+// FORM ELEMENTS
+// ============================================================
+
+.ql-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: 480px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ql-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .ql-flabel {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: .4px;
+
+        .ql-required {
+            color: #dc2626;
+        }
+    }
+
+    .ql-input {
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--text);
+        background: #fafbfc;
+        transition: all .2s;
+        width: 100%;
+
+        &:focus {
+            outline: none;
+            border-color: var(--p);
+            background: var(--surface);
+        }
+
+        &--error {
+            border-color: #dc2626;
+            &:focus { border-color: #dc2626; }
+        }
+
+        &:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+    }
+
+    .ql-textarea {
+        min-height: 80px;
+        resize: vertical;
+        font-family: inherit;
+    }
+
+    .ql-field-error {
+        font-size: 11px;
+        color: #dc2626;
+    }
+
+    .ql-hint {
+        font-size: 11px;
+        color: var(--muted);
+    }
+}
+
+// ============================================================
+// INPUT GROUPS
+// ============================================================
+
+.ql-input-group {
+    display: flex;
+    gap: 4px;
+
+    .ql-input {
+        flex: 1;
+        border-radius: 6px 0 0 6px;
+    }
+
+    .ql-btn {
+        border-radius: 0 6px 6px 0;
+        flex-shrink: 0;
+    }
+
+    &--url {
+        .ql-input {
+            border-radius: 6px 0 0 6px;
+        }
+        .ql-btn {
+            border-radius: 0 6px 6px 0;
+        }
+    }
+}
+
+// ============================================================
+// CURRENCY INPUT
+// ============================================================
+
+.ql-currency-input {
+    position: relative;
+
+    .ql-currency-symbol {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .ql-input {
+        padding-left: 28px;
+    }
+}
+
+// ============================================================
+// CHECKBOX
+// ============================================================
+
+.ql-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    padding: 4px 0;
+
+    input[type="checkbox"] {
+        display: none;
+    }
+
+    .ql-checkbox-custom {
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border);
+        border-radius: 4px;
+        background: var(--surface);
+        flex-shrink: 0;
+        transition: all .2s;
+        position: relative;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 8px;
+            height: 8px;
+            background: var(--p);
+            border-radius: 2px;
+            transition: all .2s;
+        }
+    }
+
+    input:checked + .ql-checkbox-custom {
+        border-color: var(--p);
+        background: var(--p-lt);
+
+        &::after {
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+}
+
+// ============================================================
+// VARIANTS
+// ============================================================
+
+.ql-empty-state {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--muted);
+
+    i {
+        font-size: 32px;
+        color: var(--border);
+        margin-bottom: 8px;
+    }
+
+    p {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    span {
+        font-size: 12px;
+    }
+}
+
+.ql-variant-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+
+    .ql-variant-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+
+        .ql-variant-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .ql-variant-sku {
+            font-size: 11px;
+            color: var(--muted);
+            font-family: monospace;
+            background: var(--surface);
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
+        .ql-variant-attributes {
+            display: flex;
+            gap: 4px;
+
+            .ql-attr-tag {
+                font-size: 10px;
+                font-weight: 600;
+                padding: 1px 6px;
+                border-radius: 4px;
+                background: var(--surface);
+                color: var(--muted);
+                border: 1px solid var(--border);
+            }
+        }
+
+        .ql-variant-price {
+            font-weight: 700;
+            color: #2EB270;
+            font-size: 13px;
+        }
+
+        .ql-variant-qty {
+            font-size: 12px;
+            color: var(--muted);
+        }
+    }
+
+    .ql-variant-actions {
+        display: flex;
+        gap: 4px;
+    }
+}
+
+// ============================================================
+// IMAGES
+// ============================================================
+
+.ql-upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+
+    i {
+        font-size: 28px;
+        color: var(--muted);
+    }
+
+    p {
+        margin: 4px 0 0 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    span {
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+    &:hover {
+        border-color: var(--p);
+        background: var(--p-lt);
+    }
+}
+
+.ql-demo-images {
+    .ql-demo-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 6px;
+    }
+
+    .ql-demo-list {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+
+        .ql-demo-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+
+            img {
+                width: 48px;
+                height: 48px;
+                object-fit: cover;
+                border-radius: 4px;
+                border: 1.5px solid var(--border);
+                transition: all .2s;
+            }
+
+            span {
+                font-size: 10px;
+                color: var(--muted);
+                font-weight: 500;
+            }
+
+            &:hover {
+                img {
+                    border-color: var(--p);
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow);
+                }
+                span {
+                    color: var(--text);
+                }
+            }
+        }
+    }
+}
+
+.ql-image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 6px;
+
+    .ql-image-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 4px;
+        border: 1.5px solid var(--border);
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ql-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            padding: 2px 4px;
+            font-size: 10px;
+            border-radius: 50%;
+            background: rgba(220, 38, 38, .9);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            opacity: .8;
+
+            &:hover {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+        }
+    }
+}
+
+// ============================================================
+// PRICING SUMMARY
+// ============================================================
+
+.ql-summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text);
+    border-bottom: 1px solid #f0f4f3;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &.ql-summary-item--total {
+        font-weight: 700;
+        font-size: 14px;
+        padding-top: 8px;
+        border-top: 2px solid var(--border);
+        border-bottom: none;
+        margin-top: 4px;
+    }
+
+    .ql-summary-label {
+        color: var(--muted);
+    }
+
+    .ql-summary-value {
+        font-weight: 600;
+    }
+
+    .ql-summary-grand-total {
+        color: #2EB270;
+        font-size: 16px;
+        font-weight: 800;
+    }
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+
+.ql-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .4);
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.ql-modal {
+    background: var(--surface);
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.ql-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+
+    h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        i {
+            color: var(--p);
+        }
+    }
+
+    .ql-modal-close {
+        background: none;
+        border: none;
+        font-size: 18px;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 4px;
+
+        &:hover {
+            color: var(--text);
+        }
+    }
+}
+
+.ql-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+
+    .ql-form-row {
+        grid-template-columns: 1fr 1fr 1fr;
+
+        @media (max-width: 480px) {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
+.ql-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+}
+
+// ============================================================
+// RESPONSIVE
+// ============================================================
+
+@media (max-width: 992px) {
+    .ql-main {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .ql-top-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ql-top-bar-right {
+        flex-wrap: wrap;
+    }
+
+    .ql-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ql-form-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .ql-top-bar-left {
+        flex-wrap: wrap;
+
+        .ql-title {
+            font-size: 18px;
+        }
+
+        .ql-subtitle {
+            font-size: 12px;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .ql-main {
+        padding: 12px;
+    }
+
+    .ql-top-bar-right {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ql-btn {
+        justify-content: center;
+    }
+
+    .ql-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .ql-modal {
+        max-width: 100%;
+        margin: 12px;
+    }
+
+    .ql-top-bar-left {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

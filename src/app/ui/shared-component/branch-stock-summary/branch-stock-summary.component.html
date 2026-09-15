@@ -1,0 +1,85 @@
+<div class="ql-bss" [class.ql-bss--compact]="compact">
+
+    <!-- Loading -->
+    <div class="ql-bss-loading" *ngIf="isLoading">
+        <div class="ql-bss-spinner"></div>
+        <span *ngIf="!compact">Loading stock summary…</span>
+    </div>
+
+    <!-- Error -->
+    <div class="ql-bss-error" *ngIf="error && !isLoading">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+        <button type="button" class="ql-bss-retry" (click)="refresh()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
+    <!-- Content -->
+    <ng-container *ngIf="summary && !isLoading && !error">
+
+        <div class="ql-bss-header" *ngIf="!compact">
+            <div class="ql-bss-header-title">
+                <i class="fas fa-boxes-stacked"></i>
+                <span>Stock Summary</span>
+            </div>
+            <div class="ql-bss-header-branch">{{ summary.branchName }}</div>
+            <button type="button" class="ql-bss-refresh" (click)="refresh()" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+
+        <div class="ql-bss-header ql-bss-header--compact" *ngIf="compact">
+            <span class="ql-bss-header-title">
+                <i class="fas fa-boxes-stacked"></i> Stock Summary
+            </span>
+        </div>
+
+        <div class="ql-bss-tiles">
+            <div class="ql-bss-tile">
+                <span class="ql-bss-tile-label">Products</span>
+                <span class="ql-bss-tile-value">{{ summary.totalProducts }}</span>
+            </div>
+            <div class="ql-bss-tile">
+                <span class="ql-bss-tile-label">Units</span>
+                <span class="ql-bss-tile-value">{{ formatNumber(summary.totalStockUnits) }}</span>
+            </div>
+            <div class="ql-bss-tile">
+                <span class="ql-bss-tile-label">Stock Value</span>
+                <span class="ql-bss-tile-value">{{ formatCurrency(summary.totalStockValue) }}</span>
+            </div>
+            <div class="ql-bss-tile ql-bss-tile--warning" *ngIf="summary.lowStockCount > 0">
+                <span class="ql-bss-tile-label">Low Stock</span>
+                <span class="ql-bss-tile-value">{{ summary.lowStockCount }}</span>
+            </div>
+            <div class="ql-bss-tile ql-bss-tile--danger" *ngIf="summary.outOfStockCount > 0">
+                <span class="ql-bss-tile-label">Out of Stock</span>
+                <span class="ql-bss-tile-value">{{ summary.outOfStockCount }}</span>
+            </div>
+        </div>
+
+        <!-- Top sellers (full mode only) -->
+        <div class="ql-bss-top" *ngIf="!compact && summary.topSellingProducts?.length">
+            <div class="ql-bss-top-heading">Top Selling Products</div>
+            <div class="ql-bss-top-item" *ngFor="let product of summary.topSellingProducts">
+                <span class="ql-bss-top-name">{{ product.productName }}</span>
+                <span class="ql-bss-top-value">{{ formatCurrency(product.revenue) }}</span>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="ql-bss-empty" *ngIf="summary.totalProducts === 0">
+            <i class="fas fa-inbox"></i>
+            <span>No products assigned to this branch yet.</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="ql-bss-actions" *ngIf="showActions && branchId">
+            <button type="button" class="ql-bss-action-btn" (click)="viewBranch()">
+                <i class="fas fa-eye"></i> View Branch
+            </button>
+            <button type="button" class="ql-bss-action-btn ql-bss-action-btn--primary" (click)="addProduct()">
+                <i class="fas fa-plus-circle"></i> Add Product
+            </button>
+        </div>
+
+    </ng-container>
+</div>

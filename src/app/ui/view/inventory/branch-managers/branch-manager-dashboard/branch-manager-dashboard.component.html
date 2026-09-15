@@ -1,0 +1,294 @@
+<!-- branch-manager-dashboard.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>My Branch</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Branch Info -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Branch</div>
+            <div class="ql-sidebar-branch">
+                <div class="ql-sidebar-branch-avatar">
+                    <span>{{ getInitials(branchName) }}</span>
+                </div>
+                <div class="ql-sidebar-branch-info">
+                    <span class="ql-sidebar-branch-name">{{ branchName }}</span>
+                    <span class="ql-sidebar-branch-code">Branch Manager</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="ql-filter-section" *ngIf="stats">
+            <div class="ql-filter-heading">Overview</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Products</span>
+                <span class="ql-sidebar-stat-value">{{ stats?.totalProducts || 0 }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Stock Value</span>
+                <span class="ql-sidebar-stat-value">{{ formatCurrency(stats?.totalStockValue || 0) }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #F5A623;">Low Stock</span>
+                <span class="ql-sidebar-stat-value" style="color: #F5A623;">{{ stats?.lowStockCount || 0 }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #DC2626;">Out of Stock</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ stats?.outOfStockCount || 0 }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label">Pending Restocks</span>
+                <span class="ql-sidebar-stat-value" style="color: #F5A623;">{{ stats?.pendingRestocks || 0 }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Pending Transfers</span>
+                <span class="ql-sidebar-stat-value" style="color: #3B82F6;">{{ stats?.pendingTransfers || 0 }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="goToRequestRestock()">
+                <i class="fas fa-boxes"></i> Request Restock
+            </button>
+            <button class="ql-sidebar-action" (click)="goToCreateTransfer()">
+                <i class="fas fa-exchange-alt"></i> Create Transfer
+            </button>
+            <button class="ql-sidebar-action" (click)="goToInventory()">
+                <i class="fas fa-warehouse"></i> View Inventory
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading your branch data...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="loadData()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">Branch Dashboard</h1>
+                    <span class="ql-total-badge">{{ branchName }}</span>
+                    <span class="ql-role-badge" style="background: #18444020; color: #184440;">
+                        <i class="fas fa-user-tie"></i> Manager
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="loadData()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notifications -->
+            <div class="ql-alerts-section" *ngIf="notifications.length > 0">
+                <div class="ql-alerts-header ql-alerts-header--toggle" (click)="notificationsCollapsed = !notificationsCollapsed">
+                    <h3><i class="fas fa-bell"></i> Notifications</h3>
+                    <span class="ql-alerts-count">{{ notifications.length }}</span>
+                    <i class="fas ql-alerts-toggle-icon" [class.fa-chevron-up]="!notificationsCollapsed"
+                        [class.fa-chevron-down]="notificationsCollapsed"></i>
+                </div>
+                <div class="ql-alerts-list" *ngIf="!notificationsCollapsed">
+                    <div *ngFor="let note of notifications" class="ql-alert-item ql-notification-item" (click)="navigateTo(note.route, note.queryParams)">
+                        <i class="fas" [class]="note.icon" [style.color]="note.color"></i>
+                        <span>
+                            <span class="ql-notification-title">{{ note.title }}</span>
+                            <span class="ql-notification-sub">{{ note.subtitle }} · {{ getTimeAgo(note.timestamp) }}</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Changes Requested — anchor target for the "Review Changes Requested" quick action -->
+            <div class="ql-alerts-section" id="changes-requested-section">
+                <div class="ql-alerts-header ql-alerts-header--toggle" (click)="changesRequestedCollapsed = !changesRequestedCollapsed">
+                    <h3><i class="fas fa-pencil-alt"></i> Changes Requested</h3>
+                    <span class="ql-alerts-count" *ngIf="changesRequestedMovements.length > 0">{{ changesRequestedMovements.length }}</span>
+                    <i class="fas ql-alerts-toggle-icon" [class.fa-chevron-up]="!changesRequestedCollapsed"
+                        [class.fa-chevron-down]="changesRequestedCollapsed"></i>
+                </div>
+                <ng-container *ngIf="!changesRequestedCollapsed">
+                    <div class="ql-alerts-list" *ngIf="changesRequestedMovements.length > 0">
+                        <div *ngFor="let movement of changesRequestedMovements" class="ql-alert-item ql-notification-item"
+                            (click)="goToEditMovement(movement)">
+                            <i class="fas fa-triangle-exclamation" style="color: #F59E0B;"></i>
+                            <span>
+                                <span class="ql-notification-title">{{ movement.quantity }} × {{ movement.productName }} needs updating</span>
+                                <span class="ql-notification-sub">{{ getBranchOtherSide(movement) }} · {{ getTimeAgo(movement.updatedAt || movement.createdAt) }}</span>
+                            </span>
+                            <span class="ql-alert-action">Edit <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </div>
+                    <div class="ql-empty-state-small" *ngIf="changesRequestedMovements.length === 0">
+                        <span>Nothing needs changes right now — Movement Approvals will let you know here if it does.</span>
+                    </div>
+                </ng-container>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="ql-stats-row">
+                <div class="ql-stat-mini" (click)="goToInventory()">
+                    <span class="ql-stat-mini-value">{{ stats?.totalProducts || 0 }}</span>
+                    <span class="ql-stat-mini-label">Total Products</span>
+                </div>
+                <div class="ql-stat-mini" (click)="goToInventory()">
+                    <span class="ql-stat-mini-value" style="color: #184440;">{{ formatCurrency(stats?.totalStockValue || 0) }}</span>
+                    <span class="ql-stat-mini-label">Stock Value</span>
+                </div>
+                <div class="ql-stat-mini" (click)="goToInventory()">
+                    <span class="ql-stat-mini-value" style="color: #F5A623;">{{ stats?.lowStockCount || 0 }}</span>
+                    <span class="ql-stat-mini-label">Low Stock</span>
+                </div>
+                <div class="ql-stat-mini" (click)="goToInventory()">
+                    <span class="ql-stat-mini-value" style="color: #DC2626;">{{ stats?.outOfStockCount || 0 }}</span>
+                    <span class="ql-stat-mini-label">Out of Stock</span>
+                </div>
+                <div class="ql-stat-mini" (click)="goToMyRequests()">
+                    <span class="ql-stat-mini-value" style="color: #F5A623;">{{ stats?.pendingRestocks || 0 }}</span>
+                    <span class="ql-stat-mini-label">Pending Restocks</span>
+                </div>
+            </div>
+
+            <!-- Quick Actions Grid -->
+            <div class="ql-quick-actions">
+                <div *ngFor="let action of quickActions" class="ql-quick-action"
+                    (click)="action.id === 'review-changes' ? scrollToChangesRequested() : navigateTo(action.route, action.queryParams)">
+                    <div class="ql-quick-action-icon" [style.background]="action.color + '20'" [style.color]="action.color">
+                        <i class="fas" [class]="action.icon"></i>
+                    </div>
+                    <div class="ql-quick-action-info">
+                        <span class="ql-quick-action-label">
+                            {{ action.label }}
+                            <span class="ql-quick-action-count" *ngIf="action.id === 'review-changes' && changesRequestedMovements.length > 0">
+                                {{ changesRequestedMovements.length }}
+                            </span>
+                        </span>
+                        <span class="ql-quick-action-desc">
+                            {{ action.id === 'review-changes'
+                                ? (changesRequestedMovements.length > 0
+                                    ? changesRequestedMovements.length + ' transfer' + (changesRequestedMovements.length > 1 ? 's' : '') + ' need' + (changesRequestedMovements.length > 1 ? '' : 's') + ' your input'
+                                    : 'All caught up — nothing needs changes right now')
+                                : action.description }}
+                        </span>
+                    </div>
+                    <i class="fas fa-chevron-right ql-quick-action-arrow"></i>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div class="ql-alerts-section" *ngIf="lowStockItems.length > 0 || outOfStockItems.length > 0">
+                <div class="ql-alerts-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Stock Alerts</h3>
+                    <span class="ql-alerts-count">{{ lowStockItems.length + outOfStockItems.length }} items</span>
+                </div>
+                <div class="ql-alerts-list">
+                    <div *ngFor="let item of outOfStockItems" class="ql-alert-item ql-alert-item--critical">
+                        <i class="fas fa-times-circle"></i>
+                        <span><strong>{{ item.productName }}</strong> is out of stock at your branch</span>
+                        <button class="ql-alert-action" (click)="goToRequestRestock()">
+                            Request Restock
+                        </button>
+                    </div>
+                    <div *ngFor="let item of lowStockItems" class="ql-alert-item ql-alert-item--warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span><strong>{{ item.productName }}</strong> is low on stock ({{ item.quantity }} units remaining)</span>
+                        <button class="ql-alert-action" (click)="goToRequestRestock()">
+                            Request Restock
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="ql-recent-grid">
+                <!-- Recent Requests -->
+                <div class="ql-info-card">
+                    <div class="ql-card-header">
+                        <h3><i class="fas fa-boxes"></i> Recent Restock Requests</h3>
+                        <button class="ql-card-action" (click)="goToMyRequests()">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="ql-request-list">
+                        <div *ngFor="let request of recentRequests" class="ql-request-item">
+                            <div class="ql-request-info">
+                                <span class="ql-request-product">{{ request.productName }}</span>
+                                <span class="ql-request-details">{{ request.requestedQuantity }} units · {{ formatCurrency(request.costEstimate) }}</span>
+                            </div>
+                            <span class="ql-request-status" [style.color]="getUrgencyColor(request.urgency)">
+                                <i class="fas" [class.fa-exclamation-circle]="request.urgency === 'CRITICAL'"
+                                           [class.fa-exclamation-triangle]="request.urgency === 'HIGH'"
+                                           [class.fa-minus-circle]="request.urgency === 'MEDIUM'"
+                                           [class.fa-circle]="request.urgency === 'LOW'"></i>
+                                {{ getUrgencyLabel(request.urgency) }}
+                            </span>
+                            <span class="ql-request-date">{{ getTimeAgo(request.createdAt) }}</span>
+                        </div>
+                        <div *ngIf="recentRequests.length === 0" class="ql-empty-state-small">
+                            <span>No pending restock requests</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Movements -->
+                <div class="ql-info-card">
+                    <div class="ql-card-header">
+                        <h3><i class="fas fa-exchange-alt"></i> Recent Transfers</h3>
+                        <button class="ql-card-action" (click)="navigateTo('/commerce/inventory/movements')">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="ql-movement-list">
+                        <div *ngFor="let movement of recentMovements" class="ql-movement-item ql-notification-item"
+                            (click)="navigateTo('/commerce/inventory/movements/' + movement.id)">
+                            <div class="ql-movement-info">
+                                <span class="ql-movement-product">{{ movement.productName }}</span>
+                                <span class="ql-movement-details">{{ movement.quantity }} units · {{ getMovementStatusLabel(movement.status) }}</span>
+                            </div>
+                            <span class="ql-movement-status" [style.color]="getMovementStatusColor(movement.status)">
+                                <i class="fas" [class.fa-clock]="movement.status === 'PENDING'"
+                                           [class.fa-truck]="movement.status === 'IN_TRANSIT'"
+                                           [class.fa-check-circle]="movement.status === 'COMPLETED'"
+                                           [class.fa-times-circle]="movement.status === 'CANCELLED'"></i>
+                                {{ getMovementStatusLabel(movement.status) }}
+                            </span>
+                            <span class="ql-movement-date">{{ getTimeAgo(movement.createdAt) }}</span>
+                        </div>
+                        <div *ngIf="recentMovements.length === 0" class="ql-empty-state-small">
+                            <span>No recent transfers</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </ng-container>
+
+    </main>
+</div>

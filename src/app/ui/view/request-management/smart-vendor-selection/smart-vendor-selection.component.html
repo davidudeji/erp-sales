@@ -1,0 +1,276 @@
+<div class="svs-backdrop" (click)="closePanel()"></div>
+
+<div class="svs-panel" [class.svs-panel--open]="panelVisible">
+
+  <!-- ── Panel Header ─────────────────────────────────────────── -->
+  <div class="svs-header">
+    <div class="svs-header-left">
+      <div class="svs-logo-icon">
+        <i class="fas fa-brain"></i>
+      </div>
+      <div class="svs-header-text">
+        <div class="svs-header-title">OptimaX AI Vendor Intelligence</div>
+        <div class="svs-header-sub">Powered by procurement data analysis</div>
+      </div>
+    </div>
+    <button class="svs-close-btn" (click)="closePanel()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- ── Tab Bar ──────────────────────────────────────────────── -->
+  <div class="svs-tab-bar">
+    <button
+      class="svs-tab"
+      [class.svs-tab--active]="activeTab === 'ai-ranking'"
+      (click)="activeTab = 'ai-ranking'"
+    >
+      <i class="fas fa-robot"></i> AI Ranking
+    </button>
+    <button
+      class="svs-tab"
+      [class.svs-tab--active]="activeTab === 'performance'"
+      (click)="activeTab = 'performance'"
+    >
+      <i class="fas fa-chart-bar"></i> Performance Matrix
+    </button>
+    <button
+      class="svs-tab"
+      [class.svs-tab--active]="activeTab === 'risk'"
+      (click)="activeTab = 'risk'"
+    >
+      <i class="fas fa-shield-alt"></i> Risk Assessment
+    </button>
+  </div>
+
+  <!-- ── Panel Body ────────────────────────────────────────────── -->
+  <div class="svs-body">
+
+    <!-- ── AI RANKING TAB ──────────────────────────────────────── -->
+    <ng-container *ngIf="activeTab === 'ai-ranking'">
+
+      <div class="svs-analysis-banner">
+        <i class="fas fa-check-circle svs-banner-check"></i>
+        <span>
+          Analysis complete — <strong>{{ sortedVendors.slice(0, 3).length }}</strong> vendors pre-selected from
+          <strong>{{ vendors.length }}</strong> eligible candidates.
+        </span>
+      </div>
+
+      <!-- Sort Controls -->
+      <div class="svs-sort-bar">
+        <span class="svs-sort-label">Sort by:</span>
+        <button class="svs-sort-btn" [class.active]="sortField === 'matchScore'"    (click)="setSort('matchScore')">
+          Match Score <i class="fas" [class.fa-sort-down]="sortDir === 'desc' && sortField === 'matchScore'" [class.fa-sort-up]="sortDir === 'asc' && sortField === 'matchScore'" [class.fa-sort]="sortField !== 'matchScore'"></i>
+        </button>
+        <button class="svs-sort-btn" [class.active]="sortField === 'rating'"       (click)="setSort('rating')">
+          Rating <i class="fas" [class.fa-sort-down]="sortDir === 'desc' && sortField === 'rating'" [class.fa-sort-up]="sortDir === 'asc' && sortField === 'rating'" [class.fa-sort]="sortField !== 'rating'"></i>
+        </button>
+        <button class="svs-sort-btn" [class.active]="sortField === 'totalProjects'" (click)="setSort('totalProjects')">
+          Projects <i class="fas" [class.fa-sort-down]="sortDir === 'desc' && sortField === 'totalProjects'" [class.fa-sort-up]="sortDir === 'asc' && sortField === 'totalProjects'" [class.fa-sort]="sortField !== 'totalProjects'"></i>
+        </button>
+        <button class="svs-sort-btn" [class.active]="sortField === 'completionRate'" (click)="setSort('completionRate')">
+          Delivery <i class="fas" [class.fa-sort-down]="sortDir === 'desc' && sortField === 'completionRate'" [class.fa-sort-up]="sortDir === 'asc' && sortField === 'completionRate'" [class.fa-sort]="sortField !== 'completionRate'"></i>
+        </button>
+      </div>
+
+      <!-- Vendor Ranked Rows -->
+      <div class="svs-ranked-list">
+        <div
+          *ngFor="let vendor of sortedVendors; let i = index; trackBy: trackByVendorId"
+          class="svs-vendor-row"
+          [class.svs-vendor-row--expanded]="expandedVendor === vendor.vendorId"
+        >
+          <!-- Row summary -->
+          <div class="svs-row-summary" (click)="toggleExpand(vendor.vendorId)">
+
+            <!-- Rank badge -->
+            <div class="svs-rank-badge" [attr.data-medal]="getRankMedal(i)">
+              <i class="fas" [ngClass]="getMedalIcon(i)"></i>
+              <span class="svs-rank-num">#{{ i + 1 }}</span>
+            </div>
+
+            <!-- Avatar + info -->
+            <div class="svs-rv-avatar" [style.background]="getAvatarGradient(vendor.vendorName)">
+              {{ getInitials(vendor.vendorName) }}
+            </div>
+
+            <div class="svs-rv-info">
+              <div class="svs-rv-name">{{ vendor.vendorName }}</div>
+              <div class="svs-rv-meta">
+                <span class="svs-rv-code">{{ vendor.vendorCode }}</span>
+                <span class="svs-rv-cat" *ngFor="let c of vendor.categories.slice(0, 2)">{{ c }}</span>
+              </div>
+            </div>
+
+            <!-- Score -->
+            <div class="svs-rv-score" [style.color]="getMatchColor(vendor.matchScore)">
+              <span class="svs-rv-score-num">{{ vendor.matchScore }}%</span>
+              <span class="svs-rv-score-label">match</span>
+            </div>
+
+            <!-- Score breakdown bars (collapsed preview) -->
+            <div class="svs-rv-bars">
+              <div class="svs-bar-row" *ngFor="let b of getScoreBreakdown(vendor)">
+                <span class="svs-bar-track">
+                  <span class="svs-bar-fill" [style.width.%]="b.score" [style.background]="b.color"></span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Risk badge -->
+            <div class="svs-risk-badge" [attr.data-risk]="getRiskLevel(vendor)">
+              {{ getRiskLevel(vendor) }}
+            </div>
+
+            <!-- Expand toggle -->
+            <i class="fas svs-expand-icon" [class.fa-chevron-down]="expandedVendor !== vendor.vendorId" [class.fa-chevron-up]="expandedVendor === vendor.vendorId"></i>
+          </div>
+
+          <!-- Expanded detail -->
+          <div class="svs-row-detail" *ngIf="expandedVendor === vendor.vendorId">
+
+            <!-- Score Breakdown bars full -->
+            <div class="svs-breakdown-section">
+              <div class="svs-breakdown-title"><i class="fas fa-sliders-h"></i> Score Breakdown</div>
+              <div class="svs-breakdown-row" *ngFor="let b of getScoreBreakdown(vendor)">
+                <div class="svs-bd-meta">
+                  <div class="svs-bd-label-row">
+                    <i class="fas" [ngClass]="b.icon" [style.color]="b.color"></i>
+                    <span class="svs-bd-label">{{ b.label }}</span>
+                    <span class="svs-bd-weight">{{ b.weight }}%</span>
+                  </div>
+                  <span class="svs-bd-score" [style.color]="b.color">{{ b.score | number:'1.0-0' }}</span>
+                </div>
+                <div class="svs-bd-track">
+                  <div class="svs-bd-fill" [style.width.%]="b.score" [style.background]="b.color"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Narrative -->
+            <div class="svs-narrative-section">
+              <div class="svs-breakdown-title"><i class="fas fa-comment-dots"></i> AI Analysis</div>
+              <p class="svs-narrative-text">{{ getAiNarrative(vendor) }}</p>
+            </div>
+
+            <!-- Select button -->
+            <div class="svs-detail-footer">
+              <div class="svs-detail-meta">
+                <span class="svs-detail-metric">
+                  <i class="fas fa-briefcase"></i> {{ vendor.totalProjects }} projects
+                </span>
+                <span class="svs-detail-metric">
+                  <i class="fas fa-truck"></i> {{ vendor.completionRate }}% on-time
+                </span>
+                <span class="svs-detail-metric">
+                  <i class="fas fa-star" style="color:#e8a838"></i> {{ vendor.rating.toFixed(1) }}
+                </span>
+              </div>
+              <button class="svs-select-btn" (click)="selectVendor(vendor.vendorId)">
+                <i class="fas fa-plus-circle"></i> Select This Vendor
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ── PERFORMANCE MATRIX TAB ──────────────────────────────── -->
+    <ng-container *ngIf="activeTab === 'performance'">
+      <div class="svs-matrix-wrap">
+        <table class="svs-matrix-table">
+          <thead>
+            <tr>
+              <th class="svs-matrix-th svs-matrix-th--label">Vendor</th>
+              <th class="svs-matrix-th" *ngFor="let col of getPerformanceCols()">{{ col.label }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let vendor of sortedVendors; trackBy: trackByVendorId">
+              <td class="svs-matrix-vendor-cell">
+                <div class="svs-matrix-avatar" [style.background]="getAvatarGradient(vendor.vendorName)">
+                  {{ getInitials(vendor.vendorName) }}
+                </div>
+                <div class="svs-matrix-vname">
+                  <span class="svs-matrix-name">{{ vendor.vendorName }}</span>
+                  <span class="svs-matrix-code">{{ vendor.vendorCode }}</span>
+                </div>
+              </td>
+              <td
+                *ngFor="let col of getPerformanceCols()"
+                class="svs-matrix-cell"
+                [attr.data-color]="getPerformanceColor(getVendorColValue(vendor, col.key), col.max)"
+                [class.svs-matrix-cell--best]="getBestVendorForCol(col.key) === vendor.vendorId"
+                [title]="col.label + ': ' + getVendorColValue(vendor, col.key) + col.unit"
+              >
+                <span class="svs-matrix-val">{{ getVendorColValue(vendor, col.key) }}{{ col.unit }}</span>
+                <span class="svs-matrix-best-tag" *ngIf="getBestVendorForCol(col.key) === vendor.vendorId">Best</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <!-- ── RISK ASSESSMENT TAB ─────────────────────────────────── -->
+    <ng-container *ngIf="activeTab === 'risk'">
+      <div class="svs-risk-list">
+        <div class="svs-risk-card" *ngFor="let vendor of sortedVendors; trackBy: trackByVendorId">
+
+          <div class="svs-risk-card-header">
+            <div class="svs-risk-avatar" [style.background]="getAvatarGradient(vendor.vendorName)">
+              {{ getInitials(vendor.vendorName) }}
+            </div>
+            <div class="svs-risk-info">
+              <div class="svs-risk-vendor-name">{{ vendor.vendorName }}</div>
+              <div class="svs-risk-vendor-code">{{ vendor.vendorCode }}</div>
+            </div>
+            <div class="svs-risk-level-badge" [attr.data-risk]="getRiskLevel(vendor)">
+              <i class="fas" [ngClass]="getRiskLevel(vendor) === 'LOW' ? 'fa-check-circle' : getRiskLevel(vendor) === 'MEDIUM' ? 'fa-exclamation-circle' : 'fa-times-circle'"></i>
+              {{ getRiskLevel(vendor) }} RISK
+            </div>
+            <div class="svs-delivery-grade" [attr.data-grade]="getDeliveryGrade(vendor)">
+              Grade {{ getDeliveryGrade(vendor) }}
+            </div>
+          </div>
+
+          <div class="svs-risk-factors">
+            <div class="svs-risk-factors-title"><i class="fas fa-exclamation-triangle"></i> Risk Factors</div>
+            <ul class="svs-risk-factors-list">
+              <li *ngFor="let f of getRiskFactors(vendor)">
+                <i class="fas fa-dot-circle"></i> {{ f }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="svs-risk-mitigation">
+            <div class="svs-risk-mit-title"><i class="fas fa-tools"></i> Mitigation Notes</div>
+            <p class="svs-risk-mit-text">{{ getRiskMitigation(vendor) }}</p>
+          </div>
+
+          <div class="svs-risk-footer">
+            <button class="svs-select-btn svs-select-btn--sm" (click)="selectVendor(vendor.vendorId)">
+              <i class="fas fa-plus-circle"></i> Select Vendor
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+
+  <!-- ── Panel Footer ──────────────────────────────────────────── -->
+  <div class="svs-footer">
+    <div class="svs-footer-note">
+      <i class="fas fa-info-circle"></i>
+      Selections made here are reflected on the main page automatically.
+    </div>
+    <button class="svs-footer-close" (click)="closePanel()">
+      <i class="fas fa-times"></i> Close Panel
+    </button>
+  </div>
+
+</div>

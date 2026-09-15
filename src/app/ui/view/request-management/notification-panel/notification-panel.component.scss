@@ -1,0 +1,431 @@
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+$delivered-bg:  #f0fdf4;
+$delivered-fg:  #16a34a;
+$delivered-bd:  #bbf7d0;
+
+$failed-bg:     #fef2f2;
+$failed-fg:     #dc2626;
+$failed-bd:     #fecaca;
+
+$sent-bg:       #eff6ff;
+$sent-fg:       #2563eb;
+$sent-bd:       #bfdbfe;
+
+$pending-bg:    #f8fafc;
+$pending-fg:    #64748b;
+$pending-bd:    #e2e8f0;
+
+$bounced-bg:    #fff7ed;
+$bounced-fg:    #d97706;
+$bounced-bd:    #fed7aa;
+
+$slate-900:  #0f172a;
+$slate-700:  #334155;
+$slate-500:  #64748b;
+$slate-300:  #cbd5e1;
+$slate-100:  #f1f5f9;
+$slate-50:   #f8fafc;
+$white:      #ffffff;
+
+// Channel badge colors
+$email-bg:   #eef2ff;
+$email-fg:   #4338ca;
+$inapp-bg:   #f0fdfa;
+$inapp-fg:   #0d9488;
+$sms-bg:     #faf5ff;
+$sms-fg:     #7c3aed;
+$push-bg:    #fff1f2;
+$push-fg:    #be123c;
+
+// ─── Wrapper ──────────────────────────────────────────────────────────────────
+.np-wrapper {
+  font-family: 'Inter', sans-serif;
+  color: $slate-700;
+  line-height: 1.5;
+}
+
+// ─── Compact Mode ─────────────────────────────────────────────────────────────
+.np-compact-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  background: $slate-50;
+  border: 1px solid $slate-100;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.np-icon {
+  color: $slate-500;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.np-compact-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.np-compact-reload {
+  background: none;
+  border: none;
+  color: $slate-500;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+
+  &:hover { color: $slate-700; background: $slate-100; }
+}
+
+// ─── Full Mode Header ─────────────────────────────────────────────────────────
+.np-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid $slate-100;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
+}
+
+.np-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.np-header-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.np-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $slate-900;
+  margin: 0;
+}
+
+.np-subtitle {
+  font-size: 0.75rem;
+  color: $slate-500;
+  margin: 0.1rem 0 0 0;
+}
+
+.np-header-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.np-reload-btn {
+  background: none;
+  border: 1px solid $slate-300;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  color: $slate-500;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+  &:hover:not(:disabled) {
+    border-color: #2563eb;
+    color: #2563eb;
+    background: $sent-bg;
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// ─── Status Chips ─────────────────────────────────────────────────────────────
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  &.delivered {
+    background: $delivered-bg;
+    color: $delivered-fg;
+    border: 1px solid $delivered-bd;
+  }
+
+  &.failed {
+    background: $failed-bg;
+    color: $failed-fg;
+    border: 1px solid $failed-bd;
+  }
+
+  &.pending {
+    background: $pending-bg;
+    color: $pending-fg;
+    border: 1px solid $pending-bd;
+  }
+}
+
+// ─── Loading ──────────────────────────────────────────────────────────────────
+.np-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.5rem;
+  color: $slate-500;
+  font-size: 0.875rem;
+}
+
+// ─── Empty ────────────────────────────────────────────────────────────────────
+.np-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  color: $slate-500;
+
+  .np-empty-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    background: $slate-100;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: $slate-300;
+    margin-bottom: 0.875rem;
+  }
+
+  p { font-size: 0.875rem; font-weight: 600; color: $slate-700; margin: 0 0 0.35rem 0; }
+  small { font-size: 0.78rem; }
+}
+
+// ─── Notification List ────────────────────────────────────────────────────────
+.np-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+
+  // Subtle scrollbar
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: $slate-300; border-radius: 9999px; }
+}
+
+// ─── Notification Entry ───────────────────────────────────────────────────────
+.np-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid $slate-100;
+  border-radius: 10px;
+  background: $white;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover { border-color: $slate-300; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+
+  &.delivered { border-left: 3px solid $delivered-fg; }
+  &.failed    { border-left: 3px solid $failed-fg; background: $failed-bg; }
+  &.bounced   { border-left: 3px solid $bounced-fg; background: $bounced-bg; }
+  &.sent      { border-left: 3px solid $sent-fg; }
+  &.pending   { border-left: 3px solid $slate-300; }
+}
+
+// ─── Status Icon Dot ──────────────────────────────────────────────────────────
+.np-status-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+
+  &.delivered { background: $delivered-bg; color: $delivered-fg; }
+  &.failed    { background: $failed-bg; color: $failed-fg; }
+  &.bounced   { background: $bounced-bg; color: $bounced-fg; }
+  &.sent      { background: $sent-bg; color: $sent-fg; }
+  &.pending   { background: $pending-bg; color: $pending-fg; }
+}
+
+// ─── Entry Body ───────────────────────────────────────────────────────────────
+.np-entry-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.np-entry-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.np-type-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $slate-900;
+}
+
+// Channel Badges
+.channel-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  &.email  { background: $email-bg; color: $email-fg; }
+  &.in_app { background: $inapp-bg; color: $inapp-fg; }
+  &.sms    { background: $sms-bg; color: $sms-fg; }
+  &.push   { background: $push-bg; color: $push-fg; }
+}
+
+.np-recipient {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: $slate-700;
+
+  i { color: $slate-300; font-size: 0.75rem; }
+}
+
+.np-email {
+  color: $slate-500;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.np-subject {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: $slate-500;
+
+  i { font-size: 0.7rem; flex-shrink: 0; }
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.np-timestamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.ts-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: $slate-500;
+
+  i { font-size: 0.65rem; }
+
+  &.delivered { color: $delivered-fg; }
+  &.muted { color: $slate-300; }
+}
+
+.np-failure {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: $failed-fg;
+  background: $failed-bg;
+  border: 1px solid $failed-bd;
+  border-radius: 6px;
+  padding: 0.35rem 0.625rem;
+  margin-top: 0.2rem;
+
+  i { flex-shrink: 0; margin-top: 0.1rem; }
+}
+
+.np-retry-info {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: $slate-500;
+
+  i { font-size: 0.65rem; }
+}
+
+// ─── Retry Button ─────────────────────────────────────────────────────────────
+.np-entry-actions {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.btn-retry {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: $white;
+  border: 1.5px solid $failed-fg;
+  color: $failed-fg;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: $failed-fg;
+    color: $white;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// ─── Compact Mode overrides ───────────────────────────────────────────────────
+.np-wrapper.compact {
+  .np-list { max-height: 240px; }
+}

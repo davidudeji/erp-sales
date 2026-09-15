@@ -1,0 +1,101 @@
+<app-side-modal (close)="close()">
+  <div class="h-full flex flex-col" *ngIf="rider as r">
+    <!-- Header -->
+    <div class="flex items-start justify-between pb-4 border-b border-[#e5eaed]">
+      <div class="flex items-center gap-3">
+        <span class="w-12 h-12 rounded-full bg-[#eef5f7] text-[#224957] font-bold text-[15px] flex items-center justify-center shrink-0">{{ r.initials }}</span>
+        <div>
+          <h2 class="text-[17px] font-bold text-[#14181b]">{{ r.name }}</h2>
+          <p class="text-[12px] text-[#9aa7ae]">ID: {{ r.riderCode }}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="close()"
+        class="w-8 h-8 rounded-full flex items-center justify-center text-[#71828a] hover:bg-[#eef2f5] hover:text-[#14181b] transition-colors shrink-0"
+        aria-label="Close"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18 6 6 18M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-5 space-y-6">
+
+      <!-- Status + contact -->
+      <div class="bg-white rounded-xl border border-[#e5eaed] p-4">
+        <div class="flex items-center justify-between mb-4">
+          <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold" [ngClass]="getRiderStatusBadgeClass(r.activeStatus)">
+            {{ r.activeStatus | titlecase }}
+          </span>
+          <span class="text-[12px] text-[#566670] capitalize">{{ r.vehicleType | lowercase }}</span>
+        </div>
+        <dl class="grid grid-cols-2 gap-y-3 gap-x-4 text-[13px]">
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Email</dt>
+            <dd class="text-[#14181b] font-medium truncate">{{ r.email || '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Phone</dt>
+            <dd class="text-[#14181b] font-medium">{{ r.phone || '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Current Load</dt>
+            <dd class="text-[#14181b] font-medium">{{ r.currentLoad }} orders</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Delivered Today</dt>
+            <dd class="text-[#14181b] font-medium">{{ r.todayDelivered }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Performance stats -->
+      <div *ngIf="stat" class="bg-white rounded-xl border border-[#e5eaed] p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-[13px] font-semibold text-[#14181b]">This Week</h3>
+          <span *ngIf="stat.isHoardingRisk" class="px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-[#f97316]/12 text-[#f97316]">Hoarding Risk</span>
+        </div>
+        <dl class="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <dd class="text-[18px] font-bold text-[#14181b]">{{ stat.ordersClaimedWeek }}</dd>
+            <dt class="text-[11px] text-[#9aa7ae]">Claimed</dt>
+          </div>
+          <div>
+            <dd class="text-[18px] font-bold text-[#16a34a]">{{ stat.delivered }}</dd>
+            <dt class="text-[11px] text-[#9aa7ae]">Delivered</dt>
+          </div>
+          <div>
+            <dd class="text-[18px] font-bold text-[#dc2626]">{{ stat.failed }}</dd>
+            <dt class="text-[11px] text-[#9aa7ae]">Failed</dt>
+          </div>
+        </dl>
+        <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[#eef2f5] text-[13px]">
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Avg Claim-to-Deliver</dt>
+            <dd class="text-[#14181b] font-medium">{{ stat.avgTimeMinutes }}m</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Avg Approval Wait</dt>
+            <dd class="text-[#14181b] font-medium">{{ stat.avgApprovalWaitMinutes }}m</dd>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scoped history -->
+      <div>
+        <h3 class="text-[13px] font-semibold text-[#14181b] mb-3">Order History</h3>
+        <div class="bg-white rounded-xl border border-[#e5eaed] divide-y divide-[#eef2f5]">
+          <div *ngFor="let entry of history" class="px-4 py-3">
+            <p class="text-[12.5px] text-[#14181b]">{{ entry.action }}</p>
+            <p class="text-[11px] text-[#9aa7ae] mt-0.5">{{ entry.timestamp | date: 'MMM d, y · h:mm a' }}</p>
+          </div>
+          <div *ngIf="!isLoading && !history.length" class="px-4 py-6 text-center text-[13px] text-[#9aa7ae]">
+            No history recorded for this rider yet.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-side-modal>

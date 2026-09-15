@@ -1,0 +1,16 @@
+<div class="dropdown">
+    <label>Select an Option</label>
+    <div class="dropdown-selected" (click)="toggleDropdown()">
+      {{ getSelectedOptionName() }}
+    </div>
+    <div class="dropdown-list" *ngIf="toggleDropdownOpen">
+      <div
+        class="dropdown-item"
+        *ngFor="let option of options"
+        (click)="selectOption(option)"
+      >
+        {{ option.name }}
+      </div>
+    </div>
+  </div>
+  

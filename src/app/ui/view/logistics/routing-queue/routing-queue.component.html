@@ -1,0 +1,214 @@
+<div class="routing-queue">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between flex-wrap gap-4 mb-5">
+    <div>
+      <h1 class="text-[21px] font-bold text-[#14181b]">Logistics Queue</h1>
+      <p class="text-[13px] text-[#71828a] mt-0.5">Review and route paid orders awaiting dispatch.</p>
+    </div>
+    <div class="flex gap-3">
+      <div class="stat-card">
+        <p class="stat-label">Unrouted Orders</p>
+        <p class="stat-value">{{ triageOrders.length }}</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Aging in Pool</p>
+        <p class="stat-value" [ngClass]="poolAgingCount > 0 ? 'text-[#f97316]' : ''">{{ poolAgingCount }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="rq-tabs">
+    <button type="button" class="rq-tab" [class.active]="activeTab === 'triage'" (click)="setTab('triage')">
+      New Orders
+      <span class="rq-tab-badge">{{ triageOrders.length }}</span>
+    </button>
+    <button type="button" class="rq-tab" [class.active]="activeTab === 'pool'" (click)="setTab('pool')">
+      Pool
+      <span class="rq-tab-badge" [class.rq-tab-badge--alert]="poolAgingCount > 0">{{ poolOrders.length }}</span>
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART A — TRIAGE -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'triage'" class="rq-panel">
+
+    <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+      <div class="relative w-full max-w-xs">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9aa7ae]" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <input
+          type="text"
+          placeholder="Search order ID or customer..."
+          class="rq-search-input"
+          [ngModel]="triageSearch"
+          (ngModelChange)="onSearchChange($event)"
+        />
+      </div>
+    </div>
+
+    <!-- Bulk action bar -->
+    <div *ngIf="selectedCount > 0" class="rq-bulk-bar">
+      <span class="text-[13px] font-semibold text-[#14181b]">{{ selectedCount }} selected</span>
+      <div class="flex gap-2">
+        <button type="button" class="btn btn-outline" (click)="bulkRoute(FulfillmentType.PICKUP)">
+          Route to Pickup
+        </button>
+        <button type="button" class="btn btn-primary" (click)="bulkRoute(FulfillmentType.DELIVERY)">
+          Route to Delivery
+        </button>
+      </div>
+    </div>
+
+    <div class="rq-table-card">
+      <app-table
+        [columns]="triageColumns"
+        [rows]="triageOrders"
+        [actions]="[]"
+        [selectable]="true"
+        [selectionMode]="'multiple'"
+        [selection]="triageSelection"
+        (selectionChange)="onSelectionChange($event)"
+        [dataKey]="'id'"
+        [rowClickable]="true"
+        (rowClick)="openOrderDetail($event)"
+        emptyMessage=""
+      >
+        <ng-template appTableBody let-order>
+          <td class="app-table-main-col" (click)="$event.stopPropagation()">
+            <p class="text-[13.5px] font-semibold text-[#14181b]">{{ order.orderId }}</p>
+          </td>
+          <td class="text-[13px] text-[#14181b]">{{ order.customerName }}</td>
+          <td class="text-[13px] text-[#566670]">{{ order.itemsSummary }}</td>
+          <td class="text-[13px] text-[#566670]">{{ order.deliveryLocation }}</td>
+          <td>
+            <span class="rq-time-pill">{{ timeSincePaidLabel(order) }}</span>
+          </td>
+          <td class="text-right" (click)="$event.stopPropagation()">
+            <div class="flex justify-end gap-2">
+              <button type="button" class="btn btn-outline btn-sm" (click)="routeOne(order, FulfillmentType.PICKUP)">
+                Mark Pickup
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" (click)="routeOne(order, FulfillmentType.DELIVERY)">
+                Mark Deliver
+              </button>
+            </div>
+          </td>
+        </ng-template>
+      </app-table>
+
+      <div *ngIf="!isTriageLoading && !triageOrders.length" class="rq-empty">
+        <p class="text-[14px] font-medium text-[#14181b]">All caught up</p>
+        <p class="text-[13px] text-[#9aa7ae] mt-1">No orders waiting to be routed.</p>
+      </div>
+
+      <div *ngIf="isTriageLoading" class="rq-empty">
+        <p class="text-[13px] text-[#9aa7ae]">Loading orders…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART B — POOL OVERSIGHT -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'pool'" class="rq-panel">
+
+    <div class="rq-table-card">
+      <app-table
+        [columns]="poolColumns"
+        [rows]="poolOrders"
+        [actions]="[]"
+        [rowClickable]="true"
+        (rowClick)="openOrderDetail($event)"
+        emptyMessage=""
+      >
+        <ng-template appTableBody let-order>
+          <td class="app-table-main-col" [class.rq-aging-row]="order.isAging">
+            <div class="flex items-center gap-2.5">
+              <span *ngIf="order.isAging" class="rq-aging-bar"></span>
+              <p class="text-[13.5px] font-semibold text-[#14181b]">{{ order.orderId }}</p>
+            </div>
+          </td>
+          <td class="text-[13px] text-[#14181b]">{{ order.customerName }}</td>
+          <td class="text-[13px] text-[#566670]">{{ order.itemsSummary }}</td>
+          <td class="text-[13px] text-[#566670]">{{ order.deliveryLocation }}</td>
+          <td>
+            <span class="rq-time-pill" [class.rq-time-pill--aging]="order.isAging">
+              {{ timeInPoolLabel(order) }} unclaimed
+            </span>
+          </td>
+          <td class="text-right" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-outline]="!order.isAging"
+              [class.btn-critical]="order.isAging"
+              (click)="openForceAssign(order)"
+            >
+              Assign
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
+
+      <div *ngIf="!isPoolLoading && !poolOrders.length" class="rq-empty">
+        <p class="text-[14px] font-medium text-[#14181b]">Pool is clear</p>
+        <p class="text-[13px] text-[#9aa7ae] mt-1">Every delivery order has been claimed.</p>
+      </div>
+
+      <div *ngIf="isPoolLoading" class="rq-empty">
+        <p class="text-[13px] text-[#9aa7ae]">Loading pool…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="rq-toast-stack">
+    <div *ngFor="let toast of toasts" class="rq-toast">{{ toast.message }}</div>
+  </div>
+
+  <!-- Force-assign modal -->
+  <app-modal *ngIf="showForceAssignModal">
+    <div class="rq-modal">
+      <h3 class="text-[15px] font-semibold text-[#14181b] mb-1">Force-assign order</h3>
+      <p class="text-[12.5px] text-[#9aa7ae] mb-4">
+        {{ forceAssignOrder?.orderId }} will be assigned directly to the rider you choose, bypassing self-claim.
+      </p>
+
+      <div class="space-y-2 max-h-72 overflow-y-auto mb-5">
+        <label
+          *ngFor="let rider of activeRiders"
+          class="rq-rider-option"
+          [class.selected]="forceAssignRiderId === rider.id"
+        >
+          <input type="radio" name="forceAssignRider" [value]="rider.id" [(ngModel)]="forceAssignRiderId" class="accent-[#00a191]" />
+          <span class="rq-rider-avatar">{{ rider.initials }}</span>
+          <span class="flex-1 min-w-0">
+            <span class="block text-[13px] font-semibold text-[#14181b]">{{ rider.name }}</span>
+            <span class="block text-[12px] text-[#9aa7ae]">{{ rider.currentLoad }} active orders</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-outline" (click)="closeForceAssign()">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!forceAssignRiderId || isAssigning"
+          (click)="confirmForceAssign()"
+        >
+          {{ isAssigning ? 'Assigning…' : 'Confirm Assignment' }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Order detail drawer -->
+  <app-order-detail-drawer *ngIf="selectedOrderId" [orderId]="selectedOrderId" (closed)="closeOrderDetail()"></app-order-detail-drawer>
+
+</div>

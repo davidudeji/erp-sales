@@ -1,0 +1,95 @@
+.form-container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .job-application-form {
+    flex: 1;
+    max-height: 100vh;
+    overflow-y: auto;
+  
+  
+    /* Hide scrollbar for WebKit browsers */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  /* Hide scrollbar for WebKit browsers (Chrome, Safari) */
+  .job-application-form::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .job-application-wrapper{
+    display: flex;
+    justify-content: center;
+  }
+  
+  .job-application-container{
+    width: 60%;
+    height: 100vh;
+    margin: 2rem 0 !important;
+  }
+  .card{
+    border: none !important;
+  }
+  
+  .aside-container {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    background-color: var(--celadon-green);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    max-height: 100vh;
+  }
+  
+  .tip-content {
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.8s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .tip-content.fade-in {
+    opacity: 1;
+  }
+  
+  .tip-image {
+    max-width: 50%;
+    height: auto;
+    margin-bottom: 10px;
+  }
+  
+  .tip-text {
+    font-size: var(--l-font);
+    padding: 0 20px;
+    color: #fff;
+  }
+  
+  .carousel-controls {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    position: absolute;
+    bottom: 20px;
+  }
+  
+  .carousel-controls button {
+    background-color: #007bff;
+    border: none;
+    color: white;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  .carousel-controls button:hover {
+    background-color: #0056b3;
+  }
+  

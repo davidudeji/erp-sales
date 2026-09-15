@@ -1,0 +1,378 @@
+<!-- threshold-management.component.html -->
+<p-toast position="top-right"></p-toast>
+
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Threshold Management</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <div class="ql-filter-section">
+            <button class="ql-sidebar-action" (click)="refresh()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Branch Selector -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Branch</div>
+            <select class="ql-search-input" [(ngModel)]="selectedBranch"
+                (ngModelChange)="onBranchChange(selectedBranch?.id || '')">
+                <option *ngFor="let branch of branches" [value]="branch">
+                    {{ branch.name }}
+                </option>
+            </select>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Stock Health</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Products</span>
+                <span class="ql-sidebar-stat-value">{{ stats.total }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-left: 3px solid #DC2626; padding-left: 10px;">
+                <span class="ql-sidebar-stat-label" style="color: #DC2626;">Critical</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ stats.critical }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-left: 3px solid #F59E0B; padding-left: 10px;">
+                <span class="ql-sidebar-stat-label" style="color: #F59E0B;">Low</span>
+                <span class="ql-sidebar-stat-value" style="color: #F59E0B;">{{ stats.low }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-left: 3px solid #2EB270; padding-left: 10px;">
+                <span class="ql-sidebar-stat-label" style="color: #2EB270;">Healthy</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ stats.healthy }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-left: 3px solid #3B82F6; padding-left: 10px;">
+                <span class="ql-sidebar-stat-label" style="color: #3B82F6;">Overstock</span>
+                <span class="ql-sidebar-stat-value" style="color: #3B82F6;">{{ stats.overstock }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Quick Actions</div>
+            <button class="ql-sidebar-action" (click)="openBulkEdit()">
+                <i class="fas fa-edit"></i> Bulk Edit
+            </button>
+            <button class="ql-sidebar-action" (click)="refresh()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <h1 class="ql-title">Threshold Management</h1>
+                <span class="ql-total-badge">{{ stats.total }} products</span>
+                <span class="ql-branch-badge" *ngIf="selectedBranch">
+                    <i class="fas fa-store"></i>
+                    {{ selectedBranch.name }}
+                </span>
+            </div>
+            <div class="ql-top-bar-right">
+                <button type="button" class="ql-btn ql-btn--ghost" (click)="refresh()" [disabled]="isLoading">
+                    <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i> Refresh
+                </button>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="openBulkEdit()">
+                    <i class="fas fa-edit"></i> Bulk Edit
+                </button>
+            </div>
+        </div>
+
+        <!-- Success banner -->
+        <div class="ql-success-banner" *ngIf="success">
+            <i class="fas fa-check-circle"></i>
+            <span>{{ success }}</span>
+            <button class="ql-success-dismiss" (click)="success = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Error banner -->
+        <div class="ql-error-banner" *ngIf="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="error = null"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Bulk Edit Panel -->
+        <div class="ql-bulk-edit-panel" *ngIf="showBulkEdit">
+            <div class="ql-bulk-edit-content">
+                <div class="ql-bulk-edit-header">
+                    <h4><i class="fas fa-edit"></i> Bulk Edit Thresholds</h4>
+                    <button class="ql-btn ql-btn--ghost-sm" (click)="showBulkEdit = false">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-bulk-edit-body" [formGroup]="bulkForm">
+                    <div class="ql-form-row">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Apply To</label>
+                            <select class="ql-input" formControlName="applyTo">
+                                <option value="ALL">All Products</option>
+                                <option value="CRITICAL">Critical Only</option>
+                                <option value="LOW">Low Stock Only</option>
+                            </select>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Multiplier</label>
+                            <input type="number" class="ql-input" formControlName="multiplier" step="0.1"
+                                min="0.5">
+                        </div>
+                        <div class="ql-field" style="justify-content: flex-end;">
+                            <button class="ql-btn ql-btn--primary" (click)="applyBulkEdit()">
+                                <i class="fas fa-check"></i> Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading inventory...</span>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="ql-filter-bar" *ngIf="!isLoading" [formGroup]="filterForm">
+            <div class="ql-filter-row">
+                <div class="ql-search-wrap">
+                    <i class="fas fa-search ql-search-icon"></i>
+                    <input type="text" class="ql-search-input" placeholder="Search products..."
+                        (input)="onSearchInput($event)" [value]="filterForm.get('search')?.value || ''">
+                </div>
+
+                <div class="ql-filter-group">
+                    <label class="ql-flabel">Status</label>
+                    <select class="ql-filter-select" formControlName="status" (change)="applyFilters()">
+                        <option value="ALL">All Statuses</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="LOW">Low Stock</option>
+                        <option value="NORMAL">Normal</option>
+                        <option value="OVERSTOCK">Overstock</option>
+                    </select>
+                </div>
+
+                <button class="ql-btn ql-btn--ghost-sm" (click)="clearFilters()" *ngIf="getActiveFilterCount() > 0">
+                    <i class="fas fa-undo-alt"></i> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="ql-table-wrap" *ngIf="!isLoading">
+            <table class="ql-table">
+                <thead>
+                    <tr>
+                        <th (click)="toggleSort('productName')" class="sortable">
+                            Product <i class="fas" [class]="getSortIcon('productName')"></i>
+                        </th>
+                        <th (click)="toggleSort('sku')" class="sortable">
+                            SKU <i class="fas" [class]="getSortIcon('sku')"></i>
+                        </th>
+                        <th class="center">Current Stock</th>
+                        <th (click)="toggleSort('reorderPoint')" class="sortable center">
+                            Reorder Point <i class="fas" [class]="getSortIcon('reorderPoint')"></i>
+                        </th>
+                        <th (click)="toggleSort('safetyStock')" class="sortable center">
+                            Safety Stock <i class="fas" [class]="getSortIcon('safetyStock')"></i>
+                        </th>
+                        <th (click)="toggleSort('reorderQuantity')" class="sortable center">
+                            Reorder Qty <i class="fas" [class]="getSortIcon('reorderQuantity')"></i>
+                        </th>
+                        <th (click)="toggleSort('status')" class="sortable center">
+                            Status <i class="fas" [class]="getSortIcon('status')"></i>
+                        </th>
+                        <th class="actions-heading">Actions</th>
+                    </tr>
+                </thead>
+
+                <!-- Empty state -->
+                <tbody *ngIf="filteredItems.length === 0">
+                    <tr>
+                        <td colspan="8">
+                            <div class="ql-empty">
+                                <i class="fas fa-sliders-h ql-empty-icon"></i>
+                                <p class="ql-empty-title">No products found</p>
+                                <p class="ql-empty-sub">Try adjusting your filters</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+
+                <!-- Data rows -->
+                <tbody *ngIf="filteredItems.length > 0">
+                    <tr *ngFor="let item of filteredItems"
+                        [class.ql-row--critical]="getStockStatus(item.quantity, item.reorderPoint, item.safetyStock) === 'CRITICAL'"
+                        [class.ql-row--low]="getStockStatus(item.quantity, item.reorderPoint, item.safetyStock) === 'LOW'">
+                        <td class="ql-td-product" (click)="viewProduct(item.productId)">
+                            <div class="ql-product-info">
+                                <span class="ql-product-name">{{ item.productName }}</span>
+                            </div>
+                        </td>
+
+                        <td class="ql-td-sku">{{ item.sku }}</td>
+
+                        <td class="ql-td-stock center">
+                            <span class="ql-stock-badge"
+                                [class]="'ql-stock--' + getStockStatusClass(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))">
+                                {{ item.quantity }}
+                            </span>
+                        </td>
+
+                        <td class="center">
+                            <span class="ql-threshold-value">{{ item.reorderPoint }}</span>
+                        </td>
+
+                        <td class="center">
+                            <span class="ql-threshold-value">{{ item.safetyStock }}</span>
+                        </td>
+
+                        <td class="center">
+                            <span class="ql-threshold-value">{{ item.reorderQuantity || item.reorderPoint }}</span>
+                        </td>
+
+                        <td class="center">
+                            <span class="ql-status-badge"
+                                [class]="'ql-status-badge--' + getStockStatusClass(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))">
+                                <span class="ql-status-dot"
+                                    [style.background]="getStockStatusColor(getStockStatus(item.quantity, item.reorderPoint, item.safetyStock))"></span>
+                                {{ getStockStatusLabel(getStockStatus(item.quantity, item.reorderPoint,
+                                item.safetyStock)) }}
+                            </span>
+                        </td>
+
+                        <td class="actions-col">
+                            <div class="actions-wrapper">
+                                <button class="action-btn edit-btn" (click)="openEditModal(item)"
+                                    title="Edit Thresholds">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                                <button class="action-btn view-btn" (click)="viewProduct(item.productId)"
+                                    title="View Product">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+</div>
+
+<!-- ============================================================
+EDIT THRESHOLD MODAL
+============================================================ -->
+<div class="ql-modal-backdrop" *ngIf="showEditModal"
+    (click)="$event.target === $event.currentTarget && closeEditModal()">
+    <div class="ql-modal">
+        <div class="ql-modal-header">
+            <h3><i class="fas fa-sliders-h"></i> Edit Thresholds</h3>
+            <button class="ql-modal-close" (click)="closeEditModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="ql-modal-body" *ngIf="editingItem">
+            <div class="ql-product-summary">
+                <div class="ql-product-avatar">
+                    {{ editingItem.productName.charAt(0).toUpperCase() }}
+                </div>
+                <div class="ql-product-info">
+                    <h4>{{ editingItem.productName }}</h4>
+                    <p class="ql-product-sku">{{ editingItem.sku }}</p>
+                    <p class="ql-product-branch">
+                        <i class="fas fa-store"></i> {{ editingItem.branchName }}
+                    </p>
+                    <p class="ql-product-stock">
+                        Current Stock: <strong>{{ editingItem.quantity }}</strong> units
+                    </p>
+                </div>
+            </div>
+
+            <form [formGroup]="editForm">
+                <div class="ql-form-row">
+                    <div class="ql-field">
+                        <label class="ql-flabel">Reorder Point <span class="ql-required">*</span></label>
+                        <input type="number" formControlName="reorderPoint" class="ql-input" min="0"
+                            [class.ql-input--error]="isFieldInvalid('reorderPoint')">
+                        <span class="ql-field-error" *ngIf="isFieldInvalid('reorderPoint')">
+                            {{ getFieldError('reorderPoint') }}
+                        </span>
+                        <span class="ql-hint">Stock level that triggers reordering</span>
+                    </div>
+
+                    <div class="ql-field">
+                        <label class="ql-flabel">Safety Stock <span class="ql-required">*</span></label>
+                        <input type="number" formControlName="safetyStock" class="ql-input" min="0"
+                            [class.ql-input--error]="isFieldInvalid('safetyStock')">
+                        <span class="ql-field-error" *ngIf="isFieldInvalid('safetyStock')">
+                            {{ getFieldError('safetyStock') }}
+                        </span>
+                        <span class="ql-hint">Minimum stock to keep as buffer</span>
+                    </div>
+                </div>
+
+                <div class="ql-field">
+                    <label class="ql-flabel">Reorder Quantity <span class="ql-required">*</span></label>
+                    <input type="number" formControlName="reorderQuantity" class="ql-input" min="0"
+                        [class.ql-input--error]="isFieldInvalid('reorderQuantity')">
+                    <span class="ql-field-error" *ngIf="isFieldInvalid('reorderQuantity')">
+                        {{ getFieldError('reorderQuantity') }}
+                    </span>
+                    <span class="ql-hint">Quantity to order when reorder point is triggered</span>
+                </div>
+
+                <!-- Status Preview -->
+                <div class="ql-threshold-preview" *ngIf="editForm.valid">
+                    <div class="ql-threshold-preview-label">Status Preview</div>
+                    <div class="ql-threshold-preview-status">
+                        <span class="ql-status-badge" [class]="'ql-status-badge--' + getStockStatusClass(getStockStatus(
+                            editingItem.quantity,
+                            parseInt(editForm.get('reorderPoint')?.value || 0),
+                            parseInt(editForm.get('safetyStock')?.value || 0)
+                        ))" [style.background]="getStockStatusColor(getStockStatus(
+                            editingItem.quantity,
+                            parseInt(editForm.get('reorderPoint')?.value || 0),
+                            parseInt(editForm.get('safetyStock')?.value || 0)
+                        )) + '20'" [style.color]="getStockStatusColor(getStockStatus(
+                            editingItem.quantity,
+                            parseInt(editForm.get('reorderPoint')?.value || 0),
+                            parseInt(editForm.get('safetyStock')?.value || 0)
+                        ))">
+                            {{ getStockStatusLabel(getStockStatus(
+                            editingItem.quantity,
+                            parseInt(editForm.get('reorderPoint')?.value || 0),
+                            parseInt(editForm.get('safetyStock')?.value || 0)
+                            )) }}
+                        </span>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="ql-modal-footer">
+            <button type="button" class="ql-btn ql-btn--ghost" (click)="closeEditModal()">Cancel</button>
+            <button type="button" class="ql-btn ql-btn--primary" (click)="saveEdit()"
+                [disabled]="isSaving || editForm.invalid">
+                <i class="fas" [class.fa-spinner]="isSaving" [class.fa-save]="!isSaving"
+                    [class.ql-spinning]="isSaving"></i>
+                {{ isSaving ? 'Saving...' : 'Save Changes' }}
+            </button>
+        </div>
+    </div>
+</div>

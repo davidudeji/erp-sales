@@ -1,0 +1,350 @@
+<div class="delivery-container">
+  <div class="delivery-wrapper">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-text">
+          <div class="header-badge">
+            <i class="fas fa-truck"></i>
+            <span>Sales Hub &bull; Delivery Monitoring</span>
+          </div>
+          <h1>Delivery Monitoring</h1>
+          <p class="header-subtitle">Track LPOs dispatched to vendors and monitor their delivery progress in real time.</p>
+        </div>
+        <div class="header-stats">
+          <div class="stat-chip total" (click)="setFilter('ALL')">
+            <i class="fas fa-boxes"></i>
+            <div>
+              <span class="chip-value">{{ stats.total }}</span>
+              <span class="chip-label">Total</span>
+            </div>
+          </div>
+          <div class="stat-chip pending" (click)="setFilter('PENDING')">
+            <i class="fas fa-hourglass-half"></i>
+            <div>
+              <span class="chip-value">{{ stats.pending }}</span>
+              <span class="chip-label">Pending</span>
+            </div>
+          </div>
+          <div class="stat-chip transit" (click)="setFilter('IN_TRANSIT')">
+            <i class="fas fa-shipping-fast"></i>
+            <div>
+              <span class="chip-value">{{ stats.inTransit }}</span>
+              <span class="chip-label">In Transit</span>
+            </div>
+          </div>
+          <div class="stat-chip delivered" (click)="setFilter('DELIVERED')">
+            <i class="fas fa-check-circle"></i>
+            <div>
+              <span class="chip-value">{{ stats.delivered }}</span>
+              <span class="chip-label">Delivered</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-left">
+        <span class="filter-label">Filter:</span>
+        <div class="filter-buttons">
+          <button class="filter-btn" [class.active]="filterStatus === 'ALL'" (click)="setFilter('ALL')">
+            All
+          </button>
+          <button class="filter-btn" [class.active]="filterStatus === 'PENDING'" (click)="setFilter('PENDING')">
+            <i class="fas fa-hourglass-half"></i> Pending
+          </button>
+          <button class="filter-btn transit" [class.active]="filterStatus === 'IN_TRANSIT'" (click)="setFilter('IN_TRANSIT')">
+            <i class="fas fa-shipping-fast"></i> In Transit
+          </button>
+          <button class="filter-btn partial" [class.active]="filterStatus === 'PARTIALLY_DELIVERED'" (click)="setFilter('PARTIALLY_DELIVERED')">
+            <i class="fas fa-tasks"></i> Partial
+          </button>
+          <button class="filter-btn delivered" [class.active]="filterStatus === 'DELIVERED'" (click)="setFilter('DELIVERED')">
+            <i class="fas fa-check-circle"></i> Delivered
+          </button>
+          <button class="filter-btn overdue" [class.active]="filterStatus === 'OVERDUE'" (click)="setFilter('OVERDUE')">
+            <i class="fas fa-exclamation-triangle"></i> Overdue
+          </button>
+        </div>
+      </div>
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+          placeholder="Search LPO#, vendor, request..."
+        />
+      </div>
+      <button class="btn-refresh" (click)="loadDeliveries()" title="Refresh">
+        <i class="fas fa-sync-alt" [class.spinning]="isLoading"></i>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner"></div>
+      <p>Loading deliveries...</p>
+    </div>
+
+    <!-- Delivery Table -->
+    <div class="table-container" *ngIf="!isLoading">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>LPO Number</th>
+              <th>Vendor</th>
+              <th>Request</th>
+              <th class="center-col">Items</th>
+              <th>Ordered</th>
+              <th>Expected</th>
+              <th>Status</th>
+              <th>Progress</th>
+              <th class="center-col actions-heading">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let delivery of filteredDeliveries; let i = index; trackBy: trackById"
+                [class.overdue-row]="isOverdue(delivery.expectedDelivery, delivery.status)">
+              <td class="sn-col">{{ i + 1 }}</td>
+              <td class="lpo-number">{{ delivery.lpoNumber }}</td>
+              <td class="vendor-name">
+                <div class="vendor-cell">
+                  <div class="vendor-avatar">{{ delivery.vendorName.charAt(0) }}</div>
+                  <span>{{ delivery.vendorName }}</span>
+                </div>
+              </td>
+              <td class="request-title">{{ delivery.requestTitle }}</td>
+              <td class="center-col item-count">{{ delivery.itemCount }}</td>
+              <td class="date-col">{{ formatDate(delivery.orderedDate) }}</td>
+              <td class="date-col" [class.overdue-date]="isOverdue(delivery.expectedDelivery, delivery.status)">
+                {{ formatDate(delivery.expectedDelivery) }}
+                <span class="overdue-tag" *ngIf="isOverdue(delivery.expectedDelivery, delivery.status)">
+                  {{ getDaysOverdue(delivery.expectedDelivery) }}d late
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusColor(delivery.status)">
+                  {{ getStatusLabel(delivery.status) }}
+                </span>
+              </td>
+              <td class="progress-col">
+                <div class="progress-wrapper">
+                  <div class="progress-bar">
+                    <div class="progress-fill"
+                         [style.width.%]="getProgressPercent(delivery)"
+                         [class.full]="getProgressPercent(delivery) === 100">
+                    </div>
+                  </div>
+                  <span class="progress-text">
+                    {{ getDeliveredCount(delivery) }}/{{ getTotalCount(delivery) }}
+                  </span>
+                </div>
+              </td>
+              <td class="actions-col">
+                <div class="actions-wrapper">
+                  <button class="action-btn view-btn" (click)="openDetail(delivery)" title="View Details">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button class="action-btn deliver-btn"
+                          [disabled]="delivery.status === 'DELIVERED' || isUpdating"
+                          (click)="openConfirmModal(delivery.id, 'full')"
+                          title="Mark as Delivered">
+                    <i class="fas fa-check"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Empty state inside table -->
+            <tr *ngIf="filteredDeliveries.length === 0">
+              <td colspan="10">
+                <div class="empty-state">
+                  <div class="empty-icon">
+                    <i class="fas fa-truck"></i>
+                  </div>
+                  <h3>No deliveries found</h3>
+                  <p *ngIf="filterStatus === 'ALL' && !searchTerm">
+                    No LPOs have been dispatched for delivery yet.
+                  </p>
+                  <p *ngIf="filterStatus !== 'ALL' || searchTerm">
+                    No results match your current filter or search. Try adjusting your criteria.
+                  </p>
+                  <button class="btn-reset-filter" (click)="setFilter('ALL'); searchTerm = ''">
+                    <i class="fas fa-undo-alt"></i> Clear Filters
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /delivery-wrapper -->
+</div><!-- /delivery-container -->
+
+<!-- Detail Slide-in Panel -->
+<div class="detail-overlay" *ngIf="selectedDelivery" (click)="closeDetail()"></div>
+<div class="detail-panel" [class.open]="selectedDelivery !== null" *ngIf="selectedDelivery">
+  <div class="detail-header">
+    <div class="detail-header-left">
+      <div class="detail-icon">
+        <i class="fas fa-truck"></i>
+      </div>
+      <div>
+        <h2>{{ selectedDelivery.lpoNumber }}</h2>
+        <p>{{ selectedDelivery.vendorName }}</p>
+      </div>
+    </div>
+    <button class="btn-close-panel" (click)="closeDetail()">&times;</button>
+  </div>
+
+  <div class="detail-body">
+
+    <!-- Status + Meta -->
+    <div class="detail-meta-grid">
+      <div class="meta-item">
+        <span class="meta-label">Status</span>
+        <span class="status-badge" [ngClass]="getStatusColor(selectedDelivery.status)">
+          {{ getStatusLabel(selectedDelivery.status) }}
+        </span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Request</span>
+        <span class="meta-value">{{ selectedDelivery.requestTitle }}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Ordered Date</span>
+        <span class="meta-value">{{ formatDate(selectedDelivery.orderedDate) }}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Expected Delivery</span>
+        <span class="meta-value" [class.text-danger]="isOverdue(selectedDelivery.expectedDelivery, selectedDelivery.status)">
+          {{ formatDate(selectedDelivery.expectedDelivery) }}
+          <span *ngIf="isOverdue(selectedDelivery.expectedDelivery, selectedDelivery.status)" class="overdue-tag">
+            {{ getDaysOverdue(selectedDelivery.expectedDelivery) }}d overdue
+          </span>
+        </span>
+      </div>
+      <div class="meta-item" *ngIf="selectedDelivery.deliveredDate">
+        <span class="meta-label">Delivered On</span>
+        <span class="meta-value">{{ formatDate(selectedDelivery.deliveredDate) }}</span>
+      </div>
+    </div>
+
+    <!-- Overall Progress -->
+    <div class="detail-progress-section">
+      <div class="detail-progress-header">
+        <span>Overall Delivery Progress</span>
+        <span class="progress-pct">{{ getProgressPercent(selectedDelivery) }}%</span>
+      </div>
+      <div class="progress-bar large">
+        <div class="progress-fill"
+             [style.width.%]="getProgressPercent(selectedDelivery)"
+             [class.full]="getProgressPercent(selectedDelivery) === 100">
+        </div>
+      </div>
+      <div class="progress-counts">
+        <span><i class="fas fa-check-circle text-green"></i> {{ getDeliveredCount(selectedDelivery) }} delivered</span>
+        <span><i class="fas fa-clock text-orange"></i> {{ getTotalCount(selectedDelivery) - getDeliveredCount(selectedDelivery) }} pending</span>
+      </div>
+    </div>
+
+    <!-- Item-by-item Table -->
+    <div class="detail-items-section">
+      <h3 class="detail-section-title">
+        <i class="fas fa-list-ul"></i> Item Breakdown
+      </h3>
+      <div class="items-table-wrapper">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="center-col">Unit</th>
+              <th class="center-col">Ordered</th>
+              <th class="center-col">Delivered</th>
+              <th class="center-col">Remaining</th>
+              <th class="center-col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of selectedDelivery.items">
+              <td class="item-name">{{ item.name }}</td>
+              <td class="center-col">{{ item.unit }}</td>
+              <td class="center-col">{{ item.quantity }}</td>
+              <td class="center-col delivered-qty">{{ item.delivered }}</td>
+              <td class="center-col pending-qty">{{ item.pending }}</td>
+              <td class="center-col">
+                <span class="item-status-dot"
+                      [class.dot-green]="item.pending === 0"
+                      [class.dot-orange]="item.delivered > 0 && item.pending > 0"
+                      [class.dot-gray]="item.delivered === 0">
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="selectedDelivery.items.length === 0">
+              <td colspan="6" class="no-items">No item details available for this LPO.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Action Buttons -->
+  <div class="detail-footer">
+    <button class="btn-panel-secondary" (click)="openConfirmModal(selectedDelivery.id, 'partial')"
+            [disabled]="selectedDelivery.status === 'DELIVERED' || isUpdating">
+      <i class="fas fa-tasks"></i>
+      Mark Partial
+    </button>
+    <button class="btn-panel-primary" (click)="openConfirmModal(selectedDelivery.id, 'full')"
+            [disabled]="selectedDelivery.status === 'DELIVERED' || isUpdating">
+      <i class="fas fa-check-double"></i>
+      Confirm Full Delivery
+    </button>
+  </div>
+</div>
+
+<!-- Confirm Action Modal -->
+<div class="modal-backdrop" *ngIf="showConfirmModal" (click)="showConfirmModal = false">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-header-group">
+        <div class="modal-icon"
+             [style.background]="confirmModalType === 'full' ? 'rgba(24,68,64,0.1)' : 'rgba(245,158,11,0.1)'"
+             [style.color]="confirmModalType === 'full' ? '#184440' : '#d97706'">
+          <i [class]="confirmModalType === 'full' ? 'fas fa-check-double' : 'fas fa-tasks'"></i>
+        </div>
+        <h3>{{ confirmModalType === 'full' ? 'Confirm Full Delivery' : 'Mark Partial Delivery' }}</h3>
+      </div>
+      <button class="btn-close-modal" (click)="showConfirmModal = false">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p *ngIf="confirmModalType === 'full'">
+        This will mark the LPO as <strong>fully delivered</strong>. Confirm that all items have been received in full.
+      </p>
+      <p *ngIf="confirmModalType === 'partial'">
+        This will mark the LPO as <strong>partially delivered</strong>. Use this when some items have arrived but not all.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" (click)="showConfirmModal = false">Cancel</button>
+      <button class="btn-modal-confirm"
+              [style.background]="confirmModalType === 'full' ? 'linear-gradient(135deg,#184440,#1a6b64)' : 'linear-gradient(135deg,#f59e0b,#d97706)'"
+              (click)="confirmAction()"
+              [disabled]="isUpdating">
+        <i class="fas fa-check" *ngIf="!isUpdating"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="isUpdating"></i>
+        {{ confirmModalType === 'full' ? 'Confirm Delivery' : 'Mark Partial' }}
+      </button>
+    </div>
+  </div>
+</div>

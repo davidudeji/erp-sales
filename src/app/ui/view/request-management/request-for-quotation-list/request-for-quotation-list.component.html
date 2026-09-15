@@ -1,0 +1,266 @@
+<div class="procurement-requests-container">
+  <div class="requests-wrapper">
+
+    <!-- Header - Premium #184440 Card -->
+    <div class="dashboard-header">
+      <div class="header-left">
+        <div class="header-badge">
+          <span class="pulse-dot"></span>
+          Live Dashboard
+        </div>
+        <h1 class="page-title">Procurement Command Center</h1>
+        <p class="page-subtitle">Manage, track, and fulfill all procurement requests at a glance</p>
+      </div>
+      <div class="header-actions">
+        <div class="date-range-selector">
+          <button class="range-btn" [class.active]="dateRange === 'week'" (click)="changeDateRange('week')">
+            <i class="fas fa-calendar-week"></i> Week
+          </button>
+          <button class="range-btn" [class.active]="dateRange === 'month'" (click)="changeDateRange('month')">
+            <i class="fas fa-calendar-alt"></i> Month
+          </button>
+          <button class="range-btn" [class.active]="dateRange === 'quarter'" (click)="changeDateRange('quarter')">
+            <i class="fas fa-chart-line"></i> Quarter
+          </button>
+          <button class="range-btn" [class.active]="dateRange === 'year'" (click)="changeDateRange('year')">
+            <i class="fas fa-calendar"></i> Year
+          </button>
+        </div>
+        <div class="header-right">
+          <a [routerLink]="draftsLink" class="btn-secondary-action">
+            Request Drafts
+          </a>
+          <button type="button" class="btn-primary-glow" (click)="openNewRequest()">
+            <i class="fas fa-plus-circle"></i>
+            New Request
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card stat-card-total" (click)="applyFilter('ALL')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper total">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Requests</span>
+            <span class="stat-value">{{ totalElements }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> 8.5%
+              </span>
+              <span class="stat-period">vs last month</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-progress" (click)="applyFilter('PENDING')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper progress">
+            <i class="fas fa-spinner"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">In Progress</span>
+            <span class="stat-value">{{ getInProgressCount() }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> 12.3%
+              </span>
+              <span class="stat-period">active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-delivered" (click)="applyFilter('DELIVERED')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper delivered">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Delivered</span>
+            <span class="stat-value">{{ getDeliveredCount() }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> 15.7%
+              </span>
+              <span class="stat-period">completed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-cancelled" (click)="applyFilter('CANCELLED')">
+        <div class="stat-card-glow"></div>
+        <div class="stat-card-inner">
+          <div class="stat-icon-wrapper cancelled">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Cancelled</span>
+            <span class="stat-value">{{ getCancelledCount() }}</span>
+            <div class="stat-meta">
+              <span class="stat-trend negative">
+                <i class="fas fa-arrow-down"></i> 3.2%
+              </span>
+              <span class="stat-period">voided</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <div class="filter-header">
+        <svg class="filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+        </svg>
+        <h3 class="filter-title">Filter Requests</h3>
+      </div>
+      
+      <form [formGroup]="filterForm" class="filter-form">
+        <div class="filter-field">
+          <label class="filter-label">Status</label>
+          <select formControlName="status" class="filter-select">
+            <option *ngFor="let option of statusOptions" [value]="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="filter-field">
+          <label class="filter-label">Search</label>
+          <input type="text" formControlName="searchTerm" class="filter-input" placeholder="ID, product, description...">
+        </div>
+        
+        <div class="filter-field">
+          <label class="filter-label">From Date</label>
+          <input type="date" formControlName="dateFrom" class="filter-input">
+        </div>
+        
+        <div class="filter-field">
+          <label class="filter-label">To Date</label>
+          <input type="date" formControlName="dateTo" class="filter-input">
+        </div>
+      </form>
+      
+      <div class="filter-actions">
+        <button (click)="resetFilters()" class="btn-secondary">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Requests Table -->
+    <div class="table-container">
+      <div class="table-wrapper">
+        <table class="advance-loans-table" *ngIf="allRows.length > 0">
+          <thead>
+            <tr>
+              <th style="width: 3.5rem;" class="text-center">
+                <input type="checkbox" [checked]="isAllSelected()" [indeterminate]="isSomeSelected() && !isAllSelected()" (change)="toggleSelectAll($event)">
+              </th>
+              <th class="sn-header text-center" style="width: 4rem;">S/N</th>
+              <th class="sortable" (click)="setSort('id')">Request ID <i class="fas" [ngClass]="getSortIcon('id')"></i></th>
+              <th class="sortable" (click)="setSort('procurementType')">Type <i class="fas" [ngClass]="getSortIcon('procurementType')"></i></th>
+              <th class="sortable" (click)="setSort('title')">Product / Order Name <i class="fas" [ngClass]="getSortIcon('title')"></i></th>
+              <th class="sortable text-right" (click)="setSort('quantity')">Qty <i class="fas" [ngClass]="getSortIcon('quantity')"></i></th>
+              <th class="sortable text-right" (click)="setSort('totalBudget')">Budget <i class="fas" [ngClass]="getSortIcon('totalBudget')"></i></th>
+              <th>Delivery</th>
+              <th class="sortable" (click)="setSort('deliveryDeadline')">Deadline <i class="fas" [ngClass]="getSortIcon('deliveryDeadline')"></i></th>
+              <th class="sortable text-center" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
+              <th class="text-center">Ratings</th>
+              <th class="sortable" (click)="setSort('createdAt')">Created <i class="fas" [ngClass]="getSortIcon('createdAt')"></i></th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of allRows; let i = index">
+              <td class="text-center">
+                <input type="checkbox" [checked]="isSelected(row.id)" (change)="toggleSelection(row.id, $event)" (click)="$event.stopPropagation()">
+              </td>
+              <td class="sn-cell text-center">{{ currentPage * pageSize + i + 1 }}</td>
+              <td class="loan-id-cell clickable" (click)="onActionClick({ actionId: 'view', row: row })" style="cursor: pointer; color: #38bdf8; font-weight: 600;">{{ row.id }}</td>
+              <td>
+                <span class="type-badge" [ngClass]="row.procurementType ? row.procurementType.toLowerCase() : 'order'">
+                  {{ row.procurementType ? (row.procurementType | titlecase) : 'Order' }}
+                </span>
+              </td>
+              <td class="employee-name-cell clickable" (click)="onActionClick({ actionId: 'view', row: row })" [title]="row.title" style="cursor: pointer;">{{ truncate(row.title, 30) }}</td>
+              <td class="text-right font-semibold">{{ getRowQuantity(row) }}</td>
+              <td class="text-right font-semibold text-teal-600">{{ formatBudget(row) }}</td>
+              <td class="purpose-cell" [title]="row.deliveryLocation">{{ truncate(row.deliveryLocation, 24) }}</td>
+              <td>{{ formatDate(row.deliveryDeadline) }}</td>
+              <td class="text-center">
+                <span class="status-badge" [ngClass]="getStatusBadgeClass(row.status)">
+                  {{ getStatusLabel(row.status) }}
+                </span>
+              </td>
+              <td class="rating-cell text-center">{{ getRatingDisplay(row) }}</td>
+              <td>{{ formatDate(row.createdAt) }}</td>
+              <td class="actions-col justify-center">
+                <button class="action-btn view-btn" (click)="onActionClick({ actionId: 'view', row: row })" title="View Details">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button *ngIf="row._rowType !== 'ORDER' && canEdit(row)" class="action-btn edit-btn" (click)="onActionClick({ actionId: 'edit', row: row })" title="Edit">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button *ngIf="row._rowType !== 'ORDER' && canCancel(row)" class="action-btn cancel-btn" (click)="onActionClick({ actionId: 'cancel', row: row })" title="Cancel">
+                  <i class="fas fa-times-circle"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="empty-state" *ngIf="allRows.length === 0">
+          <i class="fas fa-inbox"></i>
+          <p>No procurement requests found matching your filters.</p>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-section">
+        <div class="pagination-info">
+          Showing {{ currentPage * pageSize + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }} requests
+        </div>
+        
+        <div class="pagination-controls">
+          <select class="pagination-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+            <option [value]="10">10 per page</option>
+            <option [value]="25">25 per page</option>
+            <option [value]="50">50 per page</option>
+            <option [value]="100">100 per page</option>
+          </select>
+          
+          <div class="pagination-buttons">
+            <button class="pagination-nav" (click)="onPageChange(0)" [disabled]="currentPage === 0">
+              <i class="fas fa-angle-double-left"></i>
+            </button>
+            <button class="pagination-nav" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
+              <i class="fas fa-angle-left"></i>
+            </button>
+            <button *ngFor="let page of getPageNumbers()" 
+                    class="pagination-page" 
+                    [class.active]="page === currentPage"
+                    (click)="onPageChange(page)">
+              {{ page + 1 }}
+            </button>
+            <button class="pagination-nav" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages - 1">
+              <i class="fas fa-angle-right"></i>
+            </button>
+            <button class="pagination-nav" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
+              <i class="fas fa-angle-double-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

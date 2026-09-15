@@ -1,0 +1,134 @@
+<!-- branch-selector.component.html -->
+<div class="ql-selector" [class.ql-selector--compact]="compact" [class.ql-selector--open]="isOpen">
+
+    <!-- Label -->
+    <label class="ql-selector-label" *ngIf="label">{{ label }}</label>
+
+    <!-- Input Container -->
+    <div class="ql-selector-container" [class.ql-selector-container--focused]="isOpen">
+        <!-- Selected Branch Display / Search Input -->
+        <div class="ql-selector-input-wrap" (click)="toggleDropdown()">
+            <!-- Selected Branch -->
+            <ng-container *ngIf="selectedBranch as sb">
+                <div class="ql-selector-selected" *ngIf="!isOpen">
+                    <div class="ql-selector-avatar" [style.background]="getBranchStatusColor(sb.status)">
+                        {{ getInitials(sb.name) }}
+                    </div>
+                    <div class="ql-selector-selected-info">
+                        <span class="ql-selector-selected-name">{{ sb.name }}</span>
+                        <span class="ql-selector-selected-code">{{ sb.code }}</span>
+                    </div>
+                    <span class="ql-selector-status-dot" [style.background]="getBranchStatusColor(sb.status)"></span>
+                </div>
+            </ng-container>
+
+            <!-- Search Input (when open or no selection) -->
+            <input
+                *ngIf="!selectedBranch || isOpen"
+                type="text"
+                class="ql-selector-input"
+                placeholder="{{ placeholder }}"
+                [value]="searchTerm"
+                (input)="onSearchInput($event)"
+                (focus)="openDropdown()"
+                (keydown)="onKeydown($event)"
+                autocomplete="off"
+                [class.ql-selector-input--has-value]="searchTerm.length > 0"
+            />
+
+            <!-- Placeholder when no selection and not open -->
+            <span class="ql-selector-placeholder" *ngIf="!selectedBranch && !isOpen">
+                <i class="fas fa-store"></i>
+                {{ placeholder }}
+            </span>
+
+            <!-- Clear Button -->
+            <button class="ql-selector-clear" *ngIf="selectedBranch && !isOpen" (click)="$event.stopPropagation(); clearSelection()">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <!-- Dropdown Arrow -->
+            <i class="fas fa-chevron-down ql-selector-arrow" [class.ql-selector-arrow--open]="isOpen"></i>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="ql-selector-loading" *ngIf="isLoading">
+            <i class="fas fa-spinner fa-spin"></i>
+        </div>
+    </div>
+
+    <!-- Dropdown -->
+    <div class="ql-selector-dropdown" *ngIf="showDropdown">
+        <div class="ql-selector-dropdown-inner">
+            <!-- Search Input inside dropdown (for mobile) -->
+            <div class="ql-selector-dropdown-search" *ngIf="compact">
+                <i class="fas fa-search"></i>
+                <input
+                    type="text"
+                    class="ql-selector-dropdown-input"
+                    placeholder="Search branches..."
+                    [value]="searchTerm"
+                    (input)="onSearchInput($event)"
+                    autocomplete="off"
+                />
+            </div>
+
+            <!-- Results -->
+            <div class="ql-selector-options" *ngIf="!isLoading">
+                <div *ngFor="let branch of filteredBranches; let i = index"
+                     class="ql-selector-option"
+                     [class.ql-selector-option--selected]="selectedBranch?.id === branch.id"
+                     [class.ql-selector-option--highlighted]="i === highlightedIndex"
+                     [class.ql-selector-option--inactive]="branch.status === 'INACTIVE'"
+                     (click)="selectBranch(branch)"
+                     (mouseenter)="highlightedIndex = i">
+                    
+                    <div class="ql-selector-option-avatar" [style.background]="getBranchStatusColor(branch.status)">
+                        {{ getInitials(branch.name) }}
+                    </div>
+
+                    <div class="ql-selector-option-info">
+                        <div class="ql-selector-option-name">
+                            {{ branch.name }}
+                            <span class="ql-selector-option-code">{{ branch.code }}</span>
+                        </div>
+                        <div class="ql-selector-option-meta">
+                            <span class="ql-selector-option-city">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ branch.location.city }}, {{ branch.location.state }}
+                            </span>
+                            <span class="ql-selector-option-type">{{ getBranchTypeLabel(branch.type) }}</span>
+                        </div>
+                        <div class="ql-selector-option-status" *ngIf="showStatus">
+                            <span class="ql-status-dot" [style.background]="getBranchStatusColor(branch.status)"></span>
+                            {{ getStatusLabel(branch.status) }}
+                        </div>
+                    </div>
+
+                    <i class="fas fa-check ql-selector-option-check" *ngIf="selectedBranch?.id === branch.id"></i>
+                </div>
+
+                <!-- Empty State -->
+                <div class="ql-selector-empty" *ngIf="filteredBranches.length === 0">
+                    <i class="fas fa-store"></i>
+                    <p>No branches found</p>
+                    <span *ngIf="searchTerm">Try adjusting your search</span>
+                </div>
+            </div>
+
+            <!-- Loading state in dropdown -->
+            <div class="ql-selector-loading-dropdown" *ngIf="isLoading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading branches...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="ql-selector-error" *ngIf="error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+        <button (click)="refresh()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
+</div>

@@ -1,0 +1,150 @@
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card-mini" (click)="onNavigateToPerformance()" style="cursor: pointer;">
+        <span class="stat-value">{{ vendor.performanceScore.toFixed(0) }}%</span>
+        <span class="stat-label">Performance Score</span>
+        <div class="stat-bar">
+            <div class="stat-fill" [style.width.%]="vendor.performanceScore"
+                [style.background]="getPerformanceColor(vendor.performanceScore)"></div>
+        </div>
+    </div>
+    <div class="stat-card-mini">
+        <span class="stat-value">{{ vendor.totalProjects || vendor.performanceMetrics?.totalProjects || 0 }}</span>
+        <span class="stat-label">Total Projects</span>
+        <span class="stat-sub">{{ (vendor.winRate || 0).toFixed(0) }}% win rate</span>
+    </div>
+    <div class="stat-card-mini">
+        <span class="stat-value">{{ formatCurrency(vendor.performanceMetrics?.totalRevenue || 0) }}</span>
+        <span class="stat-label">Total Revenue</span>
+        <span class="stat-sub">Lifetime value</span>
+    </div>
+    <div class="stat-card-mini">
+        <span class="stat-value">{{ vendor.averageRating?.toFixed(1) || '—' }}</span>
+        <span class="stat-label">Rating</span>
+        <span class="stat-sub">
+            <i *ngFor="let star of [1,2,3,4,5]" class="fas fa-star"
+                [class.filled]="star <= (vendor.averageRating || 0)"></i>
+        </span>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="overview-grid">
+    <!-- Left Column -->
+    <div class="overview-left">
+        <!-- Company Info -->
+        <div class="info-card">
+            <h3><i class="fas fa-building"></i> Company Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Company Name</span>
+                    <span class="info-value">{{ vendor.companyName }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Registration Number</span>
+                    <span class="info-value">{{ vendor.registrationNumber }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Tax ID</span>
+                    <span class="info-value">{{ vendor.taxId }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Website</span>
+                    <span class="info-value">{{ vendor.website || '—' }}</span>
+                </div>
+                <div class="info-item full-width">
+                    <span class="info-label">Description</span>
+                    <span class="info-value">{{ vendor.description || 'No description provided' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address -->
+        <div class="info-card">
+            <h3><i class="fas fa-map-marker-alt"></i> Address</h3>
+            <div class="info-grid">
+                <div class="info-item full-width">
+                    <span class="info-label">Street</span>
+                    <span class="info-value">{{ vendor.address.street }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">City</span>
+                    <span class="info-value">{{ vendor.address.city }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">State</span>
+                    <span class="info-value">{{ vendor.address.state }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Country</span>
+                    <span class="info-value">{{ vendor.address.country }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Postal Code</span>
+                    <span class="info-value">{{ vendor.address.postalCode }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="overview-right">
+        <!-- Contacts -->
+        <div class="info-card">
+            <h3><i class="fas fa-address-book"></i> Contacts</h3>
+            <div class="contacts-list">
+                <div *ngFor="let contact of vendor.contacts" class="contact-item">
+                    <div class="contact-avatar">{{ contact.name.charAt(0) }}</div>
+                    <div class="contact-info">
+                        <span class="contact-name">
+                            {{ contact.name }}
+                            <span class="contact-primary" *ngIf="contact.isPrimary">Primary</span>
+                        </span>
+                        <span class="contact-role">{{ contact.role }}</span>
+                        <span class="contact-details">
+                            <i class="fas fa-envelope"></i> {{ contact.email }}
+                            <i class="fas fa-phone"></i> {{ contact.phone }}
+                        </span>
+                    </div>
+                </div>
+                <div *ngIf="!vendor.contacts || vendor.contacts.length === 0" class="no-contacts">
+                    No contacts available
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Details -->
+        <div class="info-card">
+            <h3><i class="fas fa-university"></i> Bank Details</h3>
+            <div class="info-grid" *ngIf="vendor.bankDetails">
+                <div class="info-item full-width">
+                    <span class="info-label">Bank Name</span>
+                    <span class="info-value">{{ vendor.bankDetails.bankName || '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Account Number</span>
+                    <span class="info-value">{{ vendor.bankDetails.accountNumber || '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Account Name</span>
+                    <span class="info-value">{{ vendor.bankDetails.accountName || '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">SWIFT Code</span>
+                    <span class="info-value">{{ vendor.bankDetails.swiftCode || '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Verified</span>
+                    <span class="info-value">
+                        <span class="badge-verified" [class.verified]="vendor.bankDetails.verified">
+                            {{ vendor.bankDetails.verified ? '✓ Verified' : 'Pending' }}
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <div *ngIf="!vendor.bankDetails" class="no-bank">
+                No bank details available
+            </div>
+        </div>
+    </div>
+</div>

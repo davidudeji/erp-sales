@@ -1,0 +1,34 @@
+<div class="main">
+<div class="heading">
+    <p>Configure Tax</p>
+</div>
+<div class="content">
+    <label>Select Tax Type<span style="color: red;">*</span></label>
+    <div class="tax-selector">
+        <div class="tax-dropdown">
+          <button class="btn custom-select" (click)="toggleDropdown('Tax')">
+            {{ (getSelectedItem$("Tax") | async) || "Select Tax" }}
+            <span class="arrow"></span>
+          </button>
+          <ul
+            class="custom-options"
+            *ngIf="isDropdownOpen$('Tax') | async"
+          >
+            <li
+              class="custom-option"
+              *ngFor="let item of configureTax"
+              (click)="selectItem('Tax', item)"
+            >
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+      </div>
+</div>
+<div class="footer">
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button color="primary" (click)="saveChanges()">Save Changes</button>
+  </mat-dialog-actions>
+</div>
+</div>

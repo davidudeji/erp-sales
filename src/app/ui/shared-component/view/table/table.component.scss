@@ -1,0 +1,204 @@
+:host {
+  display: block;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-wrapper {
+  border-radius: 12px;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+  border: 1px solid #e6edf2;
+  border-radius: 12px;
+  overflow: hidden;
+  color: #2a3a43;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-thead > tr > th {
+  background: #f4f7f9;
+  color: #224957;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  border-bottom: 1px solid #e6edf2;
+  padding: 0.75rem 0.9rem;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-tbody > tr > td {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid #eef2f6;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-tbody > tr:hover > td {
+  background: #f8fbfc;
+}
+
+:host ::ng-deep .app-data-table.is-striped .p-datatable-tbody > tr:nth-child(even) > td {
+  background: #f9fbfc;
+}
+
+:host ::ng-deep .app-data-table.is-compact .p-datatable-thead > tr > th,
+:host ::ng-deep .app-data-table.is-compact .p-datatable-tbody > tr > td {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95em;
+}
+
+:host ::ng-deep .app-data-table .app-table-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .app-data-table .p-sortable-column-icon {
+  display: inline-flex;
+  margin: 0;
+}
+
+:host ::ng-deep .app-data-table .app-table-select {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #f4f7f9;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-tbody > tr > td.app-table-select {
+  background: #ffffff;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-thead > tr > th.app-table-select {
+  z-index: 4;
+}
+
+:host ::ng-deep .app-data-table .p-checkbox {
+  width: 1.1rem;
+  height: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:host ::ng-deep .app-data-table .p-checkbox .p-checkbox-box {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 6px;
+  border: 1.5px solid #c8d6df;
+  background: #ffffff;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+:host ::ng-deep .app-data-table .p-checkbox .p-checkbox-box.p-focus {
+  box-shadow: 0 0 0 3px rgba(34, 73, 87, 0.15);
+  border-color: #224957;
+}
+
+:host ::ng-deep .app-data-table .p-checkbox .p-checkbox-box.p-highlight {
+  background: #224957;
+  border-color: #224957;
+}
+
+:host ::ng-deep .app-data-table .p-checkbox .p-checkbox-box.p-highlight .p-checkbox-icon {
+  color: #ffffff;
+  font-size: 0.7rem;
+}
+
+:host ::ng-deep .app-data-table .p-checkbox:not(.p-disabled) .p-checkbox-box:hover {
+  border-color: #224957;
+}
+
+:host ::ng-deep .app-data-table .p-checkbox.p-disabled {
+  opacity: 0.55;
+}
+
+:host ::ng-deep .app-data-table.has-selection .app-table-main-col {
+  position: sticky;
+  left: 4rem;
+  z-index: 1;
+  background: #ffffff;
+}
+
+:host ::ng-deep .app-data-table:not(.has-selection) .app-table-main-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #ffffff;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-thead > tr > th.app-table-main-col {
+  z-index: 4;
+  background: #f4f7f9;
+}
+
+:host ::ng-deep .app-data-table .app-table-actions-col {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: #f4f7f9;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-tbody > tr > td.app-table-actions-col {
+  background: #ffffff;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-thead > tr > th.app-table-actions-col {
+  z-index: 4;
+}
+
+:host ::ng-deep .app-data-table .p-datatable-tbody > tr:hover > td.app-table-main-col,
+:host ::ng-deep .app-data-table .p-datatable-tbody > tr:hover > td.app-table-actions-col,
+:host ::ng-deep .app-data-table .p-datatable-tbody > tr:hover > td.app-table-select {
+  background: #f8fbfc;
+}
+
+:host ::ng-deep .app-data-table.is-striped .p-datatable-tbody > tr:nth-child(even) > td.app-table-main-col,
+:host ::ng-deep .app-data-table.is-striped .p-datatable-tbody > tr:nth-child(even) > td.app-table-actions-col,
+:host ::ng-deep .app-data-table.is-striped .p-datatable-tbody > tr:nth-child(even) > td.app-table-select {
+  background: #f9fbfc;
+}
+
+.row-clickable {
+  cursor: pointer;
+}
+
+.app-table-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.app-table-action {
+  border: none;
+  background: #e8f2f7;
+  color: #224957;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.app-table-action:hover {
+  background: #d9e9f1;
+}
+
+.app-table-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.app-table-empty {
+  text-align: center;
+  padding: 1rem;
+  color: #64748b;
+}

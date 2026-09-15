@@ -1,0 +1,356 @@
+<!-- sales-and-transactions-list.component.html -->
+<p-toast position="top-right"></p-toast>
+
+<div class="il-layout">
+
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="il-sidebar">
+
+    <div class="il-sidebar-title">
+      <span>Filters</span>
+      <button class="il-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <!-- Quick search -->
+    <div class="il-filter-section">
+      <div class="il-search-wrap">
+        <i class="fas fa-search il-search-icon"></i>
+        <input type="text" class="il-search-input" placeholder="Search transactions…"
+               [(ngModel)]="searchTerm" (input)="onSearchChange()">
+      </div>
+    </div>
+
+    <!-- Status filters -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Status</div>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="selectedStatus === 'ALL'"
+              (click)="selectedStatus = 'ALL'; onStatusFilterChange()">
+        <i class="fas fa-layer-group"></i>
+        <span>All Transactions</span>
+        <span class="il-count-pill">{{ transactions.length }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="selectedStatus === 'QUOTE_SENT'"
+              (click)="selectedStatus = 'QUOTE_SENT'; onStatusFilterChange()">
+        <i class="fas fa-file-invoice"></i>
+        <span>Quote Sent</span>
+        <span class="il-count-pill il-count-pill--blue">{{ getStatusCount('QUOTE_SENT') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="selectedStatus === 'QUOTE_ACCEPTED' || selectedStatus === 'QUOTE_CONVERTED'"
+              (click)="selectedStatus = 'QUOTE_ACCEPTED'; onStatusFilterChange()">
+        <i class="fas fa-check-circle"></i>
+        <span>Quote Accepted</span>
+        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('QUOTE_ACCEPTED') + getStatusCount('QUOTE_CONVERTED') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="selectedStatus === 'PAYMENT_PENDING'"
+              (click)="selectedStatus = 'PAYMENT_PENDING'; onStatusFilterChange()">
+        <i class="fas fa-clock"></i>
+        <span>Payment Pending</span>
+        <span class="il-count-pill il-count-pill--orange">{{ getStatusCount('PAYMENT_PENDING') + getStatusCount('PAYMENT_IN_PROGRESS') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="selectedStatus === 'PAYMENT_COMPLETED'"
+              (click)="selectedStatus = 'PAYMENT_COMPLETED'; onStatusFilterChange()">
+        <i class="fas fa-check-circle"></i>
+        <span>Payment Completed</span>
+        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('PAYMENT_COMPLETED') + getStatusCount('RECEIPT_GENERATED') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="selectedStatus === 'DISPATCHED'"
+              (click)="selectedStatus = 'DISPATCHED'; onStatusFilterChange()">
+        <i class="fas fa-truck"></i>
+        <span>In Transit</span>
+        <span class="il-count-pill il-count-pill--blue">{{ getStatusCount('DISPATCHED') + getStatusCount('IN_TRANSIT') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="selectedStatus === 'DELIVERED'"
+              (click)="selectedStatus = 'DELIVERED'; onStatusFilterChange()">
+        <i class="fas fa-home"></i>
+        <span>Delivered</span>
+        <span class="il-count-pill il-count-pill--green">{{ getStatusCount('DELIVERED') }}</span>
+      </button>
+      <button class="il-status-btn" type="button"
+              [class.il-status-btn--active]="selectedStatus === 'PAYMENT_FAILED' || selectedStatus === 'QUOTE_REJECTED'"
+              (click)="selectedStatus = 'PAYMENT_FAILED'; onStatusFilterChange()">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>Failed / Rejected</span>
+        <span class="il-count-pill il-count-pill--red">{{ getStatusCount('PAYMENT_FAILED') + getStatusCount('QUOTE_REJECTED') }}</span>
+      </button>
+    </div>
+
+    <!-- Date range -->
+    <div class="il-filter-section">
+      <div class="il-filter-heading">Date Range</div>
+      <div class="il-field">
+        <label class="il-flabel">From</label>
+        <input type="date" class="il-date-input" [(ngModel)]="filters.dateFrom" (change)="applyFilters()">
+      </div>
+      <div class="il-field">
+        <label class="il-flabel">To</label>
+        <input type="date" class="il-date-input" [(ngModel)]="filters.dateTo" (change)="applyFilters()">
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN AREA ══════════════════════════════════════════════════════════ -->
+  <main class="il-main">
+
+    <!-- Top bar -->
+    <div class="il-top-bar">
+      <div class="il-top-bar-left">
+        <h1 class="il-title">Sales & Transactions</h1>
+        <span class="il-total-badge">{{ transactions.length }}</span>
+      </div>
+      <div class="il-top-bar-right">
+        <div class="il-page-size-wrap">
+          <span class="il-page-size-label">Per page</span>
+          <select class="il-page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Insight Banner -->
+    <div class="il-ai-banner" *ngIf="!aiDismissed && (getStatusCount('PAYMENT_PENDING') + getStatusCount('PAYMENT_IN_PROGRESS')) > 0">
+      <div class="il-ai-icon"><i class="fas fa-robot"></i></div>
+      <div class="il-ai-body">
+        <div class="il-ai-title">AI Insight</div>
+        <div class="il-ai-text">
+          <strong>{{ getStatusCount('PAYMENT_PENDING') + getStatusCount('PAYMENT_IN_PROGRESS') }}</strong> transaction{{ (getStatusCount('PAYMENT_PENDING') + getStatusCount('PAYMENT_IN_PROGRESS')) > 1 ? 's are' : ' is' }} pending payment. Automated reminders increase collection rates by 47%.
+        </div>
+      </div>
+      <button type="button" class="il-ai-dismiss" (click)="aiDismissed = true"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Bulk action bar -->
+    <div class="il-bulk-bar" *ngIf="selectedTransactionIds.length > 0">
+      <i class="fas fa-check-square"></i>
+      <span><strong>{{ selectedTransactionIds.length }}</strong> transaction{{ selectedTransactionIds.length > 1 ? 's' : '' }} selected</span>
+      <button type="button" class="il-btn il-btn--danger-sm" (click)="selectedTransactionIds = []">
+        <i class="fas fa-times"></i> Clear
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="il-table-wrap">
+      <table class="il-table">
+        <thead>
+          <tr>
+            <th class="il-th-chk">
+              <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)">
+            </th>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Quote #</th>
+            <th>Amount</th>
+            <th>Payment</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="il-th-actions">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Loading skeleton -->
+        <tbody *ngIf="isLoading">
+          <tr class="il-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="9"><div class="il-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+
+        <!-- Empty state -->
+        <tbody *ngIf="!isLoading && filteredTransactions.length === 0">
+          <tr>
+            <td colspan="9">
+              <div class="il-empty">
+                <i class="fas fa-exchange-alt il-empty-icon"></i>
+                <p class="il-empty-title">No transactions found</p>
+                <p class="il-empty-sub">Adjust your filters or create a new transaction</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="!isLoading && filteredTransactions.length > 0">
+          <tr *ngFor="let tx of filteredTransactions"
+              [class.il-row--overdue]="isPaymentOverdue(tx)"
+              [class.il-row--cancelled]="tx.status === 'QUOTE_REJECTED' || tx.status === 'PAYMENT_FAILED'">
+
+            <td class="il-td-chk">
+              <input type="checkbox" [checked]="isSelected(tx.id)" (change)="toggleSelection(tx.id, $event)">
+            </td>
+
+            <td class="il-td-num">
+              <button type="button" class="il-link" (click)="viewDetails(tx)">
+                {{ tx.orderId || '#' + tx.id }}
+              </button>
+            </td>
+
+            <td class="il-td-client">{{ getCustomerName(tx) }}</td>
+
+            <td class="il-td-num">{{ getQuoteNumber(tx) }}</td>
+
+            <td class="il-td-amount">{{ formatCurrency(tx.totalAmount, tx.currency) }}</td>
+
+            <td>
+              <div class="il-payment-split">
+                <span class="il-paid-val">{{ formatCurrency(tx.paidAmount || 0, tx.currency) }}</span>
+                <span class="il-separator">/</span>
+                <span class="il-due-val" [class.il-due-val--overdue]="tx.balanceDue > 0">
+                  {{ formatCurrency(tx.balanceDue || 0, tx.currency) }}
+                </span>
+              </div>
+            </td>
+
+            <td>
+              <span class="il-status-badge"
+                    [class.il-status-badge--sent]="tx.status === 'QUOTE_SENT' || tx.status === 'INVOICE_SENT'"
+                    [class.il-status-badge--accepted]="tx.status === 'QUOTE_ACCEPTED' || tx.status === 'QUOTE_CONVERTED'"
+                    [class.il-status-badge--pending]="tx.status === 'PAYMENT_PENDING' || tx.status === 'PAYMENT_IN_PROGRESS'"
+                    [class.il-status-badge--paid]="tx.status === 'PAYMENT_COMPLETED' || tx.status === 'RECEIPT_GENERATED'"
+                    [class.il-status-badge--transit]="tx.status === 'DISPATCHED' || tx.status === 'IN_TRANSIT'"
+                    [class.il-status-badge--delivered]="tx.status === 'DELIVERED'"
+                    [class.il-status-badge--overdue]="isPaymentOverdue(tx)"
+                    [class.il-status-badge--cancelled]="tx.status === 'QUOTE_REJECTED' || tx.status === 'PAYMENT_FAILED'">
+                {{ isPaymentOverdue(tx) ? 'Overdue' : formatStatusLabel(tx.status) }}
+              </span>
+            </td>
+
+            <td class="il-td-date">{{ toDate(tx.quoteConvertedDate || tx.orderDate) | date:'dd MMM yyyy' }}</td>
+
+            <td class="il-td-actions">
+              <div class="il-row-actions">
+                <button type="button" class="il-action-btn" (click)="viewDetails(tx)" title="View">
+                  <i class="fas fa-eye"></i> View
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--payment"
+                        *ngIf="tx.balanceDue > 0 && tx.status !== 'QUOTE_REJECTED' && tx.status !== 'PAYMENT_FAILED'"
+                        (click)="openPaymentModal(tx, $event)" title="Record Payment">
+                  <i class="fas fa-credit-card"></i> Pay
+                </button>
+                <button type="button" class="il-action-btn il-action-btn--receipt"
+                        *ngIf="tx.paidAmount > 0"
+                        (click)="openReceiptModal(tx, $event)" title="Receipt">
+                  <i class="fas fa-receipt"></i>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="il-pagination" *ngIf="totalPages > 1">
+      <span>
+        Showing {{ (currentPage - 1) * pageSize + 1 }}–{{ Math.min(currentPage * pageSize, filteredTransactions.length) }} of {{ filteredTransactions.length }}
+      </span>
+      <div class="il-page-btns">
+        <button type="button" class="il-page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="il-page-btn"
+                *ngFor="let p of getPageNumbers()"
+                [class.il-page-btn--active]="p === currentPage"
+                (click)="goToPage(p)">{{ p }}</button>
+        <button type="button" class="il-page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ RECORD PAYMENT MODAL ══════════════════════════════════════════════ -->
+<div class="il-confirm-backdrop" *ngIf="showPaymentModal" (click)="$event.target === $event.currentTarget && closePaymentModal()">
+  <div class="il-confirm-modal" style="max-width:560px;text-align:left;" (click)="$event.stopPropagation()">
+    <div class="il-modal-header">
+      <div class="il-modal-header-left">
+        <i class="fas fa-credit-card" style="color:var(--p);font-size:1.1rem;"></i>
+        <span style="font-weight:700;font-size:16px;color:#1a2535;">Record Payment</span>
+      </div>
+      <button type="button" class="il-modal-close" (click)="closePaymentModal()">&times;</button>
+    </div>
+
+    <div class="il-modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1rem;">
+        <div>
+          <label class="il-flabel">Customer</label>
+          <div style="padding:6px 10px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);font-weight:600;font-size:13px;">
+            {{ getCustomerName(selectedTxForPayment) }}
+          </div>
+        </div>
+        <div>
+          <label class="il-flabel">Order #</label>
+          <div style="padding:6px 10px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);font-weight:600;font-size:13px;color:var(--p);">
+            {{ selectedTxForPayment?.orderId || '#' + selectedTxForPayment?.id }}
+          </div>
+        </div>
+        <div>
+          <label class="il-flabel">Outstanding Balance</label>
+          <div style="padding:6px 10px;background:#fef2f2;border-radius:6px;border:1px solid #fca5a5;font-weight:700;font-size:14px;color:#dc2626;">
+            {{ formatCurrency(selectedTxForPayment?.balanceDue || 0, selectedTxForPayment?.currency) }}
+          </div>
+        </div>
+        <div>
+          <label class="il-flabel">Total Amount</label>
+          <div style="padding:6px 10px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);font-weight:600;font-size:13px;">
+            {{ formatCurrency(selectedTxForPayment?.totalAmount || 0, selectedTxForPayment?.currency) }}
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1rem;">
+        <div>
+          <label class="il-flabel">Payment Date <span style="color:#dc2626;">*</span></label>
+          <input type="date" class="il-date-input" [(ngModel)]="paymentDate" [max]="todayDateString">
+        </div>
+        <div>
+          <label class="il-flabel">Payment Method <span style="color:#dc2626;">*</span></label>
+          <select class="il-date-input" [(ngModel)]="paymentMethod" style="appearance:auto;padding:6px 8px;">
+            <option *ngFor="let opt of paymentMethodOptions" [value]="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+        <div style="grid-column:span 2;">
+          <label class="il-flabel">Amount Received <span style="color:#dc2626;">*</span></label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--muted);font-size:12px;">
+              {{ selectedTxForPayment?.currency || 'NGN' }}
+            </span>
+            <input type="number" class="il-date-input" [(ngModel)]="paymentAmount" 
+                   style="padding-left:3.5rem;font-weight:600;font-size:14px;"
+                   min="1" step="0.01" placeholder="0.00">
+          </div>
+        </div>
+        <div style="grid-column:span 2;">
+          <label class="il-flabel">Reference / Txn ID</label>
+          <input type="text" class="il-date-input" [(ngModel)]="paymentReference" placeholder="e.g. Bank ref, check number">
+        </div>
+        <div style="grid-column:span 2;">
+          <label class="il-flabel">Notes</label>
+          <textarea class="il-date-input" [(ngModel)]="paymentNotes" rows="2" placeholder="Internal memo regarding payment..." style="resize:vertical;min-height:50px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="il-modal-footer">
+      <button type="button" class="il-btn il-btn--ghost-sm" style="padding:8px 20px;font-size:13px;" (click)="closePaymentModal()">Cancel</button>
+      <button type="button" class="il-btn il-btn--primary" [disabled]="isSavingPayment || paymentAmount <= 0" (click)="savePayment()">
+        <i class="fas" [class.fa-spinner]="isSavingPayment" [class.fa-spin]="isSavingPayment" [class.fa-save]="!isSavingPayment"></i>
+        {{ isSavingPayment ? 'Saving...' : 'Record Payment' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RECEIPT MODAL ══════════════════════════════════════════════════════ -->
+<app-payment-receipt *ngIf="showReceiptModal && selectedReceiptTx" [paymentObj]="selectedReceiptTx" (closed)="closeReceiptModal()"></app-payment-receipt>

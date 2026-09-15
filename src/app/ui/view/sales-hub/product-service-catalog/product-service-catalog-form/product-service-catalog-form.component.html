@@ -1,0 +1,522 @@
+<p-toast position="top-right"></p-toast>
+<div class="product-form-container">
+  <div class="form-wrapper">
+
+    <!-- Clean Form Header -->
+    <div class="form-header">
+      <div class="header-back-title-group">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div class="header-content">
+          <div class="header-badge">
+            <i class="fas fa-box"></i>
+            <span>{{ isEditMode ? 'Edit Product' : 'Add New Product' }}</span>
+          </div>
+          <h1 class="header-title">{{ isEditMode ? 'Edit Product' : 'Create New Product' }}</h1>
+          <p class="header-subtitle">
+            {{ isEditMode ? 'Update and manage your product details' : 'Add a new product to your catalog' }}
+          </p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="product-code" *ngIf="isEditMode">
+          <span class="product-label">SKU</span>
+          <strong>{{ productForm.get('sku')?.value || 'N/A' }}</strong>
+        </div>
+        <button type="submit" class="btn-save-header" [disabled]="isSubmitting" (click)="onSubmit()">
+          <i *ngIf="!isSubmitting" class="fas fa-check"></i>
+          <div *ngIf="isSubmitting" class="spinner-mini"></div>
+          {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update' : 'Create') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner-glow"></div>
+      <p>Loading product details...</p>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="productForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" class="product-form">
+      
+      <!-- Two-Column Form Layout -->
+      <div class="form-columns-wrapper">
+        
+        <!-- LEFT COLUMN -->
+        <div class="form-column left-column">
+          
+          <!-- Section 1: General Information -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-info-circle"></i>
+              </div>
+              <h3>General Information</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label required">Name</label>
+                  <input type="text" formControlName="name" class="form-control" placeholder="Enter product name">
+                  <div class="form-error" *ngIf="isFieldInvalid('name')">{{ getFieldError('name') }}</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Description</label>
+                <textarea formControlName="description" class="form-textarea" placeholder="Enter product description" rows="3"></textarea>
+                <div class="form-error" *ngIf="isFieldInvalid('description')">{{ getFieldError('description') }}</div>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label required">Category</label>
+                  <select formControlName="category" class="form-control">
+                    <option value="">Select category</option>
+                    <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                  </select>
+                  <div class="form-error" *ngIf="isFieldInvalid('category')">{{ getFieldError('category') }}</div>
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Measurement Unit</label>
+                  <select formControlName="measurementUnit" class="form-control">
+                    <option *ngFor="let unit of measurementUnits" [value]="unit.name">{{ unit.name }}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Identifiers -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-tags"></i>
+              </div>
+              <h3>Identifiers</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Part Number</label>
+                  <input type="text" formControlName="partNumber" class="form-control" placeholder="Enter part number">
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">SKU</label>
+                  <div class="sku-input-wrapper">
+                    <input type="text" formControlName="sku" class="form-control" placeholder="SKU will be auto-generated" readonly>
+                    <button type="button" class="btn-generate-sku" (click)="generateSku()" title="Generate SKU">
+                      <i class="fas fa-sync-alt"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Code (UPC/Barcode)</label>
+                  <div class="code-input-wrapper">
+                    <input type="text" formControlName="code" class="form-control" placeholder="Enter code (UPC for auto-fill)">
+                    <button type="button" class="btn-auto-fill" (click)="autoFillFromCode()" title="Auto-fill from code">
+                      <i class="fas fa-magic"></i>
+                    </button>
+                  </div>
+                  <small class="form-hint">Enter a product code (e.g., UPC/Barcode 12-13 digits) to auto-fill product information from online databases.</small>
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Reorder Threshold</label>
+                  <input type="number" formControlName="reorderThreshold" class="form-control" placeholder="Enter threshold value">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Weight (in KG)</label>
+                  <input type="number" formControlName="weight" class="form-control" placeholder="Enter weight in kg" step="0.01">
+                </div>
+                <div class="form-group flex-1" style="display: flex; align-items: flex-end; justify-content: flex-end;">
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="availableOnline">
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">Available in Online Store</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Pricing & Inventory -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <h3>Pricing &amp; Inventory</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label required">Cost Price</label>
+                  <div class="currency-input">
+                    <span class="currency-symbol">₦</span>
+                    <input type="number" formControlName="costPrice" class="form-control" placeholder="0.00" step="0.01">
+                  </div>
+                  <div class="form-error" *ngIf="isFieldInvalid('costPrice')">{{ getFieldError('costPrice') }}</div>
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label required">Selling Price</label>
+                  <div class="currency-input">
+                    <span class="currency-symbol">₦</span>
+                    <input type="number" formControlName="sellingPrice" class="form-control" placeholder="0.00" step="0.01">
+                  </div>
+                  <div class="form-error" *ngIf="isFieldInvalid('sellingPrice')">{{ getFieldError('sellingPrice') }}</div>
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label required">Quantity</label>
+                  <input type="number" formControlName="quantity" class="form-control" placeholder="0" min="0">
+                  <div class="form-error" *ngIf="isFieldInvalid('quantity')">{{ getFieldError('quantity') }}</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Expiry Date</label>
+                  <input type="date" formControlName="expiryDate" class="form-control" [min]="todayDateString">
+                  <div class="form-error" *ngIf="isFieldInvalid('expiryDate')">{{ getFieldError('expiryDate') }}</div>
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Discount</label>
+                  <select formControlName="discount" class="form-control">
+                    <option *ngFor="let opt of discountOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Supplier</label>
+                  <div class="supplier-select-wrapper">
+                    <select formControlName="supplier" class="form-control">
+                      <option value="">Select supplier</option>
+                      <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
+                    </select>
+                    <button type="button" class="btn-add-supplier" (click)="addSupplier()">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Tax(es)</label>
+                  <select formControlName="taxes" class="form-control">
+                    <option *ngFor="let tax of taxOptions" [value]="tax">{{ tax }}</option>
+                  </select>
+                </div>
+                <div class="form-group flex-1" style="display: flex; align-items: flex-end;">
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="isComboProduct" (change)="showComboOptions = !showComboOptions">
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">Is this a combo product?</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Combo Options (Conditional) -->
+          <div class="form-card glass" *ngIf="showComboOptions">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-layer-group"></i>
+              </div>
+              <h3>Combo Options</h3>
+            </div>
+            <div class="card-body">
+              <div class="combo-info">
+                <p class="combo-hint">Configure the products that make up this combo product.</p>
+                <button type="button" class="btn-add-item" (click)="openVariantModal()">
+                  <i class="fas fa-plus"></i> Add Combo Item
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Product Variants -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-cubes"></i>
+              </div>
+              <h3>Product Variants</h3>
+              <button type="button" class="btn-add-item" (click)="openVariantModal()">
+                <i class="fas fa-plus"></i> Add Variant
+              </button>
+            </div>
+            <div class="card-body">
+              <div *ngIf="variantsArray.length === 0" class="empty-state-small">
+                <i class="fas fa-cubes" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 0.5rem;"></i>
+                <p>No variants added yet.</p>
+                <span>Click "Add Variant" to create product variations.</span>
+              </div>
+              <div *ngFor="let variant of variantsArray.controls; let i = index" class="variant-item">
+                <div class="variant-info">
+                  <div class="variant-title-row" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+                    <strong class="variant-name" style="color: #0f172a; font-size: 0.95rem;">{{ variant.get('name')?.value || 'Variant ' + (i + 1) }}</strong>
+                    <span class="variant-sku-badge" *ngIf="variant.get('sku')?.value" style="background: #f1f5f9; color: #475569; font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: monospace;">
+                      SKU: {{ variant.get('sku')?.value }}
+                    </span>
+                  </div>
+                  <div class="variant-attributes" *ngIf="variant.get('attributes.color')?.value || variant.get('attributes.size')?.value || variant.get('attributes.material')?.value || variant.get('attributes.model')?.value || variant.get('attributes.year')?.value" style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.35rem;">
+                    <span class="attr-tag" *ngIf="variant.get('attributes.color')?.value" style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Color: {{ variant.get('attributes.color')?.value }}
+                    </span>
+                    <span class="attr-tag" *ngIf="variant.get('attributes.size')?.value" style="background: #fef3c7; color: #92400e; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Size: {{ variant.get('attributes.size')?.value }}
+                    </span>
+                    <span class="attr-tag" *ngIf="variant.get('attributes.material')?.value" style="background: #f3e8ff; color: #6b21a8; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Material: {{ variant.get('attributes.material')?.value }}
+                    </span>
+                    <span class="attr-tag" *ngIf="variant.get('attributes.model')?.value" style="background: #dcfce7; color: #15803d; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Model: {{ variant.get('attributes.model')?.value }}
+                    </span>
+                    <span class="attr-tag" *ngIf="variant.get('attributes.year')?.value" style="background: #ffe4e6; color: #be123c; font-size: 0.75rem; padding: 0.1rem 0.4rem; border-radius: 4px;">
+                      Year: {{ variant.get('attributes.year')?.value }}
+                    </span>
+                  </div>
+                  <div class="variant-meta" style="display: flex; gap: 1rem; font-size: 0.85rem;">
+                    <span class="variant-price" style="font-weight: 700; color: #059669;">₦{{ (variant.get('price')?.value || 0) | number:'1.2-2' }}</span>
+                    <span class="variant-qty" style="color: #64748b;">{{ variant.get('quantity')?.value || 0 }} units in stock</span>
+                  </div>
+                </div>
+                <div class="variant-actions" style="display: flex; gap: 0.35rem;">
+                  <button type="button" class="btn-icon-sm" (click)="openEditVariantModal(i)" title="Edit Variant">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="btn-icon-sm btn-danger" (click)="removeVariant(i)" title="Remove Variant">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="form-column right-column">
+          
+          <!-- Section: Product Images -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-images"></i>
+              </div>
+              <h3>Product Images</h3>
+            </div>
+            <div class="card-body">
+              <!-- Upload Dropzone -->
+              <div class="image-upload-dropzone" (click)="imageInput.click()">
+                <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                <p>Click to upload product images</p>
+                <span>Supports PNG, JPG, JPEG</span>
+              </div>
+              <input type="file" #imageInput accept="image/*" (change)="onImageSelected($event)" multiple style="display: none;">
+
+              <!-- URL Input Group -->
+              <div class="image-url-input-group mt-3">
+                <input type="text" #urlInput class="form-control" placeholder="Or paste image URL...">
+                <button type="button" class="btn-add-url" (click)="addImageUrl(urlInput.value); urlInput.value=''">Add</button>
+              </div>
+
+              <!-- Demo Images Grid -->
+              <div class="demo-images-gallery mt-3">
+                <span class="gallery-title">Quick Add Demo Images:</span>
+                <div class="demo-images-list">
+                  <div class="demo-thumb-container" *ngFor="let demo of demoImages" (click)="addImageUrl(demo.url)" [title]="demo.name">
+                    <img [src]="demo.url" class="demo-thumb">
+                    <span class="demo-label">{{ demo.name }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Image Previews Grid -->
+              <div class="images-preview-grid mt-3" *ngIf="images.length > 0">
+                <div class="image-preview-card" *ngFor="let img of images; let idx = index">
+                  <img [src]="img" class="preview-img">
+                  <button type="button" class="btn-remove-image" (click)="removeImage(idx)" title="Remove Image">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 6: Stock Movement & Pricing -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-exchange-alt"></i>
+              </div>
+              <h3>Stock Movement &amp; Pricing</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Movement Date</label>
+                  <input type="date" formControlName="movementDate" class="form-control" [max]="todayDateString">
+                  <div class="form-error" *ngIf="isFieldInvalid('movementDate')">{{ getFieldError('movementDate') }}</div>
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Quantity</label>
+                  <input type="number" formControlName="movementQuantity" class="form-control" min="1">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">Purchase Price</label>
+                  <div class="currency-input">
+                    <span class="currency-symbol">₦</span>
+                    <input type="text" formControlName="movementPurchasePrice" class="form-control" placeholder="N/A" readonly>
+                  </div>
+                </div>
+                 <div class="form-group flex-1">
+                   <label class="form-label required">Tax</label>
+                   <input type="text" formControlName="movementTax" class="form-control" placeholder="e.g. VAT 7.5%, 5%, etc.">
+                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 7: Reference -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-file-alt"></i>
+              </div>
+              <h3>Reference</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Enter reference (optional)</label>
+                <input type="text" formControlName="reference" class="form-control" placeholder="Enter reference">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 8: Supplier -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-truck"></i>
+              </div>
+              <h3>Supplier</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Select supplier</label>
+                <select formControlName="selectedSupplier" class="form-control">
+                  <option value="">Select supplier</option>
+                  <option *ngFor="let sup of suppliers" [value]="sup.name">{{ sup.name }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 9: Selling Price & Discount Summary -->
+          <div class="form-card glass">
+            <div class="card-header">
+              <div class="card-header-icon">
+                <i class="fas fa-percent"></i>
+              </div>
+              <h3>Pricing Summary</h3>
+            </div>
+            <div class="card-body">
+              <div class="pricing-summary">
+                <div class="summary-item">
+                  <span class="summary-label">Selling Price</span>
+                  <span class="summary-value">{{ (productForm.get('sellingPrice')?.value || 0) | currency:'NGN':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Cost Price</span>
+                  <span class="summary-value">{{ (productForm.get('costPrice')?.value || 0) | currency:'NGN':'symbol':'1.2-2' }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Discount</span>
+                  <span class="summary-value">{{ productForm.get('discount')?.value || 'No Discount' }}</span>
+                </div>
+                <div class="summary-item total">
+                  <span class="summary-label">Current Stock Value</span>
+                  <span class="summary-value grand-total">
+                    {{ ((productForm.get('sellingPrice')?.value || 0) * (productForm.get('quantity')?.value || 0)) | currency:'NGN':'symbol':'1.2-2' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Variant Modal -->
+<div class="modal-overlay" *ngIf="showVariantModal" (click)="showVariantModal = false">
+  <form class="modal-container" (click)="$event.stopPropagation()" [formGroup]="variantModalForm" (ngSubmit)="saveVariant()">
+    <div class="modal-header">
+      <h3><i class="fas fa-cube"></i> {{ currentVariantIndex !== null ? 'Edit Variant' : 'Add Variant' }}</h3>
+      <button type="button" class="modal-close" (click)="showVariantModal = false">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label required">Variant Name</label>
+        <input type="text" formControlName="name" class="form-control" placeholder="e.g., Large, Red, Deluxe">
+        <div class="form-error" *ngIf="variantModalForm.get('name')?.invalid && variantModalForm.get('name')?.touched">
+          Variant name is required
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label">SKU</label>
+          <input type="text" formControlName="sku" class="form-control" placeholder="Variant SKU (auto-generated if empty)">
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label required">Price</label>
+          <div class="currency-input">
+            <span class="currency-symbol">₦</span>
+            <input type="number" formControlName="price" class="form-control" placeholder="0.00" step="0.01">
+          </div>
+          <div class="form-error" *ngIf="variantModalForm.get('price')?.invalid && variantModalForm.get('price')?.touched">
+            Price must be 0 or greater
+          </div>
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label required">Quantity</label>
+          <input type="number" formControlName="quantity" class="form-control" placeholder="0" min="0">
+          <div class="form-error" *ngIf="variantModalForm.get('quantity')?.invalid && variantModalForm.get('quantity')?.touched">
+            Quantity must be 0 or greater
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label">Color</label>
+          <input type="text" formControlName="color" class="form-control" placeholder="e.g., Red">
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label">Size</label>
+          <input type="text" formControlName="size" class="form-control" placeholder="e.g., Large">
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label">Material</label>
+          <input type="text" formControlName="material" class="form-control" placeholder="e.g., Wood">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label">Model</label>
+          <input type="text" formControlName="model" class="form-control" placeholder="e.g., XPS 13, Pro Max">
+        </div>
+        <div class="form-group flex-1">
+          <label class="form-label">Year</label>
+          <input type="text" formControlName="year" class="form-control" placeholder="e.g., 2026">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="showVariantModal = false">Cancel</button>
+      <button type="submit" class="btn-save">
+        {{ currentVariantIndex !== null ? 'Save Changes' : 'Add Variant' }}
+      </button>
+    </div>
+  </form>
+</div>

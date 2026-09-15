@@ -1,0 +1,319 @@
+<!-- ═══════════════════════════════════════════════════
+     PERFORMANCE PAGE
+════════════════════════════════════════════════════ -->
+<div class="min-h-screen bg-[#f5f7f9] px-6 py-8 max-w-[1440px] mx-auto font-sans text-[#1a2c35]" *ngIf="stats">
+
+  <div class="mb-7">
+    <h1 class="text-2xl font-bold text-[#224957] tracking-tight">Performance</h1>
+    <p class="text-sm text-[#5a7380] mt-0.5">Your trading metrics, delivery record and client breakdown</p>
+  </div>
+
+  <!-- ── Top KPI row ────────────────────────────────────── -->
+  <div class="grid grid-cols-4 gap-4 mb-4">
+
+    <!-- Revenue YTD -->
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm col-span-1">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Revenue YTD</span>
+        <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </span>
+      </div>
+      <div class="text-xl font-bold text-[#224957] mb-1">{{ fmtCurrency(stats.totalRevenueYtd) }}</div>
+      <p class="text-xs flex items-center gap-1" [ngClass]="growthColor(stats.revenueGrowthPct)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline *ngIf="stats.revenueGrowthPct >= 0" points="18 15 12 9 6 15"/>
+          <polyline *ngIf="stats.revenueGrowthPct < 0"  points="6 9 12 15 18 9"/>
+        </svg>
+        <strong>{{ stats.revenueGrowthPct >= 0 ? '+' : '' }}{{ stats.revenueGrowthPct }}%</strong> vs prior period
+      </p>
+    </div>
+
+    <!-- Acceptance rate -->
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Acceptance Rate</span>
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+          [ngClass]="[ratingBg(stats.quotationAcceptanceRate), ratingColor(stats.quotationAcceptanceRate)]">
+          %
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-2" [ngClass]="ratingColor(stats.quotationAcceptanceRate)">
+        {{ stats.quotationAcceptanceRate }}%
+      </div>
+      <div class="w-full h-1.5 bg-[#e6edf2] rounded-full overflow-hidden">
+        <div class="h-full rounded-full bg-[#224957]" [style.width.%]="stats.quotationAcceptanceRate"></div>
+      </div>
+      <p class="text-xs text-[#5a7380] mt-1.5">Quotations won vs submitted</p>
+    </div>
+
+    <!-- On-time delivery -->
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">On-Time Delivery</span>
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center"
+          [ngClass]="[ratingBg(stats.onTimeDeliveryRate), ratingColor(stats.onTimeDeliveryRate)]">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight mb-2" [ngClass]="ratingColor(stats.onTimeDeliveryRate)">
+        {{ stats.onTimeDeliveryRate }}%
+      </div>
+      <div class="w-full h-1.5 bg-[#e6edf2] rounded-full overflow-hidden">
+        <div class="h-full rounded-full bg-green-500" [style.width.%]="stats.onTimeDeliveryRate"></div>
+      </div>
+      <p class="text-xs text-[#5a7380] mt-1.5">LPOs delivered on schedule</p>
+    </div>
+
+    <!-- Overall rating -->
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[#5a7380]">Overall Rating</span>
+        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </span>
+      </div>
+      <div class="text-4xl font-bold tracking-tight text-amber-500 mb-2">{{ stats.overallRating }}</div>
+      <div class="flex gap-0.5 mb-1.5">
+        <ng-container *ngFor="let s of stars(stats.overallRating)">
+          <svg width="13" height="13" viewBox="0 0 24 24"
+            [class.text-amber-400]="s.full || s.half"
+            [class.text-[#e6edf2]]="!s.full && !s.half"
+            fill="currentColor">
+            <polygon *ngIf="s.full" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            <path *ngIf="s.half" d="M12 2v15.77l-6.18 3.25 1.18-6.88L2 9.27l6.91-1.01L12 2z" fill="currentColor" class="text-amber-400"/>
+            <path *ngIf="s.half" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77V2z" fill="currentColor" class="text-[#e6edf2]"/>
+            <polygon *ngIf="!s.full && !s.half" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </ng-container>
+      </div>
+      <p class="text-xs text-[#5a7380]">Based on client feedback</p>
+    </div>
+
+  </div>
+
+  <!-- ── Secondary KPI row ──────────────────────────────── -->
+  <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="bg-white border border-[#e6edf2] rounded-xl px-4 py-3.5 shadow-sm flex items-center gap-3">
+      <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+      </span>
+      <div>
+        <p class="text-xs text-[#5a7380]">RFQs Received</p>
+        <p class="text-lg font-bold text-[#1a2c35]">{{ stats.totalRfqsReceived }}</p>
+      </div>
+    </div>
+    <div class="bg-white border border-[#e6edf2] rounded-xl px-4 py-3.5 shadow-sm flex items-center gap-3">
+      <span class="w-8 h-8 rounded-lg bg-[#e8f2f7] text-[#224957] flex items-center justify-center shrink-0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </span>
+      <div>
+        <p class="text-xs text-[#5a7380]">Quotations Submitted</p>
+        <p class="text-lg font-bold text-[#1a2c35]">{{ stats.totalQuotationsSubmitted }}</p>
+      </div>
+    </div>
+    <div class="bg-white border border-[#e6edf2] rounded-xl px-4 py-3.5 shadow-sm flex items-center gap-3">
+      <span class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center shrink-0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      <div>
+        <p class="text-xs text-[#5a7380]">LPOs Accepted</p>
+        <p class="text-lg font-bold text-[#1a2c35]">{{ stats.totalLposAccepted }}</p>
+      </div>
+    </div>
+    <div class="bg-white border border-[#e6edf2] rounded-xl px-4 py-3.5 shadow-sm flex items-center gap-3">
+      <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </span>
+      <div>
+        <p class="text-xs text-[#5a7380]">LPOs Fulfilled</p>
+        <p class="text-lg font-bold text-[#1a2c35]">{{ stats.totalLposFulfilled }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Charts + Top Clients row ──────────────────────── -->
+  <div class="grid grid-cols-3 gap-5 mb-6">
+
+    <!-- Revenue bar chart — 2 cols -->
+    <div class="col-span-2 bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h3 class="text-sm font-semibold text-[#1a2c35]">Monthly Revenue</h3>
+          <p class="text-xs text-[#5a7380] mt-0.5">All-time total: <strong class="text-[#1a2c35]">{{ fmtCurrency(stats.totalRevenueAllTime) }}</strong></p>
+        </div>
+        <span class="text-xs text-[#5a7380] bg-[#f5f7f9] border border-[#e6edf2] px-3 py-1 rounded-full">2026</span>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="flex items-end gap-3 h-40">
+        <div *ngFor="let m of stats.monthlyMetrics"
+          class="flex-1 flex flex-col items-center gap-1.5 group">
+          <!-- Bar -->
+          <div class="relative w-full flex items-end justify-center" style="height: 128px">
+            <div
+              class="w-full rounded-t-lg bg-[#224957] group-hover:bg-[#2d6478] transition-all duration-300 cursor-default"
+              [style.height.%]="barHeight(m.revenue, revenueValues(stats.monthlyMetrics))"
+              [title]="fmtCurrency(m.revenue)"
+            ></div>
+            <!-- Tooltip on hover -->
+            <div class="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 bg-[#1a2c35] text-white text-[10px] font-semibold px-2 py-1 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              {{ fmtCurrencyShort(m.revenue) }}
+            </div>
+          </div>
+          <!-- Month label -->
+          <span class="text-[10px] text-[#5a7380] font-medium">{{ m.month.split(' ')[0] }}</span>
+        </div>
+      </div>
+
+      <!-- Monthly stats below chart -->
+      <div class="grid grid-cols-6 gap-2 mt-4 pt-4 border-t border-[#eef2f6]">
+        <div *ngFor="let m of stats.monthlyMetrics" class="flex flex-col items-center gap-0.5">
+          <span class="text-[10px] text-[#5a7380]">RFQs: <strong class="text-[#1a2c35]">{{ m.rfqs }}</strong></span>
+          <span class="text-[10px] text-[#5a7380]">Won: <strong class="text-[#1a2c35]">{{ m.won }}</strong></span>
+          <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+            [class.bg-green-50]="winRate(m) >= 50"
+            [class.text-green-600]="winRate(m) >= 50"
+            [class.bg-amber-50]="winRate(m) < 50"
+            [class.text-amber-600]="winRate(m) < 50">
+            {{ winRate(m) }}%
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RFQ funnel — 1 col -->
+    <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+      <h3 class="text-sm font-semibold text-[#1a2c35] mb-1">RFQ Funnel</h3>
+      <p class="text-xs text-[#5a7380] mb-5">How RFQs convert to revenue</p>
+
+      <div class="flex flex-col gap-3">
+        <!-- Received -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-[#5a7380] font-medium">RFQs Received</span>
+            <strong class="text-[#1a2c35]">{{ stats.totalRfqsReceived }}</strong>
+          </div>
+          <div class="w-full h-2.5 bg-[#e6edf2] rounded-full overflow-hidden">
+            <div class="h-full bg-blue-400 rounded-full" style="width:100%"></div>
+          </div>
+        </div>
+        <!-- Quoted -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-[#5a7380] font-medium">Quotations Sent</span>
+            <strong class="text-[#1a2c35]">{{ stats.totalQuotationsSubmitted }}</strong>
+          </div>
+          <div class="w-full h-2.5 bg-[#e6edf2] rounded-full overflow-hidden">
+            <div class="h-full bg-[#224957] rounded-full"
+              [style.width.%]="stats.totalRfqsReceived > 0 ? (stats.totalQuotationsSubmitted / stats.totalRfqsReceived * 100) : 0"></div>
+          </div>
+        </div>
+        <!-- LPOs accepted -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-[#5a7380] font-medium">LPOs Accepted</span>
+            <strong class="text-[#1a2c35]">{{ stats.totalLposAccepted }}</strong>
+          </div>
+          <div class="w-full h-2.5 bg-[#e6edf2] rounded-full overflow-hidden">
+            <div class="h-full bg-green-500 rounded-full"
+              [style.width.%]="stats.totalRfqsReceived > 0 ? (stats.totalLposAccepted / stats.totalRfqsReceived * 100) : 0"></div>
+          </div>
+        </div>
+        <!-- Fulfilled -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-[#5a7380] font-medium">Fulfilled</span>
+            <strong class="text-[#1a2c35]">{{ stats.totalLposFulfilled }}</strong>
+          </div>
+          <div class="w-full h-2.5 bg-[#e6edf2] rounded-full overflow-hidden">
+            <div class="h-full bg-green-600 rounded-full"
+              [style.width.%]="stats.totalRfqsReceived > 0 ? (stats.totalLposFulfilled / stats.totalRfqsReceived * 100) : 0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Response metrics -->
+      <div class="mt-5 pt-4 border-t border-[#eef2f6] flex flex-col gap-2.5">
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-[#5a7380]">Avg. Response Time</span>
+          <span class="text-sm font-bold text-[#1a2c35]">{{ stats.avgRfqResponseHours }}h</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-[#5a7380]">RFQ Response Rate</span>
+          <span class="text-sm font-bold" [ngClass]="ratingColor(stats.rfqResponseRate)">{{ stats.rfqResponseRate }}%</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Top Clients ────────────────────────────────────── -->
+  <div class="bg-white border border-[#e6edf2] rounded-2xl p-5 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-sm font-semibold text-[#1a2c35]">Top Clients</h3>
+        <p class="text-xs text-[#5a7380] mt-0.5">By total revenue earned</p>
+      </div>
+    </div>
+
+    <div class="flex flex-col divide-y divide-[#f0f4f7]">
+      <div *ngFor="let client of stats.topClients; let i = index"
+        class="flex items-center gap-4 py-3.5">
+
+        <!-- Rank -->
+        <span class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+          [class.bg-amber-100]="i === 0" [class.text-amber-700]="i === 0"
+          [class.bg-[#e8f2f7]]="i !== 0" [class.text-[#224957]]="i !== 0">
+          {{ i + 1 }}
+        </span>
+
+        <!-- Client name -->
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-[#1a2c35] truncate">{{ client.clientName }}</p>
+          <p class="text-xs text-[#5a7380]">{{ client.totalOrders }} orders</p>
+        </div>
+
+        <!-- Revenue -->
+        <div class="text-right shrink-0 min-w-[120px]">
+          <p class="text-sm font-bold text-[#224957]">{{ fmtCurrency(client.totalRevenue) }}</p>
+        </div>
+
+        <!-- On-time rate -->
+        <div class="flex flex-col items-center shrink-0 min-w-[70px]">
+          <span class="text-[10px] text-[#5a7380] mb-1">On-time</span>
+          <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+            [ngClass]="[ratingBg(client.onTimeRate), ratingColor(client.onTimeRate)]">
+            {{ client.onTimeRate }}%
+          </span>
+        </div>
+
+        <!-- Acceptance rate + mini bar -->
+        <div class="flex flex-col gap-1 shrink-0 min-w-[90px]">
+          <div class="flex justify-between text-[10px]">
+            <span class="text-[#5a7380]">Acceptance</span>
+            <span class="font-semibold" [ngClass]="ratingColor(client.acceptanceRate)">{{ client.acceptanceRate }}%</span>
+          </div>
+          <div class="w-full h-1.5 bg-[#e6edf2] rounded-full overflow-hidden">
+            <div class="h-full rounded-full"
+              [style.width.%]="client.acceptanceRate"
+              [class.bg-green-500]="client.acceptanceRate >= 75"
+              [class.bg-amber-400]="client.acceptanceRate >= 50 && client.acceptanceRate < 75"
+              [class.bg-red-400]="client.acceptanceRate < 50"
+            ></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Loading state -->
+<div *ngIf="!stats" class="min-h-screen bg-[#f5f7f9] flex items-center justify-center">
+  <div class="flex flex-col items-center gap-3 text-[#5a7380]">
+    <div class="w-8 h-8 border-2 border-[#224957] border-t-transparent rounded-full animate-spin"></div>
+    <span class="text-sm">Loading performance data…</span>
+  </div>
+</div>

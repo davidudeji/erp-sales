@@ -1,0 +1,291 @@
+<!-- src/app/ui/view/sales-module/customer-list/customer-list.component.html -->
+<p-toast position="top-right"></p-toast>
+<div class="ql-layout">
+  <!-- Sidebar Filters -->
+  <aside class="ql-sidebar">
+    <div class="ql-sidebar-title">
+      <span>Filters</span>
+      <button class="ql-reset-link" (click)="resetFilters()">Reset all</button>
+    </div>
+
+    <!-- Search -->
+    <div class="ql-filter-section">
+      <div class="ql-search-wrap">
+        <i class="ql-search-icon fas fa-search"></i>
+        <input class="ql-search-input" type="text" [(ngModel)]="filters.searchTerm" (input)="applyFilters()" placeholder="Search customers...">
+      </div>
+    </div>
+
+    <!-- Status Filters -->
+    <div class="ql-filter-section">
+      <div class="ql-filter-heading">Status</div>
+      <button class="ql-status-btn" [class.ql-status-btn--active]="filters.status === 'ALL'" (click)="filters.status = 'ALL'; applyFilters()">
+        <i class="fas fa-users"></i>
+        All Customers
+        <span class="ql-count-pill">{{ stats.total }}</span>
+      </button>
+      <button class="ql-status-btn" [class.ql-status-btn--active]="filters.status === 'ACTIVE'" (click)="filters.status = 'ACTIVE'; applyFilters()">
+        <i class="fas fa-user-check"></i>
+        Active
+        <span class="ql-count-pill ql-count-pill--green">{{ stats.active }}</span>
+      </button>
+      <button class="ql-status-btn" [class.ql-status-btn--active]="filters.status === 'INACTIVE'" (click)="filters.status = 'INACTIVE'; applyFilters()">
+        <i class="fas fa-user-slash"></i>
+        Inactive
+        <span class="ql-count-pill ql-count-pill--gray">{{ stats.inactive }}</span>
+      </button>
+      <button class="ql-status-btn" [class.ql-status-btn--active]="filters.status === 'BLACKLISTED'" (click)="filters.status = 'BLACKLISTED'; applyFilters()">
+        <i class="fas fa-ban"></i>
+        Blacklisted
+        <span class="ql-count-pill ql-count-pill--red">{{ stats.blacklisted }}</span>
+      </button>
+    </div>
+
+    <!-- Date Range -->
+    <div class="ql-filter-section">
+      <div class="ql-filter-heading">Date Range</div>
+      <div class="ql-field">
+        <label class="ql-flabel">From</label>
+        <input class="ql-date-input" type="date" [(ngModel)]="filters.dateFrom" (change)="applyFilters()">
+      </div>
+      <div class="ql-field">
+        <label class="ql-flabel">To</label>
+        <input class="ql-date-input" type="date" [(ngModel)]="filters.dateTo" (change)="applyFilters()">
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="ql-main">
+    <!-- Top Bar -->
+    <div class="ql-top-bar">
+      <div class="ql-top-bar-left">
+        <h1 class="ql-title">Customers</h1>
+        <span class="ql-total-badge">{{ totalElements }} total</span>
+      </div>
+      <div class="ql-top-bar-right">
+        <div class="ql-page-size-wrap">
+          <span style="font-size:12px;color:var(--muted);">Show</span>
+          <select class="ql-page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange(pageSize)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+        <button class="ql-btn ql-btn--primary" (click)="openCustomerModal()">
+          <i class="fas fa-plus"></i> Add Customer
+        </button>
+      </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="ql-bulk-bar" *ngIf="selectedCustomerIds.length > 0">
+      <i class="fas fa-check-circle" style="color:#0b8a5e;"></i>
+      <span>{{ selectedCustomerIds.length }} selected</span>
+      <button class="ql-btn ql-btn--ghost-sm">Bulk Edit</button>
+      <button class="ql-btn ql-btn--danger-sm">Delete Selected</button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="ql-table-wrap">
+      <table class="ql-table">
+        <thead>
+          <tr>
+            <th class="ql-th-chk"><input type="checkbox" disabled></th>
+            <th>Customer</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Spent</th>
+            <th>Orders</th>
+            <th>Since</th>
+            <th class="ql-th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let _ of [].constructor(5)" class="ql-skeleton-row">
+            <td colspan="10"><div class="ql-skeleton-bar"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Customers Table -->
+    <div *ngIf="!isLoading" class="ql-table-wrap">
+      <table class="ql-table">
+        <thead>
+          <tr>
+            <th class="ql-th-chk">
+              <input type="checkbox" (change)="toggleSelectAll($event)" [checked]="isAllSelected()">
+            </th>
+            <th>Customer</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Spent</th>
+            <th>Orders</th>
+            <th>Since</th>
+            <th class="ql-th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let customer of customers; let i = index">
+            <td class="ql-td-chk">
+              <input type="checkbox" [value]="customer.id" (change)="toggleSelection(customer.id, $event)" [checked]="isSelected(customer.id)">
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--p-lt));color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
+                  {{ customer.name.charAt(0).toUpperCase() }}
+                </div>
+                <span style="font-weight:600;">{{ customer.name }}</span>
+              </div>
+            </td>
+            <td>{{ customer.email }}</td>
+            <td>{{ customer.phone }}</td>
+            <td class="ql-td-client">{{ customer.address }}</td>
+            <td>
+              <span class="ql-status-badge" [class]="getStatusBadgeClass(customer.status)">
+                {{ getStatusLabel(customer.status) | titlecase }}
+              </span>
+            </td>
+            <td class="ql-td-amount">{{ formatCurrency(customer.totalSpent) }}</td>
+            <td class="ql-td-num">{{ customer.totalOrders }}</td>
+            <td class="ql-td-date">{{ formatDate(customer.createdAt) }}</td>
+            <td class="ql-td-actions">
+              <div class="ql-row-actions">
+                <button class="ql-action-btn" (click)="openCustomerDetails(customer)" title="View">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="ql-action-btn" (click)="openCustomerModal(customer)" title="Edit">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="ql-action-btn ql-action-btn--convert" (click)="createQuote(customer)" title="Create Quote">
+                  <i class="fas fa-file-invoice"></i>
+                </button>
+                <button class="ql-action-btn ql-action-btn--danger" (click)="deleteCustomer(customer)" title="Delete">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="customers.length === 0">
+            <td colspan="10">
+              <div class="ql-empty">
+                <div class="ql-empty-icon"><i class="fas fa-users"></i></div>
+                <p class="ql-empty-title">No customers found</p>
+                <p class="ql-empty-sub">Add your first customer to get started</p>
+                <button class="ql-btn ql-btn--primary" (click)="openCustomerModal()">
+                  <i class="fas fa-plus"></i> Add Customer
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="ql-pagination" *ngIf="totalPages > 0">
+      <span>
+        Showing {{ currentPage * pageSize + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }} customers
+      </span>
+      <div class="ql-page-btns">
+        <button class="ql-page-btn" (click)="onPageChange(0)" [disabled]="currentPage === 0">
+          <i class="fas fa-angle-double-left"></i>
+        </button>
+        <button class="ql-page-btn" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 0">
+          <i class="fas fa-angle-left"></i>
+        </button>
+        <button *ngFor="let page of getPageNumbers()" class="ql-page-btn" [class.ql-page-btn--active]="page === currentPage" (click)="onPageChange(page)">
+          {{ page + 1 }}
+        </button>
+        <button class="ql-page-btn" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages - 1">
+          <i class="fas fa-angle-right"></i>
+        </button>
+        <button class="ql-page-btn" (click)="onPageChange(totalPages - 1)" [disabled]="currentPage === totalPages - 1">
+          <i class="fas fa-angle-double-right"></i>
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Customer Details Side Panel -->
+<div class="ql-confirm-backdrop" *ngIf="showCustomerDetails" (click)="closeCustomerDetails()">
+  <div class="ql-confirm-modal" style="max-width:500px;text-align:left;" (click)="$event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div>
+        <h3 style="margin:0;font-size:18px;font-weight:800;color:#1a2e2c;">Customer Details</h3>
+        <p style="margin:4px 0 0;font-size:13px;color:#6a8e89;">{{ selectedCustomerDetail?.email }}</p>
+      </div>
+      <button style="background:none;border:none;font-size:24px;cursor:pointer;color:#6a8e89;" (click)="closeCustomerDetails()">×</button>
+    </div>
+    <div style="border-top:1px solid #eef3f2;padding-top:16px;">
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
+        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Name</span>
+        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail?.name }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
+        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Phone</span>
+        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail?.phone }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
+        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Address</span>
+        <span style="font-size:14px;color:#1a2e2c;font-weight:500;text-align:right;">{{ selectedCustomerDetail?.address }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;" *ngIf="selectedCustomerDetail?.taxId">
+        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Tax ID</span>
+        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail?.taxId }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
+        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Status</span>
+        <span>
+          <span class="ql-status-badge" [class]="getStatusBadgeClass(selectedCustomerDetail?.status || '')">
+            {{ getStatusLabel(selectedCustomerDetail?.status || '') | titlecase }}
+          </span>
+        </span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
+        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Total Spent</span>
+        <span style="font-size:14px;color:#1a2e2c;font-weight:700;">{{ selectedCustomerDetail ? formatCurrency(selectedCustomerDetail.totalSpent) : '' }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f4f3;">
+        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Orders</span>
+        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail?.totalOrders }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;">
+        <span style="font-size:13px;font-weight:600;color:#6a8e89;">Since</span>
+        <span style="font-size:14px;color:#1a2e2c;font-weight:500;">{{ selectedCustomerDetail ? formatDate(selectedCustomerDetail.createdAt) : '' }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="ql-confirm-backdrop" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
+  <div class="ql-confirm-modal" (click)="$event.stopPropagation()">
+    <div class="ql-confirm-icon">🗑️</div>
+    <div class="ql-confirm-title">Delete Customer</div>
+    <div class="ql-confirm-sub">
+      Are you sure you want to delete <strong>{{ pendingDeleteCustomerName }}</strong>?<br>
+      This action cannot be undone.
+    </div>
+    <div class="ql-confirm-actions">
+      <button class="ql-btn ql-btn--ghost-sm" (click)="showDeleteModal = false">Cancel</button>
+      <button class="ql-btn ql-btn--danger-sm" (click)="confirmDeleteCustomer()" style="background:#dc2626;border-color:#dc2626;color:white;padding:6px 20px;">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<app-modal *ngIf="showCustomerModal" [header]="selectedCustomerForEdit ? 'Edit Customer' : 'Add New Customer'"
+  (close)="closeCustomerModal()">
+  <app-customer-form [editId]="selectedCustomerForEdit?.id" (saved)="onCustomerSaved()"
+    (cancelled)="closeCustomerModal()"></app-customer-form>
+</app-modal>
+
+<app-quote-form *ngIf="showQuoteModal" [customerId]="selectedCustomerId" (saved)="onQuoteSaved()"
+  (cancelled)="closeQuoteModal()"></app-quote-form>

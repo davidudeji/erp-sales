@@ -1,0 +1,200 @@
+<div class="lg-page">
+
+  <div class="lg-header">
+    <div>
+      <h1 class="lg-title">Delivery Records</h1>
+      <p class="lg-subtitle">Delivered proof, failed exceptions, and pickup confirmations.</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="lg-tabs">
+    <button type="button" class="lg-tab" [class.active]="activeTab === 'delivered'" (click)="setTab('delivered')">
+      Delivered
+      <span class="lg-tab-badge">{{ deliveredAttempts.length }}</span>
+    </button>
+    <button type="button" class="lg-tab" [class.active]="activeTab === 'failed'" (click)="setTab('failed')">
+      Failed
+      <span class="lg-tab-badge" [class.lg-tab-badge--alert]="failedAttempts.length > 0">{{ failedAttempts.length }}</span>
+    </button>
+    <button type="button" class="lg-tab" [class.active]="activeTab === 'pickups'" (click)="setTab('pickups')">
+      Pickups
+      <span class="lg-tab-badge">{{ pickupOrders.length }}</span>
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART A — DELIVERED -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'delivered'">
+
+    <div class="relative w-full max-w-xs mb-4">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9aa7ae]" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m21 21-4.3-4.3"></path>
+      </svg>
+      <input
+        type="text"
+        placeholder="Search order, customer or rider..."
+        class="lg-search-input"
+        [ngModel]="deliveredSearch"
+        (ngModelChange)="onDeliveredSearchChange($event)"
+      />
+    </div>
+
+    <div class="lg-table-card">
+      <app-table [columns]="deliveredColumns" [rows]="deliveredAttempts" [actions]="[]" [rowClickable]="true" (rowClick)="openProof($event)" emptyMessage="">
+        <ng-template appTableBody let-a>
+          <td class="app-table-main-col">
+            <p class="text-[13.5px] font-semibold text-[#14181b]">{{ a.orderDisplayId }}</p>
+          </td>
+          <td class="text-[13px] text-[#14181b]">{{ a.customerName }}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="lg-avatar">{{ a.riderInitials }}</span>
+              <span class="text-[13px] text-[#14181b]">{{ a.riderName }}</span>
+            </div>
+          </td>
+          <td class="text-[12.5px] text-[#566670]">{{ a.attemptedAt | date: 'h:mm a' }} · {{ a.attemptedAt | date: 'MMM d' }}</td>
+          <td><span class="lg-pill lg-pill--success">DELIVERED</span></td>
+          <td (click)="$event.stopPropagation()">
+            <button type="button" class="w-9 h-9 rounded-lg border border-[#e2e8f0] flex items-center justify-center hover:border-[#00a191] transition-colors" (click)="openProof(a)" aria-label="View proof">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#566670" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <path d="M21 15l-5-5L5 21"></path>
+              </svg>
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
+
+      <div *ngIf="!isDeliveredLoading && !deliveredAttempts.length" class="lg-empty">
+        <p class="text-[14px] font-medium text-[#14181b]">No deliveries yet today</p>
+      </div>
+      <div *ngIf="isDeliveredLoading" class="lg-empty">
+        <p class="text-[13px] text-[#9aa7ae]">Loading deliveries…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART B — FAILED / EXCEPTIONS -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'failed'">
+    <div class="lg-table-card">
+      <app-table [columns]="failedColumns" [rows]="failedAttempts" [actions]="[]" [rowClickable]="true" (rowClick)="openOrderDetail($event.orderId)" emptyMessage="">
+        <ng-template appTableBody let-a>
+          <td class="app-table-main-col">
+            <p class="text-[13.5px] font-semibold text-[#14181b]">{{ a.orderDisplayId }}</p>
+          </td>
+          <td class="text-[13px] text-[#14181b]">{{ a.customerName }}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="lg-avatar">{{ a.riderInitials }}</span>
+              <span class="text-[13px] text-[#14181b]">{{ a.riderName }}</span>
+            </div>
+          </td>
+          <td><span class="lg-pill lg-pill--error">{{ getFailureReasonLabel(a.failureReason) }}</span></td>
+          <td class="text-[12.5px] text-[#566670]">{{ timeAgo(a.attemptedAt) }} ago</td>
+          <td>
+            <span *ngIf="a.escalationNote" class="lg-pill lg-pill--alert">Escalated</span>
+          </td>
+          <td class="text-right" (click)="$event.stopPropagation()">
+            <div class="flex justify-end gap-2">
+              <button type="button" class="btn btn-outline btn-sm" (click)="openEscalate(a)" [disabled]="!!a.escalationNote">
+                Escalate
+              </button>
+              <button type="button" class="btn btn-critical-outline btn-sm" (click)="cancel(a)">
+                Cancel
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" (click)="requeue(a)">
+                Requeue
+              </button>
+            </div>
+          </td>
+        </ng-template>
+      </app-table>
+
+      <div *ngIf="!isFailedLoading && !failedAttempts.length" class="lg-empty">
+        <p class="text-[14px] font-medium text-[#14181b]">No failed deliveries — nice work</p>
+      </div>
+      <div *ngIf="isFailedLoading" class="lg-empty">
+        <p class="text-[13px] text-[#9aa7ae]">Loading exceptions…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PART C — PICKUPS -->
+  <!-- ============================================================ -->
+  <div *ngIf="activeTab === 'pickups'">
+    <div class="lg-table-card">
+      <app-table [columns]="pickupColumns" [rows]="pickupOrders" [actions]="[]" [rowClickable]="true" (rowClick)="openOrderDetail($event.id)" emptyMessage="">
+        <ng-template appTableBody let-order>
+          <td class="app-table-main-col">
+            <p class="text-[13.5px] font-semibold text-[#14181b]">{{ order.orderId }}</p>
+          </td>
+          <td class="text-[13px] text-[#14181b]">{{ order.customerName }}</td>
+          <td class="text-[13px] text-[#566670]">{{ order.itemsSummary }}</td>
+          <td class="text-[12.5px] text-[#566670]">{{ timeAgo(order.routedAt || order.paidAt) }} waiting</td>
+          <td class="text-right" (click)="$event.stopPropagation()">
+            <button type="button" class="btn btn-primary btn-sm" (click)="openCollectConfirm(order)">
+              Mark Collected
+            </button>
+          </td>
+        </ng-template>
+      </app-table>
+
+      <div *ngIf="!isPickupsLoading && !pickupOrders.length" class="lg-empty">
+        <p class="text-[14px] font-medium text-[#14181b]">No orders waiting for pickup</p>
+      </div>
+      <div *ngIf="isPickupsLoading" class="lg-empty">
+        <p class="text-[13px] text-[#9aa7ae]">Loading pickups…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Escalate modal -->
+  <app-modal *ngIf="showEscalateModal">
+    <div class="lg-modal">
+      <h3 class="text-[15px] font-semibold text-[#14181b] mb-1">Escalate {{ escalatingAttempt?.orderDisplayId }}</h3>
+      <p class="text-[12.5px] text-[#9aa7ae] mb-4">This flags the order for manual follow-up outside the system (e.g. a phone call). A note is required.</p>
+      <textarea class="lg-textarea" rows="3" placeholder="What follow-up is needed?" [(ngModel)]="escalateNote"></textarea>
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="button" class="btn btn-neutral-outline" (click)="closeEscalate()">Cancel</button>
+        <button type="button" class="btn btn-outline" [disabled]="!escalateNote.trim() || isActioning" (click)="confirmEscalate()">
+          {{ isActioning ? 'Escalating…' : 'Confirm Escalation' }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Mark collected confirm -->
+  <app-modal *ngIf="showCollectConfirm">
+    <div class="lg-modal">
+      <h3 class="text-[15px] font-semibold text-[#14181b] mb-1">Confirm pickup</h3>
+      <p class="text-[12.5px] text-[#9aa7ae] mb-4">
+        Mark {{ collectingOrder?.orderId }} as collected by {{ collectingOrder?.customerName }}.
+      </p>
+      <label class="text-[12.5px] font-semibold text-[#14181b] mb-1.5 block">Verification code / ID <span class="text-[#9aa7ae] font-normal">(optional)</span></label>
+      <input type="text" class="lg-search-input !pl-3" placeholder="e.g. ID last 4 digits" [(ngModel)]="verificationCode" />
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="button" class="btn btn-neutral-outline" (click)="closeCollectConfirm()">Cancel</button>
+        <button type="button" class="btn btn-primary" [disabled]="isActioning" (click)="confirmCollected()">
+          {{ isActioning ? 'Confirming…' : 'Mark Collected' }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Toasts -->
+  <div class="lg-toast-stack">
+    <div *ngFor="let toast of toasts" class="lg-toast">{{ toast.message }}</div>
+  </div>
+
+  <!-- Drawers -->
+  <app-proof-detail-drawer *ngIf="selectedProofAttempt" [attempt]="selectedProofAttempt" (closed)="closeProof()"></app-proof-detail-drawer>
+  <app-order-detail-drawer *ngIf="selectedOrderId" [orderId]="selectedOrderId" (closed)="closeOrderDetail()"></app-order-detail-drawer>
+
+</div>

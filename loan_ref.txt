@@ -1,0 +1,1321 @@
+can you design the table EXACTLY like the one in this html and scss file "<div class="advance-approval-container" data-component="advance-approval">
+  <!-- Messages -->
+  <div class="messages-container" *ngIf="messages.length > 0">
+    <p-messages [(value)]="messages" [enableService]="false"></p-messages>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading advanced loan applications...</p>
+  </div>
+
+  <div *ngIf="!isLoading">
+    <header class="page-header">
+      <div class="header-left">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div class="header-title">
+          <h1><i class="fas fa-clipboard-list"></i> Advanced Loan Applications</h1>
+          <p>Review and manage employee loan applications</p>
+        </div>
+      </div>
+      <button class="refresh-btn" (click)="loadApplications()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </header>
+
+    <!-- Dashboard Stats Cards - New design (no filtering) -->
+    <div class="stats-grid">
+      <!-- Pending Card -->
+      <div class="stat-card">
+        <div class="stat-icon pending-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ statusCounts.pending }}</div>
+          <div class="stat-label">Pending</div>
+        </div>
+      </div>
+
+      <!-- Approved Card -->
+      <div class="stat-card">
+        <div class="stat-icon approved-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ statusCounts.approved }}</div>
+          <div class="stat-label">Approved</div>
+        </div>
+      </div>
+
+      <!-- Active Card -->
+      <div class="stat-card">
+        <div class="stat-icon active-icon">
+          <i class="fas fa-exchange-alt"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ statusCounts.active }}</div>
+          <div class="stat-label">Active</div>
+        </div>
+      </div>
+
+      <!-- Total Balance Card (not clickable) -->
+      <div class="stat-card total-balance-card">
+        <div class="stat-icon balance-icon">
+          <i class="fas fa-scale-balanced"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(totalActiveLoanBalance) }}</div>
+          <div class="stat-label">Total Balance of Active Loans</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="filters-wrapper">
+      <div class="search-section">
+        <div class="search-wrapper">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm" 
+            (ngModelChange)="onSearchTermChange($event)"
+            placeholder="Search by employee name or ID...">
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label>Employee ID</label>
+        <input type="text" [(ngModel)]="filters.employeeId" (ngModelChange)="applyFilters()" placeholder="EMP-001">
+      </div>
+
+      <div class="filter-group">
+        <label>Department</label>
+        <select [(ngModel)]="filters.department" (ngModelChange)="applyFilters()">
+          <option value="">All Departments</option>
+          <option value="Finance">Finance</option>
+          <option value="HR">HR</option>
+          <option value="IT">IT</option>
+          <option value="Sales">Sales</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Operations">Operations</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Status</label>
+        <select [(ngModel)]="filters.status" (ngModelChange)="applyFilters()">
+          <option value="">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="READY_FOR_DISBURSEMENT">Ready for Disbursement</option>
+          <option value="ACTIVE">Active</option>
+          <option value="SKIPPED">Skipped</option>
+          <option value="OVERDUE">Overdue</option>
+          <option value="PAUSED">Paused</option>
+          <option value="DEFAULTED">Defaulted</option>
+          <option value="REJECTED">Rejected</option>
+          <option value="COMPLETED">Completed</option>
+        </select>
+      </div>
+
+      <div class="filter-group date-group">
+        <label>Date From</label>
+        <input type="date" [(ngModel)]="filters.dateFrom" (ngModelChange)="applyFilters()">
+      </div>
+
+      <div class="filter-group date-group">
+        <label>Date To</label>
+        <input type="date" [(ngModel)]="filters.dateTo" (ngModelChange)="applyFilters()">
+      </div>
+
+      <button class="reset-btn" (click)="resetFilters()">
+        <i class="fas fa-undo-alt"></i> Reset
+      </button>
+    </div>
+
+    <!-- Results Count -->
+    <div class="results-info">
+      <span>Showing {{ paginationStart }}–{{ paginationEnd }} of {{ filteredLoans.length }} applications</span>
+    </div>
+
+    <!-- Table -->
+ <div class="table-wrapper">
+  <table class="advance-loans-table" *ngIf="paginatedLoans.length > 0">
+    <thead>
+      <tr>
+        <th class="sortable" (click)="setSort('sn')">S/N <i class="fas" [ngClass]="getSortIcon('sn')"></i></th>
+        <th class="sortable" (click)="setSort('loanId')">Loan ID <i class="fas" [ngClass]="getSortIcon('loanId')"></i></th>
+        <th class="sortable" (click)="setSort('fullName')">Employee <i class="fas" [ngClass]="getSortIcon('fullName')"></i></th>
+        <th class="sortable" (click)="setSort('employeeId')">Employee ID <i class="fas" [ngClass]="getSortIcon('employeeId')"></i></th>
+        <th class="sortable" (click)="setSort('department')">Department <i class="fas" [ngClass]="getSortIcon('department')"></i></th>
+        <th class="sortable" (click)="setSort('amount')">Amount <i class="fas" [ngClass]="getSortIcon('amount')"></i></th>
+        <th>Purpose</th>
+        <th class="sortable" (click)="setSort('interestRate')">Interest <i class="fas" [ngClass]="getSortIcon('interestRate')"></i></th>
+        <th class="sortable" (click)="setSort('totalRepayable')">Total Repayable <i class="fas" [ngClass]="getSortIcon('totalRepayable')"></i></th>
+        <th class="sortable" (click)="setSort('status')">Status <i class="fas" [ngClass]="getSortIcon('status')"></i></th>
+        <th class="sortable" (click)="setSort('requestDate')">Date Submitted <i class="fas" [ngClass]="getSortIcon('requestDate')"></i></th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of paginatedLoans; let i = index">
+        <td class="sn-cell">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+        <td class="loan-id-cell">{{ row.loanCode }}</td>
+        <td class="employee-name-cell">{{ row.fullName }}</td>
+        <td>{{ row.employeeId }}</td>
+        <td>{{ row.departmentDisplay }}</td>
+        <td>{{ formatCurrency(row.loan.amount) }}</td>
+        <td class="purpose-cell">{{ row.purposeDisplay }}</td>
+        <td>{{ row.loan.interestRate || 0 }}%</td>
+        <td>{{ formatCurrency(row.totalRepayable) }}</td>
+        <td>
+          <span class="status-badge" [ngClass]="row.statusClass">
+            {{ row.statusLabel }}
+          </span>
+        </td>
+        <td>{{ row.loan.requestDate | date:'mediumDate' }}</td>
+        <td class="actions-col">
+          <button class="action-btn view-btn" (click)="openLoanDetails(row.loan)" title="View Details">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="action-btn history-btn" (click)="seeLoanHistory(row.employeeId)" title="View Loan History">
+            <i class="fas fa-history"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="empty-state" *ngIf="paginatedLoans.length === 0">
+    <i class="fas fa-inbox"></i>
+    <p>No advance loan applications found matching your filters.</p>
+  </div>
+
+  <div class="pagination-bar" *ngIf="totalPages > 1">
+    <button class="pagination-btn" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">
+      <i class="fas fa-chevron-left"></i> Previous
+    </button>
+    <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
+    <button class="pagination-btn" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">
+      Next <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Approval Modal (unchanged) -->
+<div class="modal-overlay" *ngIf="showApprovalModal" (click)="closeApprovalModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-check-circle"></i> Approve Advance Loan</h2>
+      <button class="close-btn" (click)="closeApprovalModal()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedLoanForApproval as loan">
+      <div class="request-summary">
+        <div class="summary-row"><span>Employee:</span><strong>{{ loan.fullName }}</strong></div>
+        <div class="summary-row"><span>Employee ID:</span><strong>{{ loan.employeeId }}</strong></div>
+        <div class="summary-row"><span>Department:</span><strong>{{ formatDepartmentDisplay(loan.department) }}</strong></div>
+        <div class="summary-row"><span>Loan Code:</span><strong>{{ loan.loanCode || loan.id }}</strong></div>
+        <div class="summary-row"><span>Amount Requested:</span><strong>{{ formatCurrency(loan.amount) }}</strong></div>
+        <div class="summary-row"><span>Purpose:</span><strong>{{ formatPurposeDisplay(loan.purpose) }}</strong></div>
+        <div class="summary-row"><span>Applied On:</span><strong>{{ loan.requestDate | date:'mediumDate' }}</strong></div>
+      </div>
+
+      <div class="info-box warning" *ngIf="getEmployeeInterestRejectionComment(selectedLoanForApproval) as employeeFeedback">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div class="info-text">
+          <strong>Employee rejection comment:</strong>
+          <p>{{ employeeFeedback }}</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Interest Rate (%) <span class="required">*</span></label>
+        <input type="number" [value]="selectedLoanForApproval.defaultInterestRate ?? proposedInterestRate" class="form-input" readonly disabled>
+        <div class="field-hint">Default interest rate for this purpose: <strong>{{ selectedLoanForApproval.defaultInterestRate ?? proposedInterestRate }}%</strong> (immutable, set in Loan Purpose Management)</div>
+      </div>
+
+      <div class="form-group">
+        <label>Late Fee Percentage (%) <span class="required">*</span></label>
+        <input type="number" [(ngModel)]="proposedLateFeePercentage" min="0" step="0.1" class="form-input">
+        <div class="field-hint">Charged once per overdue installment after the grace period.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Late Fee Grace Period (Days) <span class="required">*</span></label>
+        <input type="number" [(ngModel)]="proposedLateFeeGracePeriodDays" min="0" step="1" class="form-input">
+        <div class="field-hint">Number of days after due date before late fee is added.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Repayment Start Date <span class="required">*</span></label>
+        <input type="date" [(ngModel)]="repaymentStartDate" (ngModelChange)="onRepaymentStartDateChange($event)" [min]="getMinRepaymentDate()" class="form-input">
+        <div class="field-hint">Date the first repayment installment is due</div>
+      </div>
+
+      <div class="form-group">
+        <label>Repayment Day of Month <span class="required">*</span></label>
+        <select [(ngModel)]="proposedRepaymentDay" class="form-select">
+          <option *ngFor="let d of availableRepaymentDays" [value]="d">{{ d }}{{ getDayOrdinal(d) }}</option>
+        </select>
+        <div class="field-hint" *ngIf="!repaymentDayWarning && repaymentStartDate">{{ getRepaymentDaySuggestion() }}</div>
+        <div class="field-hint error-text" *ngIf="repaymentDayWarning">{{ repaymentDayWarning }}</div>
+      </div>
+
+      <div class="form-group">
+        <label>Admin Notes (Optional)</label>
+        <textarea [(ngModel)]="approvalNotes" rows="3" placeholder="Add any comments or approval notes…" class="form-textarea"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="closeApprovalModal()">Cancel</button>
+      <button class="approve-btn" (click)="submitApproval()">
+        <i class="fas fa-check"></i> Approve Loan
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-ban"></i> Reject Loan Application</h2>
+      <button class="close-btn" (click)="closeRejectModal()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedLoanForRejection as loan">
+      <div class="request-summary">
+        <div class="summary-row"><span>Employee:</span><strong>{{ loan.fullName }}</strong></div>
+        <div class="summary-row"><span>Employee ID:</span><strong>{{ loan.employeeId }}</strong></div>
+        <div class="summary-row"><span>Department:</span><strong>{{ formatDepartmentDisplay(loan.department) }}</strong></div>
+        <div class="summary-row"><span>Amount:</span><strong>{{ formatCurrency(loan.amount) }}</strong></div>
+        <div class="summary-row"><span>Purpose:</span><strong>{{ formatPurposeDisplay(loan.purpose) }}</strong></div>
+      </div>
+
+      <div class="form-group">
+        <label>Reason for Rejection <span class="required">*</span></label>
+        <textarea [(ngModel)]="rejectionReason" rows="4" placeholder="Please provide a detailed reason. This will be visible to the employee." class="form-textarea"></textarea>
+        <div class="field-hint">This reason is stored on the loan record and shown to the employee.</div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="closeRejectModal()">Cancel</button>
+      <button class="reject-btn" (click)="confirmRejection()">
+        <i class="fas fa-ban"></i> Reject Application
+      </button>
+    </div>
+  </div>
+</div>" "@use '../_loan-status-badges' as loanStatus;
+
+// ==========================================
+// SOLUTION 1: Wrap everything with app-loan-approval-ui selector
+// ==========================================
+app-loan-approval-ui {
+  
+  .advance-approval-container[data-component="advance-approval"] {
+    font-size: 2rem;
+    
+    .messages-container {
+      margin-bottom: 16px;
+    }
+
+    .loading-state {
+      display: grid;
+      place-items: center;
+      gap: 16px;
+      min-height: 300px;
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #e3eef0;
+      padding: 40px;
+
+      .spinner {
+        width: 44px;
+        height: 44px;
+        border: 4px solid #e3eef0;
+        border-top-color: #2E6276;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+
+      p {
+        color: #2E6276;
+        font-size: 1.2rem;
+      }
+    }
+
+    // Header with proper spacing
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 16px 24px;
+      margin-bottom: 20px;
+      background: white;
+      border: 1px solid rgba(46, 98, 118, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(46, 98, 118, 0.08);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      
+      // SOLUTION 3: Override global lm-header-card styles
+      border-left: none !important;
+      border-radius: 16px !important;
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .header-title {
+        h1 {
+          margin: 0;
+          color: #1a4b5c;
+          font-size: 1.6rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+
+          .title-icon {
+            color: #2EB270;
+            font-size: 1.7rem;
+          }
+        }
+
+        p {
+          margin: 4px 0 0;
+          color: #6b8a97;
+          font-size: 1.18rem;
+        }
+      }
+
+      .refresh-btn {
+        background: white;
+        border: 1px solid #d7e7ec;
+        padding: 8px 20px;
+        border-radius: 40px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        color: #2E6276;
+
+        i {
+          font-size: 0.85rem;
+        }
+
+        &:hover {
+          background: #edf6f8;
+          border-color: #2E6276;
+          transform: translateY(-1px);
+        }
+      }
+    }
+
+    // New Stats Grid (4 cards)
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+
+      .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border: 1px solid #e3eef0;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+        
+        // SOLUTION 3: Force override global interference
+        background: white !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 16px !important;
+        border: 1px solid #e3eef0 !important;
+        box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05) !important;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(46, 98, 118, 0.1);
+        }
+
+        .stat-icon {
+          width: 52px;
+          height: 52px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          
+          // SOLUTION 3: Force override global gradient
+          width: 52px !important;
+          height: 52px !important;
+          border-radius: 14px !important;
+
+          i {
+            font-size: 1.4rem;
+            color: white;
+          }
+
+          &.pending-icon {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+            background: linear-gradient(135deg, #f59e0b, #fbbf24) !important;
+          }
+
+          &.approved-icon {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+            background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+          }
+
+          &.active-icon {
+            background: linear-gradient(135deg, #2EB270, #47e797);
+            box-shadow: 0 4px 10px rgba(46, 178, 112, 0.2);
+            background: linear-gradient(135deg, #2EB270, #47e797) !important;
+          }
+
+          &.balance-icon {
+            background: linear-gradient(135deg, #e68a2e, #f0a04b);
+            box-shadow: 0 4px 10px rgba(230, 138, 46, 0.2);
+            background: linear-gradient(135deg, #e68a2e, #f0a04b) !important;
+          }
+        }
+
+        .stat-content {
+          flex: 1;
+
+          .stat-value {
+            display: block;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1a4b5c;
+            line-height: 1.2;
+            margin-bottom: 4px;
+            font-size: 1.6rem !important;
+            font-weight: 700 !important;
+            color: #1a4b5c !important;
+          }
+
+          .stat-label {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #8aadba;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+            font-size: 0.75rem !important;
+            text-transform: uppercase !important;
+            color: #8aadba !important;
+          }
+        }
+      }
+    }
+
+    // Filters section
+    .filters-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+      align-items: flex-end;
+      background: white;
+      border: 1px solid #e3eef0;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+
+      .search-section {
+        flex: 2;
+        min-width: 220px;
+
+        .search-wrapper {
+          position: relative;
+
+          i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8aadba;
+            font-size: 1rem;
+          }
+
+          input {
+            width: 100%;
+            padding: 10px 12px 10px 40px;
+            border: 1px solid #d7e7ec;
+            border-radius: 12px;
+            font-size: 1.04rem;
+            background: white;
+            transition: all 0.2s;
+
+            &:focus {
+              outline: none;
+              border-color: #2E6276;
+              box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+            }
+
+            &::placeholder {
+              color: #b6d0da;
+            }
+          }
+        }
+      }
+
+      .filter-group {
+        flex: 1;
+        min-width: 120px;
+
+        label {
+          display: block;
+          margin-bottom: 6px;
+          font-weight: 600;
+          color: #1a4b5c;
+          font-size: 0.84rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        input, select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #d7e7ec;
+          border-radius: 10px;
+          font-size: 1.02rem;
+          background: white;
+          transition: all 0.2s;
+
+          &:focus {
+            outline: none;
+            border-color: #2E6276;
+            box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+          }
+        }
+
+        &.date-group {
+          min-width: 120px;
+        }
+      }
+
+      .reset-btn {
+        padding: 10px 20px;
+        border-radius: 40px;
+        border: 1px solid #d7e7ec;
+        background: white;
+        color: #2E6276;
+        font-weight: 600;
+        font-size: 0.96rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        height: 42px;
+
+        &:hover {
+          background: #edf6f8;
+          border-color: #2E6276;
+          transform: translateY(-1px);
+        }
+      }
+    }
+
+    // Results info
+    .results-info {
+      margin-bottom: 16px;
+      color: #8aadba;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0 4px;
+    }
+
+    // Background gradient for container
+    background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%);
+    padding: 20px;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    
+    // SOLUTION 3: Force background gradient
+    background: linear-gradient(135deg, #f8feff 0%, #f0f7fa 100%) !important;
+    padding: 20px !important;
+
+    // Table wrapper
+    .table-wrapper {
+      background: white;
+      border-radius: 20px;
+      border: 1px solid #e3eef0;
+      overflow-x: auto;
+      box-shadow: 0 4px 12px rgba(46, 98, 118, 0.05);
+    }
+
+    .advance-loans-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1200px; // Reduced because we removed 2 columns
+
+      th, td {
+        padding: 14px 20px;
+        text-align: left;
+        border-bottom: 1px solid #eef3f6;
+        font-size: 1.04rem;
+      }
+
+      th {
+        background: #f8fcfd;
+        color: #1a4b5c;
+        font-weight: 700;
+        font-size: 0.98rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+
+        &.sortable {
+          cursor: pointer;
+          position: relative;
+          padding-right: 32px;
+          transition: background 0.2s;
+
+          &:hover {
+            background: rgba(46, 98, 118, 0.05);
+          }
+
+          i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8aadba;
+            font-size: 0.75rem;
+          }
+        }
+      }
+
+      td {
+        vertical-align: middle;
+        color: #2c5a6a;
+        font-size: 1.06rem;
+      }
+
+      tr {
+        transition: background 0.15s ease;
+
+        &:hover {
+          background: #f8fcfd;
+        }
+      }
+
+      .sn-cell {
+        font-weight: 600;
+        color: #8aadba;
+        width: 50px;
+        text-align: center;
+      }
+
+      .loan-id-cell {
+        font-family: monospace;
+        font-weight: 600;
+        color: #2E6276;
+        font-size: 1rem;
+      }
+
+      .employee-name-cell {
+        font-weight: 600;
+        color: #1a4b5c;
+      }
+
+      .purpose-cell {
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #6b8a97;
+      }
+
+      // Status badges
+      .status-badge {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 4px 12px !important;
+        border-radius: 999px !important;
+        font-size: 0.96rem !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+        white-space: nowrap !important;
+
+        &.status-pending {
+          background: rgba(245, 158, 11, 0.15) !important;
+          color: #b45309 !important;
+          border: 1px solid rgba(245, 158, 11, 0.3) !important;
+        }
+
+        &.status-approved {
+          background: rgba(59, 130, 246, 0.15) !important;
+          color: #1e40af !important;
+          border: 1px solid rgba(59, 130, 246, 0.3) !important;
+        }
+
+        &.status-ready_for_disbursement {
+          background: rgba(8, 145, 178, 0.15) !important;
+          color: #0891b2 !important;
+          border: 1px solid rgba(8, 145, 178, 0.3) !important;
+        }
+
+        &.status-active {
+          background: rgba(46, 178, 112, 0.15) !important;
+          color: #1e7e4a !important;
+          border: 1px solid rgba(46, 178, 112, 0.3) !important;
+        }
+
+        &.status-rejected {
+          background: rgba(220, 38, 38, 0.15) !important;
+          color: #991b1b !important;
+          border: 1px solid rgba(220, 38, 38, 0.3) !important;
+        }
+
+        &.status-completed {
+          background: rgba(16, 185, 129, 0.15) !important;
+          color: #0a6b4d !important;
+          border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        }
+
+        &.status-skipped {
+          background: rgba(107, 114, 128, 0.15) !important;
+          color: #374151 !important;
+          border: 1px solid rgba(107, 114, 128, 0.3) !important;
+        }
+
+        &.status-overdue {
+          background: rgba(249, 115, 22, 0.15) !important;
+          color: #c2410c !important;
+          border: 1px solid rgba(249, 115, 22, 0.3) !important;
+        }
+
+        &.status-paused {
+          background: rgba(100, 116, 139, 0.15) !important;
+          color: #334155 !important;
+          border: 1px solid rgba(100, 116, 139, 0.3) !important;
+        }
+
+        &.status-defaulted {
+          background: rgba(185, 28, 28, 0.15) !important;
+          color: #7f1d1d !important;
+          border: 1px solid rgba(185, 28, 28, 0.3) !important;
+        }
+      }
+
+      // NEW: Action buttons styled like Grace Period UI
+      .actions-col {
+        white-space: nowrap;
+        display: flex;
+        gap: 8px;
+
+        .action-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+
+          i {
+            font-size: 0.95rem;
+          }
+
+          &.view-btn {
+            color: #2E6276;
+            background: rgba(46, 98, 118, 0.08);
+
+            &:hover {
+              background: rgba(46, 98, 118, 0.16);
+              transform: translateY(-2px);
+            }
+          }
+
+          &.history-btn {
+            color: #6b8a97;
+            background: rgba(107, 114, 128, 0.08);
+
+            &:hover {
+              background: rgba(107, 114, 128, 0.16);
+              transform: translateY(-2px);
+            }
+          }
+        }
+      }
+    }
+
+    // Empty state
+    .empty-state {
+      text-align: center;
+      padding: 60px;
+
+      i {
+        font-size: 3rem;
+        color: #b6d0da;
+        margin-bottom: 16px;
+        display: block;
+      }
+
+      p {
+        color: #8aadba;
+        margin: 0;
+        font-size: 0.9rem;
+      }
+    }
+
+    // Pagination
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 16px;
+      padding: 16px 20px;
+      border-top: 1px solid #eef3f6;
+      background: #fbfdfe;
+      flex-wrap: wrap;
+
+      .pagination-btn {
+        padding: 6px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid #d7e7ec;
+        background: white;
+        color: #2e6276;
+        border-radius: 40px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        &:hover:not(:disabled) {
+          background: #edf6f8;
+          border-color: #2E6276;
+        }
+
+        &:disabled {
+          color: #b6bfc7;
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+      }
+
+      .pagination-info {
+        font-size: 0.9rem;
+        color: #6f8792;
+        font-weight: 500;
+      }
+    }
+
+    // Modal styles (keep existing)
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-container {
+      background: white;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      animation: slideUp 0.25s ease;
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 24px;
+        border-bottom: 1px solid #eef3f6;
+        background: linear-gradient(135deg, #f8fcfd, #ffffff);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+
+        h2 {
+          margin: 0;
+          color: #1a4b5c;
+          font-size: 1.2rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+
+          i {
+            color: #eb9b3f;
+          }
+        }
+
+        .close-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: none;
+          background: #f0f7fa;
+          color: #8aadba;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: #e2edf2;
+            color: #2E6276;
+            transform: rotate(90deg);
+          }
+        }
+      }
+
+      .modal-body {
+        padding: 24px;
+
+        .request-summary {
+          background: #f8fcfd;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 20px;
+          border: 1px solid #e2edf2;
+
+          .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eef3f6;
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            span {
+              color: #8aadba;
+              font-size: 0.8rem;
+              font-weight: 500;
+            }
+
+            strong {
+              color: #1a4b5c;
+              font-size: 0.85rem;
+              font-weight: 600;
+            }
+          }
+        }
+
+        .info-box {
+          display: flex;
+          gap: 12px;
+          padding: 12px;
+          border-radius: 12px;
+          margin-bottom: 20px;
+
+          &.warning {
+            background: #fef8e7;
+            border-left: 3px solid #eb9b3f;
+
+            i {
+              color: #eb9b3f;
+            }
+          }
+
+          i {
+            font-size: 1rem;
+          }
+
+          .info-text {
+            strong {
+              display: block;
+              color: #1a4b5c;
+              font-size: 0.8rem;
+              margin-bottom: 3px;
+            }
+
+            p {
+              margin: 0;
+              color: #6b8a97;
+              font-size: 0.75rem;
+              line-height: 1.4;
+            }
+          }
+        }
+
+        .form-group {
+          margin-bottom: 18px;
+
+          label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #1a4b5c;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+
+            .required {
+              color: #dc3545;
+              margin-left: 3px;
+            }
+          }
+
+          .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d7e7ec;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            background: white;
+            transition: all 0.2s;
+
+            &:focus {
+              outline: none;
+              border-color: #2E6276;
+              box-shadow: 0 0 0 3px rgba(46, 98, 118, 0.1);
+            }
+
+            &:disabled, &[readonly] {
+              background: #f8fcfd;
+              color: #8aadba;
+              cursor: not-allowed;
+            }
+          }
+
+          .form-textarea {
+            resize: vertical;
+            min-height: 70px;
+          }
+
+          .field-hint {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.7rem;
+            color: #8aadba;
+
+            &.error-text {
+              color: #dc3545;
+            }
+
+            i {
+              margin-right: 3px;
+            }
+          }
+        }
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #eef3f6;
+        background: #fafdfe;
+
+        .cancel-btn {
+          padding: 8px 20px;
+          border-radius: 32px;
+          border: 1px solid #d7e7ec;
+          background: white;
+          color: #8aadba;
+          font-weight: 600;
+          font-size: 0.8rem;
+          cursor: pointer;
+          transition: all 0.2s;
+
+          &:hover {
+            background: #f8fcfd;
+            border-color: #bcd9e3;
+          }
+        }
+
+        .approve-btn {
+          padding: 8px 20px;
+          border-radius: 32px;
+          border: none;
+          background: linear-gradient(135deg, #2EB270, #239d60);
+          color: white;
+          font-weight: 600;
+          font-size: 0.8rem;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          box-shadow: 0 2px 8px rgba(46, 178, 112, 0.3);
+          transition: all 0.2s;
+
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(46, 178, 112, 0.4);
+          }
+        }
+
+        .reject-btn {
+          padding: 8px 20px;
+          border-radius: 32px;
+          border: none;
+          background: linear-gradient(135deg, #dc2626, #b91c1c);
+          color: white;
+          font-weight: 600;
+          font-size: 0.8rem;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+          transition: all 0.2s;
+
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ==========================================
+// SOLUTION 3 (continued): Force override global styles
+// ==========================================
+
+// Prevent global from forcing .lm-header-card styles on your header
+app-loan-approval-ui .page-header,
+app-loan-approval-ui .lm-header-card {
+  border-left: none !important;
+  border-radius: 16px !important;
+  
+  h1 {
+    font-size: 1.6rem !important;
+    
+    i {
+      color: #2EB270 !important;
+    }
+  }
+}
+
+// Ensure card icons keep their gradients (override global gradient)
+app-loan-approval-ui .stats-grid .stat-card .stat-icon {
+  background: linear-gradient(135deg, #3a7187 0%, #5aa4c0 60%, #8fc4d8 100%) !important;
+}
+
+app-loan-approval-ui .stats-grid .stat-card {
+  .pending-icon {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24) !important;
+  }
+  .approved-icon {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+  }
+  .active-icon {
+    background: linear-gradient(135deg, #2EB270, #47e797) !important;
+  }
+  .balance-icon {
+    background: linear-gradient(135deg, #e68a2e, #f0a04b) !important;
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  app-loan-approval-ui .advance-approval-container .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  app-loan-approval-ui .advance-approval-container {
+    padding: 12px !important;
+
+    .page-header {
+      flex-direction: column;
+      align-items: stretch;
+
+      .header-left {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .refresh-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .filters-wrapper {
+      flex-direction: column;
+
+      .search-section, .filter-group {
+        width: 100%;
+      }
+
+      .reset-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    .modal-container {
+      width: 95%;
+      max-width: 95%;
+    }
+  }
+}" so i want everything in the product-request-list table to resemble everything in the table from the html i pasted, down to including an "S/N" column at the beginning, the design of the button and more

@@ -1,0 +1,529 @@
+// branch-selector.component.scss
+// ============================================================
+// VARIABLES
+// ============================================================
+
+:host {
+    --p: #184440;
+    --p-lt: #e8f4f2;
+    --bg: #eef3f2;
+    --surface: #ffffff;
+    --border: #ccddd9;
+    --text: #1a2e2c;
+    --muted: #6a8e89;
+    --shadow: 0 1px 8px rgba(24, 68, 64, .08);
+}
+
+// ============================================================
+// SELECTOR CONTAINER
+// ============================================================
+
+.ql-selector {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+
+    &--compact {
+        max-width: 280px;
+    }
+
+    &--open {
+        z-index: 100;
+    }
+}
+
+.ql-selector-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    margin-bottom: 4px;
+}
+
+// ============================================================
+// INPUT CONTAINER
+// ============================================================
+
+.ql-selector-container {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    transition: all .2s ease;
+
+    &--focused {
+        border-color: var(--p);
+        box-shadow: 0 0 0 3px rgba(24, 68, 64, .08);
+    }
+
+    &:hover:not(.ql-selector-container--focused) {
+        border-color: var(--p);
+    }
+}
+
+.ql-selector-input-wrap {
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 4px 8px;
+    cursor: pointer;
+    position: relative;
+}
+
+// ============================================================
+// SELECTED BRANCH
+// ============================================================
+
+.ql-selector-selected {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    padding: 2px 0;
+
+    .ql-selector-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+
+    .ql-selector-selected-info {
+        flex: 1;
+
+        .ql-selector-selected-name {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .ql-selector-selected-code {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            font-family: monospace;
+        }
+    }
+
+    .ql-selector-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+
+.ql-selector-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: transparent;
+    padding: 6px 0;
+    min-width: 60px;
+
+    &::placeholder {
+        color: var(--muted);
+    }
+
+    &--has-value {
+        color: var(--text);
+    }
+}
+
+.ql-selector-placeholder {
+    flex: 1;
+    color: var(--muted);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    i {
+        font-size: 14px;
+        color: var(--muted);
+    }
+}
+
+// ============================================================
+// CLEAR BUTTON
+// ============================================================
+
+.ql-selector-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all .15s;
+    flex-shrink: 0;
+
+    &:hover {
+        background: var(--bg);
+        color: var(--text);
+    }
+
+    i {
+        font-size: 12px;
+    }
+}
+
+// ============================================================
+// ARROW
+// ============================================================
+
+.ql-selector-arrow {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform .25s ease;
+    flex-shrink: 0;
+    margin-left: 4px;
+
+    &--open {
+        transform: rotate(180deg);
+    }
+}
+
+// ============================================================
+// LOADING
+// ============================================================
+
+.ql-selector-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+
+    i {
+        color: var(--p);
+        font-size: 14px;
+    }
+}
+
+// ============================================================
+// DROPDOWN
+// ============================================================
+
+.ql-selector-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .12);
+    overflow: hidden;
+    animation: ql-dropdown-slide .2s ease;
+    z-index: 1000;
+}
+
+@keyframes ql-dropdown-slide {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ql-selector-dropdown-inner {
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+// ============================================================
+// DROPDOWN SEARCH (mobile)
+// ============================================================
+
+.ql-selector-dropdown-search {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f4f3;
+    gap: 8px;
+
+    i {
+        color: var(--muted);
+        font-size: 14px;
+    }
+
+    .ql-selector-dropdown-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        font-family: inherit;
+        background: transparent;
+        color: var(--text);
+
+        &::placeholder {
+            color: var(--muted);
+        }
+    }
+
+    @media (min-width: 769px) {
+        display: none;
+    }
+}
+
+// ============================================================
+// OPTIONS
+// ============================================================
+
+.ql-selector-options {
+    padding: 4px 0;
+}
+
+.ql-selector-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background .15s;
+
+    &:hover {
+        background: var(--bg);
+    }
+
+    &--highlighted {
+        background: var(--bg);
+    }
+
+    &--selected {
+        background: var(--p-lt);
+
+        .ql-selector-option-name {
+            color: var(--p);
+        }
+    }
+
+    &--inactive {
+        opacity: .6;
+    }
+
+    .ql-selector-option-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    .ql-selector-option-info {
+        flex: 1;
+        min-width: 0;
+
+        .ql-selector-option-name {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+
+            .ql-selector-option-code {
+                font-size: 11px;
+                font-weight: 400;
+                color: var(--muted);
+                font-family: monospace;
+            }
+        }
+
+        .ql-selector-option-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--muted);
+
+            .ql-selector-option-city {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+
+                i {
+                    font-size: 10px;
+                }
+            }
+
+            .ql-selector-option-type {
+                font-size: 10px;
+                font-weight: 600;
+                padding: 1px 6px;
+                border-radius: 4px;
+                background: var(--bg);
+            }
+        }
+
+        .ql-selector-option-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+
+            .ql-status-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+        }
+    }
+
+    .ql-selector-option-check {
+        color: var(--p);
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+}
+
+// ============================================================
+// EMPTY STATE
+// ============================================================
+
+.ql-selector-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    color: var(--muted);
+    text-align: center;
+
+    i {
+        font-size: 28px;
+        color: var(--border);
+        margin-bottom: 8px;
+    }
+
+    p {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    span {
+        font-size: 12px;
+    }
+}
+
+// ============================================================
+// LOADING (dropdown)
+// ============================================================
+
+.ql-selector-loading-dropdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    gap: 8px;
+    color: var(--muted);
+
+    i {
+        font-size: 24px;
+        color: var(--p);
+    }
+
+    span {
+        font-size: 13px;
+    }
+}
+
+// ============================================================
+// ERROR
+// ============================================================
+
+.ql-selector-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #dc2626;
+
+    i {
+        font-size: 14px;
+    }
+
+    button {
+        background: none;
+        border: none;
+        color: #dc2626;
+        cursor: pointer;
+        padding: 2px 4px;
+        font-size: 14px;
+
+        &:hover {
+            opacity: .7;
+        }
+    }
+}
+
+// ============================================================
+// RESPONSIVE
+// ============================================================
+
+@media (max-width: 768px) {
+    .ql-selector {
+        max-width: 100%;
+    }
+
+    .ql-selector--compact {
+        max-width: 100%;
+    }
+
+    .ql-selector-dropdown {
+        max-width: 100vw;
+    }
+}
+
+@media (max-width: 480px) {
+    .ql-selector-option {
+        padding: 10px 12px;
+
+        .ql-selector-option-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 11px;
+        }
+
+        .ql-selector-option-info {
+            .ql-selector-option-name {
+                font-size: 13px;
+            }
+        }
+    }
+}

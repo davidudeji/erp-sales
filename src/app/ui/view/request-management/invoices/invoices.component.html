@@ -1,0 +1,90 @@
+<div class="doc-sheet invoice-sheet" *ngIf="request">
+  <div class="doc-header">
+    <div class="doc-logo-section">
+      <div class="app-logo-mark invoice"><i class="fas fa-receipt"></i></div>
+      <div>
+        <h2>COMMERCIAL INVOICE</h2>
+        <p class="ref-num">Invoice Number: {{ invoice?.invoiceNumber || ('INV-2026-' + (getRequestIdSuffix(request.id) || '999')) }}</p>
+      </div>
+    </div>
+    <div class="doc-meta-section">
+      <div class="meta-row">
+        <span class="meta-label">Invoice Date:</span>
+        <span class="meta-value">{{ formatDate(invoice?.issuedDate || invoice?.issueDate || request.updatedAt) }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Due Date:</span>
+        <span class="meta-value">{{ formatDate(invoice?.dueDate || request.deliveryDeadline) }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Reference LPO:</span>
+        <span class="meta-value">{{ invoice?.lpoNumber || ('LPO-2026-' + (getRequestIdSuffix(request.id) || '888')) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="address-split">
+    <div class="address-block">
+      <h5>BILL TO (CLIENT)</h5>
+      <h4>{{ request.customerName || 'Optimax Industries' }}</h4>
+      <p>{{ request.deliveryLocation || 'Corporate Headquarters, Lagos, Nigeria' }}</p>
+    </div>
+    <div class="address-block">
+      <h5>BILL FROM (VENDOR)</h5>
+      <h4>{{ request.selectedVendorName || invoice?.clientName || invoice?.vendorName || 'Apex Sourcing Solutions Ltd' }}</h4>
+      <p>sales&#64;apexsourcing.com | +234-809-123-4567</p>
+    </div>
+  </div>
+
+  <div class="items-table-wrapper">
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th style="width: 5%;">#</th>
+          <th style="width: 55%;">Item Description</th>
+          <th class="text-center" style="width: 10%;">Qty</th>
+          <th class="text-right" style="width: 15%;">Unit Price</th>
+          <th class="text-right" style="width: 15%;">Total Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of request.items; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>
+            <strong>{{ item.name }}</strong>
+            <p *ngIf="item.description" class="item-desc">{{ item.description }}</p>
+          </td>
+          <td class="text-center">{{ item.quantity }}</td>
+          <td class="text-right">{{ formatCurrency((invoice?.items?.[i]?.unitPrice) || (item.estimatedBudget / item.quantity)) }}</td>
+          <td class="text-right">{{ formatCurrency((invoice?.items?.[i]?.totalPrice) || (invoice?.items?.[i]?.total) || item.estimatedBudget) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="doc-footer-summary">
+    <div class="notes-block">
+      <h5>Payment Terms & Notes</h5>
+      <p>Please settle the total amount within the specified due date using the corporate bank transfer details provided in the LPO agreement.</p>
+    </div>
+    <div class="summary-block">
+      <div class="summary-row">
+        <span>Subtotal</span>
+        <span>{{ formatCurrency(invoice?.subtotal || request.totalBudget) }}</span>
+      </div>
+      <div class="summary-row">
+        <span>VAT (7.5%)</span>
+        <span>{{ formatCurrency(invoice?.tax || invoice?.taxAmount || (request.totalBudget * 0.075)) }}</span>
+      </div>
+      <div class="summary-row total">
+        <span>Total Amount Due</span>
+        <span>{{ formatCurrency(invoice?.total || invoice?.totalAmount || (request.totalBudget * 1.075)) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Stamp -->
+  <div class="invoice-stamp" [class.paid]="request.status === 'PAYMENT_CONFIRMED' || request.status === 'DELIVERED'">
+    {{ (request.status === 'PAYMENT_CONFIRMED' || request.status === 'DELIVERED') ? 'PAID' : 'PAYMENT PENDING' }}
+  </div>
+</div>

@@ -1,0 +1,691 @@
+$brand: #184440;
+$brand-light: rgba(24, 68, 64, 0.08);
+$approve: #16a34a;
+$reject: #dc2626;
+$border: #e2e8f0;
+$text: #1e293b;
+$muted: #64748b;
+$bg: #f8fafc;
+
+/* ── Page ─────────────────────────────────────────────── */
+.ai-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: $bg;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Header ───────────────────────────────────────────── */
+.ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem;
+  background: linear-gradient(135deg, #0f2a28 0%, $brand 100%);
+  border-radius: 16px;
+  margin: 1.25rem 1.25rem 0;
+  box-shadow: 0 4px 20px rgba(24, 68, 64, 0.2);
+}
+
+.ai-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ai-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.65);
+}
+
+.ai-stat { text-align: right; }
+
+.ai-stat-num {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.ai-stat-label {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Filters ──────────────────────────────────────────── */
+.ai-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  flex-wrap: wrap;
+}
+
+.ai-search {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.55rem 1rem;
+  border: 1.5px solid $border;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  background: #fff;
+  color: $text;
+  outline: none;
+  transition: border-color 0.2s;
+  &:focus { border-color: $brand; }
+}
+
+.ai-type-tabs { display: flex; gap: 0.4rem; }
+
+.ai-type-btn {
+  padding: 0.45rem 1rem;
+  border: 1.5px solid $border;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: $muted;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { border-color: $brand; color: $brand; }
+  &.active { background: $brand; border-color: $brand; color: #fff; }
+}
+
+/* ── Body: split ──────────────────────────────────────── */
+.ai-body {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 0;
+  margin: 0 1.25rem 1.25rem;
+  border: 1px solid $border;
+  border-radius: 16px;
+  background: #fff;
+  min-height: 600px;
+  height: 600px;
+  overflow: hidden;
+}
+
+/* ── Left List ────────────────────────────────────────── */
+.ai-list {
+  border-right: 1px solid $border;
+  overflow-y: auto;
+  background: $bg;
+}
+
+.ai-loading, .ai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: $muted;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  i { font-size: 2rem; color: #cbd5e1; }
+}
+
+.ai-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid $border;
+  border-top-color: $brand;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Cards ────────────────────────────────────────────── */
+.ai-card {
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid $border;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: rgba(24,68,64,0.04); }
+  &.active { background: $brand-light; border-left: 3px solid $brand; }
+}
+
+.ai-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.ai-card-id { font-size: 0.72rem; font-weight: 600; color: $muted; }
+
+.ai-card-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: $text;
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
+}
+
+.ai-card-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.74rem;
+  color: $muted;
+  margin-bottom: 0.4rem;
+  span { display: flex; align-items: center; gap: 0.25rem; }
+  i { font-size: 0.65rem; }
+}
+
+.ai-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+  margin-top: 0.4rem;
+}
+
+.ai-budget { font-weight: 700; color: $brand; }
+.ai-date   { color: $muted; }
+
+/* Urgency badges */
+.ai-urgency {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  &.urgency-critical { background: #fee2e2; color: $reject; }
+  &.urgency-high     { background: #fef3c7; color: #b45309; }
+  &.urgency-normal   { background: #f0fdf4; color: $approve; }
+}
+
+/* Mini stage dots */
+.ai-mini-progress {
+  display: flex;
+  gap: 4px;
+  margin: 0.4rem 0 0.1rem;
+}
+
+.ai-mini-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  &.dot-done     { background: $approve; }
+  &.dot-rejected { background: $reject; }
+  &.dot-active   { background: $brand; box-shadow: 0 0 0 2px rgba(24,68,64,0.25); }
+  &.dot-waiting  { background: #cbd5e1; }
+}
+
+/* ── Right Detail ─────────────────────────────────────── */
+.ai-detail {
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ai-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.ai-detail-id {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $muted;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.ai-detail-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: $text;
+  line-height: 1.3;
+}
+
+.ai-status-badge {
+  white-space: nowrap;
+  padding: 0.35rem 0.9rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  &.pending  { background: #fef3c7; color: #b45309; }
+  &.approved { background: #dcfce7; color: $approve; }
+  &.rejected { background: #fee2e2; color: $reject; }
+}
+
+/* Summary row */
+.ai-summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.ai-summary-card {
+  background: $bg;
+  border: 1px solid $border;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.ai-summary-label {
+  font-size: 0.72rem;
+  color: $muted;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ai-summary-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $text;
+}
+
+/* Sections */
+.ai-section { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.ai-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: $muted;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid $border;
+}
+
+.ai-stage-badge {
+  background: $brand-light;
+  color: $brand;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 99px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ai-description { margin: 0; font-size: 0.88rem; color: $text; line-height: 1.6; }
+
+/* Progress bar */
+.ai-progress-bar {
+  height: 6px;
+  background: $border;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.ai-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, $brand, $approve);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+/* Stages list */
+.ai-stages { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.ai-stage-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1.5px solid $border;
+  transition: all 0.15s;
+  background: #fff;
+
+  &.active  { border-color: $brand; background: $brand-light; }
+  &.done    { border-color: #d1fae5; background: #f0fdf4; }
+  &.waiting { opacity: 0.6; }
+}
+
+.ai-stage-icon {
+  width: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.stage-icon-approved { color: $approve; font-size: 1rem; }
+.stage-icon-rejected { color: $reject; font-size: 1rem; }
+.stage-icon-active   { color: $brand; font-size: 1rem; }
+.stage-icon-waiting  { color: #cbd5e1; font-size: 1rem; }
+
+.ai-stage-body { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
+
+.ai-stage-name {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: $text;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ai-stage-role {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: $muted;
+  background: $bg;
+  border: 1px solid $border;
+  border-radius: 4px;
+  padding: 0 0.4rem;
+}
+
+.ai-required-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #b45309;
+  border-radius: 99px;
+  padding: 0.1rem 0.45rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ai-stage-meta {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  color: $muted;
+}
+
+.ai-stage-comment {
+  font-style: italic;
+  color: $muted;
+}
+
+.ai-stage-status-chip {
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.2rem;
+
+  &.chip-approved        { background: #dcfce7; color: $approve; }
+  &.chip-rejected        { background: #fee2e2; color: $reject; }
+  &.chip-pending         { background: #fef3c7; color: #b45309; }
+  &.chip-skipped         { background: #f1f5f9; color: $muted; }
+}
+
+/* No-stages placeholder */
+.ai-no-stages {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  color: $muted;
+  font-style: italic;
+  padding: 0.5rem 0;
+  i { color: #93c5fd; }
+}
+
+/* Current approver highlight */
+.ai-current-approver {
+  padding: 0.9rem 1.1rem;
+  background: $brand-light;
+  border-radius: 12px;
+  border: 1.5px solid rgba(24,68,64,0.15);
+}
+
+.ai-approver-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: $brand;
+  margin-bottom: 0.3rem;
+}
+
+.ai-approver-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $brand;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  i { font-size: 0.9rem; }
+}
+
+.ai-approver-role {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: $muted;
+}
+
+/* Items table */
+.ai-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+
+  th {
+    padding: 0.55rem 0.75rem;
+    background: $bg;
+    font-weight: 600;
+    color: $muted;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 2px solid $border;
+  }
+
+  td {
+    padding: 0.6rem 0.75rem;
+    color: $text;
+    border-bottom: 1px solid $border;
+  }
+
+  tfoot td {
+    border-top: 2px solid $border;
+    border-bottom: none;
+    background: $bg;
+  }
+
+  .text-right { text-align: right; }
+}
+
+.ai-total-label { font-weight: 600; color: $muted; font-size: 0.82rem; }
+.ai-total-val   { font-weight: 800; color: $brand; font-size: 0.95rem; }
+
+/* Info grid */
+.ai-info-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.ai-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid $border;
+  font-size: 0.85rem;
+  &:last-child { border-bottom: none; }
+}
+
+.ai-info-label { color: $muted; font-weight: 500; }
+.ai-info-val   { color: $text; font-weight: 600; }
+
+/* Action buttons */
+.ai-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid $border;
+  margin-top: auto;
+}
+
+.ai-btn-reject, .ai-btn-approve {
+  flex: 1;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.15s;
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.ai-btn-reject  {
+  background: #fee2e2;
+  color: $reject;
+  &:not(:disabled):hover { background: $reject; color: #fff; }
+}
+
+.ai-btn-approve {
+  background: #dcfce7;
+  color: $approve;
+  &:not(:disabled):hover { background: $approve; color: #fff; }
+}
+
+/* Empty detail state */
+.ai-no-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: $muted;
+  gap: 0.75rem;
+  i { font-size: 2.5rem; color: #cbd5e1; }
+  p { font-size: 0.9rem; margin: 0; }
+}
+
+/* ── Modals ───────────────────────────────────────────── */
+.ai-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } }
+
+.ai-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+}
+
+.ai-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1.25rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  i { font-size: 1.2rem; }
+  h3 { margin: 0; }
+  &.approve { background: #f0fdf4; color: $approve; }
+  &.reject  { background: #fef2f2; color: $reject; }
+}
+
+.ai-modal-body {
+  padding: 1.25rem 1.5rem;
+  p { margin: 0 0 0.5rem; font-size: 0.9rem; color: $text; }
+}
+
+.ai-modal-note {
+  font-size: 0.8rem !important;
+  color: $muted !important;
+  font-style: italic;
+}
+
+.ai-modal-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $muted;
+  margin: 0.75rem 0 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  .optional { font-weight: 400; text-transform: none; }
+  .required { color: $reject; }
+}
+
+.ai-modal-textarea {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid $border;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: $text;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  &:focus { border-color: $brand; }
+}
+
+.ai-modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid $border;
+  background: $bg;
+}
+
+.ai-modal-cancel {
+  flex: 1;
+  padding: 0.65rem;
+  border: 1.5px solid $border;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: $muted;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:not(:disabled):hover { border-color: $text; color: $text; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.ai-modal-confirm {
+  flex: 2;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.15s;
+  &.approve { background: $approve; color: #fff; &:not(:disabled):hover { background: #15803d; } }
+  &.reject  { background: $reject;  color: #fff; &:not(:disabled):hover { background: #b91c1c; } }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}

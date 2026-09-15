@@ -1,0 +1,754 @@
+<!-- performance-report.component.html -->
+<p-toast position="top-right"></p-toast>
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Reports</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Templates -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Templates</div>
+            <div *ngFor="let template of reportTemplates" class="ql-template-item"
+                (click)="reportForm.patchValue({ type: template.id }); reportForm.patchValue({ name: template.name })">
+                <i class="fas" [class]="template.icon"></i>
+                <span>{{ template.name }}</span>
+            </div>
+        </div>
+
+        <!-- Saved Reports -->
+        <div class="ql-filter-section" *ngIf="savedReports.length > 0">
+            <div class="ql-filter-heading">Saved Reports</div>
+            <div *ngFor="let report of savedReports" class="ql-saved-item"
+                [class.ql-saved-item--active]="report.id === reportId" (click)="selectReport(report.id)">
+                <div class="ql-saved-icon">
+                    <i class="fas" [class]="getReportTypeIcon(report.type)"></i>
+                </div>
+                <div class="ql-saved-info">
+                    <span class="ql-saved-name">{{ report.name }}</span>
+                    <span class="ql-saved-date">{{ formatDate(report.createdAt) }}</span>
+                </div>
+                <button class="ql-saved-delete" (click)="$event.stopPropagation(); deleteReport(report.id)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="setActiveTab('builder')">
+                <i class="fas fa-plus"></i> New Report
+            </button>
+            <button class="ql-sidebar-action" (click)="setActiveTab('saved')">
+                <i class="fas fa-folder"></i> Saved Reports
+            </button>
+            <button class="ql-sidebar-action" (click)="openScheduleModal()" *ngIf="reportData">
+                <i class="fas fa-clock"></i> Schedule
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading report data...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="loadData()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- ========================================================
+            BUILDER TAB
+            ======================================================== -->
+            <div *ngIf="activeTab === 'builder'" class="ql-builder-container">
+                <div class="ql-builder-header">
+                    <h2><i class="fas fa-file-alt"></i> {{ isEditing ? 'Edit Report' : 'Create New Report' }}</h2>
+                    <p class="ql-builder-subtitle">Configure your report parameters and generate insights</p>
+                </div>
+
+                <div class="ql-builder-grid">
+                    <!-- Left: Form -->
+                    <div class="ql-builder-form">
+                        <form [formGroup]="reportForm" (ngSubmit)="generateReport()">
+                            <!-- Basic Info -->
+                            <div class="ql-form-section">
+                                <h4>Basic Information</h4>
+                                <div class="ql-form-row">
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Report Name <span class="ql-required">*</span></label>
+                                        <input type="text" class="ql-input" formControlName="name"
+                                            placeholder="e.g., Q4 Performance Report">
+                                        <span class="ql-field-error"
+                                            *ngIf="reportForm.get('name')?.invalid && reportForm.get('name')?.touched">
+                                            Report name is required
+                                        </span>
+                                    </div>
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Report Type <span class="ql-required">*</span></label>
+                                        <select class="ql-input" formControlName="type">
+                                            <option value="PERFORMANCE">Performance Report</option>
+                                            <option value="INVENTORY">Inventory Report</option>
+                                            <option value="SALES">Sales Report</option>
+                                            <option value="TURNOVER">Turnover Report</option>
+                                            <option value="AFFORDABILITY">Affordability Report</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="ql-form-row">
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Format <span class="ql-required">*</span></label>
+                                        <select class="ql-input" formControlName="format">
+                                            <option value="PDF">PDF Report</option>
+                                            <option value="EXCEL">Excel Spreadsheet</option>
+                                            <option value="CSV">CSV Data</option>
+                                            <option value="HTML">HTML Preview</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Date Range -->
+                            <div class="ql-form-section">
+                                <h4>Date Range</h4>
+                                <div class="ql-form-row">
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Start Date <span class="ql-required">*</span></label>
+                                        <input type="date" class="ql-input" formControlName="dateRangeStart">
+                                    </div>
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">End Date <span class="ql-required">*</span></label>
+                                        <input type="date" class="ql-input" formControlName="dateRangeEnd">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filters -->
+                            <div class="ql-form-section">
+                                <h4>Filters <span class="ql-filter-hint">(Optional)</span></h4>
+                                <div class="ql-form-row">
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Branches</label>
+                                        <select class="ql-input" formControlName="branches" multiple>
+                                            <option *ngFor="let branch of branches" [value]="branch.id">
+                                                {{ branch.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="ql-field">
+                                        <label class="ql-flabel">Categories</label>
+                                        <select class="ql-input" formControlName="categories" multiple>
+                                            <option *ngFor="let cat of getUniqueCategories()" [value]="cat">
+                                                {{ cat }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sections -->
+                            <div class="ql-form-section">
+                                <h4>Include Sections</h4>
+                                <div class="ql-checkbox-group">
+                                    <label class="ql-checkbox" *ngFor="let section of availableSections">
+                                        <input type="checkbox"
+                                            [formControlName]="'include' + section.id.charAt(0).toUpperCase() + section.id.slice(1)">
+                                        <span><i class="fas" [class]="section.icon"></i> {{ section.name }}</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="ql-form-actions">
+                                <button type="submit" class="ql-btn ql-btn--primary" [disabled]="isGenerating">
+                                    <i class="fas" [class.fa-spinner]="isGenerating" [class.fa-play]="!isGenerating"
+                                        [class.ql-spinning]="isGenerating"></i>
+                                    {{ isGenerating ? 'Generating...' : 'Generate Report' }}
+                                </button>
+                                <button type="button" class="ql-btn ql-btn--ghost" (click)="goBack()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Right: Template Preview -->
+                    <div class="ql-builder-preview">
+                        <div class="ql-preview-card">
+                            <h4>Template Preview</h4>
+                            <div class="ql-preview-type">
+                                <i class="fas"
+                                    [class]="getReportTypeIcon(reportForm.get('type')?.value || 'PERFORMANCE')"></i>
+                                <span>{{ getReportTypeLabel(reportForm.get('type')?.value || 'PERFORMANCE') }}</span>
+                            </div>
+                            <div class="ql-preview-sections">
+                                <span *ngFor="let section of availableSections" class="ql-preview-section"
+                                    [class.ql-preview-section--active]="reportForm.get('include' + section.id.charAt(0).toUpperCase() + section.id.slice(1))?.value">
+                                    <i class="fas" [class]="section.icon"></i>
+                                    {{ section.name }}
+                                </span>
+                            </div>
+                            <div class="ql-preview-info">
+                                <div class="ql-preview-info-item">
+                                    <span class="ql-preview-label">Format</span>
+                                    <span class="ql-preview-value">{{ reportForm.get('format')?.value || 'PDF' }}</span>
+                                </div>
+                                <div class="ql-preview-info-item">
+                                    <span class="ql-preview-label">Date Range</span>
+                                    <span class="ql-preview-value">
+                                        {{ formatDate(reportForm.get('dateRangeStart')?.value) }} —
+                                        {{ formatDate(reportForm.get('dateRangeEnd')?.value) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================
+            PREVIEW TAB
+            ======================================================== -->
+            <div *ngIf="activeTab === 'preview' && reportData" class="ql-preview-container">
+                <!-- Top Bar -->
+                <div class="ql-top-bar">
+                    <div class="ql-top-bar-left">
+                        <h1 class="ql-title">{{ reportData.config.name }}</h1>
+                        <span class="ql-total-badge">Report</span>
+                        <span class="ql-preview-badge">
+                            <i class="fas fa-clock"></i>
+                            {{ formatDateTime(reportData.generatedAt) }}
+                        </span>
+                    </div>
+                    <div class="ql-top-bar-right">
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="setActiveTab('builder')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="saveReport()" [disabled]="isSaving">
+                            <i class="fas fa-save" [class.ql-spinning]="isSaving"></i>
+                            {{ isSaving ? 'Saving...' : 'Save' }}
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--primary" (click)="exportReport()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview Tabs -->
+                <div class="ql-preview-tabs">
+                    <button class="ql-tab" [class.ql-tab--active]="previewTab === 'summary'"
+                        (click)="setPreviewTab('summary')">
+                        <i class="fas fa-file-alt"></i> Summary
+                    </button>
+                    <button class="ql-tab" [class.ql-tab--active]="previewTab === 'charts'"
+                        (click)="setPreviewTab('charts')" *ngIf="reportData.config.includeSections.charts">
+                        <i class="fas fa-chart-pie"></i> Charts
+                    </button>
+                    <button class="ql-tab" [class.ql-tab--active]="previewTab === 'tables'"
+                        (click)="setPreviewTab('tables')" *ngIf="reportData.config.includeSections.tables">
+                        <i class="fas fa-table"></i> Tables
+                    </button>
+                    <button class="ql-tab" [class.ql-tab--active]="previewTab === 'details'"
+                        (click)="setPreviewTab('details')" *ngIf="reportData.config.includeSections.details">
+                        <i class="fas fa-list"></i> Details
+                    </button>
+                </div>
+
+                <!-- Preview Content -->
+                <div class="ql-preview-content" id="report-preview-sheet">
+
+                    <!-- Summary -->
+                    <div *ngIf="previewTab === 'summary'" class="ql-preview-summary">
+                        <!-- Stats Cards -->
+                        <div class="ql-stats-row">
+                            <div class="ql-stat-mini">
+                                <span class="ql-stat-mini-value" style="color: #184440;">{{
+                                    formatCurrency(reportData.summary.totalRevenue) }}</span>
+                                <span class="ql-stat-mini-label">Total Revenue</span>
+                            </div>
+                            <div class="ql-stat-mini">
+                                <span class="ql-stat-mini-value" style="color: #2EB270;">{{
+                                    formatCurrency(reportData.summary.totalProfit) }}</span>
+                                <span class="ql-stat-mini-label">Total Profit</span>
+                            </div>
+                            <div class="ql-stat-mini">
+                                <span class="ql-stat-mini-value" style="color: #3B82F6;">{{
+                                    formatNumber(reportData.summary.totalUnitsSold) }}</span>
+                                <span class="ql-stat-mini-label">Units Sold</span>
+                            </div>
+                            <div class="ql-stat-mini">
+                                <span class="ql-stat-mini-value" style="color: #8B5CF6;">{{
+                                    reportData.summary.stockTurnover.toFixed(1) }}x</span>
+                                <span class="ql-stat-mini-label">Turnover</span>
+                            </div>
+                            <div class="ql-stat-mini">
+                                <span class="ql-stat-mini-value" style="color: #F59E0B;">{{
+                                    formatCurrency(reportData.summary.inventoryValue) }}</span>
+                                <span class="ql-stat-mini-label">Inventory Value</span>
+                            </div>
+                        </div>
+
+                        <!-- Summary Grid -->
+                        <div class="ql-summary-grid">
+                            <div class="ql-info-card">
+                                <h4 class="ql-info-title"><i class="fas fa-store"></i> Branch Overview</h4>
+                                <div class="ql-summary-item">
+                                    <span class="ql-summary-value">{{ reportData.metadata.totalBranches }}</span>
+                                    <span class="ql-summary-label">Branches</span>
+                                </div>
+                                <div class="ql-summary-item">
+                                    <span class="ql-summary-value" style="color: #2EB270;">{{
+                                        reportData.metadata.topPerformingBranch }}</span>
+                                    <span class="ql-summary-label">Top Branch</span>
+                                </div>
+                            </div>
+
+                            <div class="ql-info-card">
+                                <h4 class="ql-info-title"><i class="fas fa-box"></i> Product Overview</h4>
+                                <div class="ql-summary-item">
+                                    <span class="ql-summary-value">{{ reportData.metadata.totalProducts }}</span>
+                                    <span class="ql-summary-label">Products</span>
+                                </div>
+                                <div class="ql-summary-item">
+                                    <span class="ql-summary-value" style="color: #3B82F6;">{{
+                                        reportData.metadata.topPerformingProduct }}</span>
+                                    <span class="ql-summary-label">Top Product</span>
+                                </div>
+                            </div>
+
+                            <div class="ql-info-card">
+                                <h4 class="ql-info-title"><i class="fas fa-exclamation-triangle"></i> Stock Health</h4>
+                                <div class="ql-summary-item">
+                                    <span class="ql-summary-value" style="color: #F59E0B;">{{
+                                        reportData.summary.lowStockCount }}</span>
+                                    <span class="ql-summary-label">Low Stock</span>
+                                </div>
+                                <div class="ql-summary-item">
+                                    <span class="ql-summary-value" style="color: #DC2626;">{{
+                                        reportData.summary.outOfStockCount }}</span>
+                                    <span class="ql-summary-label">Out of Stock</span>
+                                </div>
+                            </div>
+
+                            <div class="ql-info-card">
+                                <h4 class="ql-info-title"><i class="fas fa-chart-line"></i> Performance</h4>
+                                <div class="ql-summary-item">
+                                    <span class="ql-summary-value" style="color: #2EB270;">{{
+                                        reportData.summary.highPerformingCount }}</span>
+                                    <span class="ql-summary-label">High Performers</span>
+                                </div>
+                                <div class="ql-summary-item">
+                                    <span class="ql-summary-value" style="color: #DC2626;">{{
+                                        reportData.summary.lowPerformingCount }}</span>
+                                    <span class="ql-summary-label">Low Performers</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="ql-info-card" *ngIf="reportData.config.includeSections.recommendations">
+                            <h4 class="ql-info-title"><i class="fas fa-lightbulb"></i> Recommendations</h4>
+                            <div class="ql-recommendation-list">
+                                <div *ngFor="let rec of reportData.recommendations; let i = index"
+                                    class="ql-recommendation-item">
+                                    <span class="ql-recommendation-number">{{ i + 1 }}</span>
+                                    <span class="ql-recommendation-text">{{ rec }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div *ngIf="previewTab === 'charts'" class="ql-preview-charts">
+                        <div class="ql-charts-grid">
+                            <div *ngFor="let chart of reportData.charts" class="ql-chart-card">
+                                <h4>{{ chart.title }}</h4>
+                                <div class="ql-chart-container">
+                                    <!-- Bar Chart -->
+                                    <div *ngIf="chart.type === 'BAR'" class="ql-bar-chart">
+                                        <div *ngFor="let item of chart.data; let i = index" class="ql-bar-item">
+                                            <div class="ql-bar-value">{{ formatCurrency(item) }}</div>
+                                            <div class="ql-bar-wrapper">
+                                                <div class="ql-bar"
+                                                    [style.height.%]="getBarHeight(item, getMaxChartValue(chart.data))"
+                                                    [style.background]="chart.colors?.[i] || '#184440'"></div>
+                                            </div>
+                                            <div class="ql-bar-label">{{ chart.labels[i] }}</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pie Chart -->
+                                    <div *ngIf="chart.type === 'PIE'" class="ql-pie-chart">
+                                        <div class="ql-pie-container">
+                                            <div class="ql-pie" [style.background]="getConicGradient(chart)">
+                                            </div>
+                                            <div class="ql-pie-center">
+                                                <span class="ql-pie-total">{{ getChartTotal(chart) }}</span>
+                                                <span class="ql-pie-label">Total</span>
+                                            </div>
+                                        </div>
+                                        <div class="ql-pie-legend">
+                                            <div *ngFor="let label of chart.labels; let i = index"
+                                                class="ql-pie-legend-item">
+                                                <span class="ql-pie-dot"
+                                                    [style.background]="chart.colors?.[i] || '#184440'"></span>
+                                                <span>{{ label }}</span>
+                                                <span class="ql-pie-value">{{ chart.data[i] }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tables -->
+                    <div *ngIf="previewTab === 'tables'" class="ql-preview-tables">
+                        <div class="ql-table-container">
+                            <h4>Product Performance Data</h4>
+                            <div class="ql-table-wrapper">
+                                <table class="ql-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Category</th>
+                                            <th>Units Sold</th>
+                                            <th>Revenue</th>
+                                            <th>Profit</th>
+                                            <th>Score</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let p of reportData.performanceData.slice(0, 20)">
+                                            <td><strong>{{ p.productName }}</strong></td>
+                                            <td>{{ p.category }}</td>
+                                            <td>{{ formatNumber(p.totalSold) }}</td>
+                                            <td>{{ formatCurrency(p.totalRevenue) }}</td>
+                                            <td>{{ formatCurrency(p.totalProfit) }}</td>
+                                            <td>
+                                                <span class="ql-score-pill"
+                                                    [style.background]="getStatusColor(p.performanceScore) + '20'"
+                                                    [style.color]="getStatusColor(p.performanceScore)">
+                                                    {{ p.performanceScore.toFixed(0) }}%
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="ql-status-pill"
+                                                    [style.color]="getStatusColor(p.performanceScore)">
+                                                    {{ getStatusLabel(p.performanceScore) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="ql-table-note" *ngIf="reportData.performanceData.length > 20">
+                                Showing first 20 of {{ reportData.performanceData.length }} products
+                            </p>
+                        </div>
+
+                        <div class="ql-table-container">
+                            <h4>Inventory Summary by Branch</h4>
+                            <div class="ql-table-wrapper">
+                                <table class="ql-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Branch</th>
+                                            <th>Products</th>
+                                            <th>Total Units</th>
+                                            <th>Stock Value</th>
+                                            <th>Low Stock</th>
+                                            <th>Out of Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let branch of getUniqueBranches()">
+                                            <td><strong>{{ branch.name }}</strong></td>
+                                            <td>{{ getBranchProductCount(branch.id) }}</td>
+                                            <td>{{ getBranchTotalUnits(branch.id) }}</td>
+                                            <td>{{ formatCurrency(getBranchStockValue(branch.id)) }}</td>
+                                            <td>{{ getBranchLowStockCount(branch.id) }}</td>
+                                            <td>{{ getBranchOutOfStockCount(branch.id) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details -->
+                    <div *ngIf="previewTab === 'details'" class="ql-preview-details">
+                        <div class="ql-details-grid">
+                            <!-- Metadata -->
+                            <div class="ql-info-card">
+                                <h4 class="ql-info-title"><i class="fas fa-info-circle"></i> Report Metadata</h4>
+                                <div class="ql-detail-item">
+                                    <span class="ql-detail-label">Report ID</span>
+                                    <span class="ql-detail-value">{{ reportData.config.id }}</span>
+                                </div>
+                                <div class="ql-detail-item">
+                                    <span class="ql-detail-label">Generated</span>
+                                    <span class="ql-detail-value">{{ formatDateTime(reportData.generatedAt) }}</span>
+                                </div>
+                                <div class="ql-detail-item">
+                                    <span class="ql-detail-label">Period</span>
+                                    <span class="ql-detail-value">{{ reportData.metadata.periodDays }} days</span>
+                                </div>
+                                <div class="ql-detail-item">
+                                    <span class="ql-detail-label">Format</span>
+                                    <span class="ql-detail-value">{{ reportData.config.format }}</span>
+                                </div>
+                                <div class="ql-detail-item">
+                                    <span class="ql-detail-label">Type</span>
+                                    <span class="ql-detail-value">{{ getReportTypeLabel(reportData.config.type)
+                                        }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Filters Applied -->
+                            <div class="ql-info-card">
+                                <h4 class="ql-info-title"><i class="fas fa-filter"></i> Filters Applied</h4>
+                                <div class="ql-detail-item" *ngIf="reportData.config.filters.branchIds?.length">
+                                    <span class="ql-detail-label">Branches</span>
+                                    <span class="ql-detail-value">{{ reportData.config.filters.branchIds?.length }}
+                                        selected</span>
+                                </div>
+                                <div class="ql-detail-item" *ngIf="reportData.config.filters.productIds?.length">
+                                    <span class="ql-detail-label">Products</span>
+                                    <span class="ql-detail-value">{{ reportData.config.filters.productIds?.length }}
+                                        selected</span>
+                                </div>
+                                <div class="ql-detail-item" *ngIf="reportData.config.filters.categoryIds?.length">
+                                    <span class="ql-detail-label">Categories</span>
+                                    <span class="ql-detail-value">{{ reportData.config.filters.categoryIds?.length }}
+                                        selected</span>
+                                </div>
+                                <div class="ql-detail-item"
+                                    *ngIf="!reportData.config.filters.branchIds?.length && !reportData.config.filters.productIds?.length && !reportData.config.filters.categoryIds?.length">
+                                    <span class="ql-detail-label">Filters</span>
+                                    <span class="ql-detail-value" style="color: var(--muted);">None applied — all data
+                                        included</span>
+                                </div>
+                            </div>
+
+                            <!-- Sections Included -->
+                            <div class="ql-info-card">
+                                <h4 class="ql-info-title"><i class="fas fa-file-alt"></i> Sections Included</h4>
+                                <div class="ql-detail-item" *ngFor="let section of availableSections">
+                                    <span class="ql-detail-label">{{ section.name }}</span>
+                                    <span class="ql-detail-value"
+                                        [style.color]="isSectionIncluded(section.id) ? '#2EB270' : '#DC2626'">
+                                        <i class="fas" [class.fa-check-circle]="isSectionIncluded(section.id)"
+                                            [class.fa-times-circle]="!isSectionIncluded(section.id)"></i>
+                                        {{ isSectionIncluded(section.id) ? 'Included' : 'Excluded' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ========================================================
+            SAVED REPORTS TAB
+            ======================================================== -->
+            <div *ngIf="activeTab === 'saved'" class="ql-saved-container">
+                <div class="ql-saved-header">
+                    <h2><i class="fas fa-folder"></i> Saved Reports</h2>
+                    <p class="ql-saved-subtitle">View and manage your saved reports</p>
+                </div>
+
+                <div class="ql-saved-grid">
+                    <div *ngFor="let report of savedReports" class="ql-saved-card" (click)="selectReport(report.id)">
+                        <div class="ql-saved-card-icon" [style.background]="getReportTypeIcon(report.type) + '20'">
+                            <i class="fas" [class]="getReportTypeIcon(report.type)"
+                                [style.color]="getReportTypeIcon(report.type)"></i>
+                        </div>
+                        <div class="ql-saved-card-info">
+                            <h4>{{ report.name }}</h4>
+                            <div class="ql-saved-card-meta">
+                                <span>{{ getReportTypeLabel(report.type) }}</span>
+                                <span>{{ report.format }}</span>
+                                <span>{{ formatDate(report.createdAt) }}</span>
+                            </div>
+                            <div class="ql-saved-card-status">
+                                <span class="ql-status-badge" [class.ql-status-badge--run]="report.lastRun">
+                                    <i class="fas" [class.fa-check-circle]="report.lastRun"
+                                        [class.fa-clock]="!report.lastRun"></i>
+                                    {{ report.lastRun ? 'Last run: ' + formatDate(report.lastRun) : 'Not run yet' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="ql-saved-card-actions">
+                            <button class="ql-action-btn" (click)="$event.stopPropagation(); selectReport(report.id)">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="ql-action-btn ql-action-btn--delete"
+                                (click)="$event.stopPropagation(); deleteReport(report.id)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div *ngIf="savedReports.length === 0" class="ql-empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <h4>No Saved Reports</h4>
+                        <p>Generate a report and save it to access it here.</p>
+                        <button class="ql-btn ql-btn--primary" (click)="setActiveTab('builder')">
+                            <i class="fas fa-plus"></i> Create Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        EXPORT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showExportModal"
+            (click)="$event.target === $event.currentTarget && closeExportModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-file-export"></i> Export Report</h3>
+                    <button class="ql-modal-close" (click)="closeExportModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Export <strong>{{ reportData?.config?.name }}</strong> as {{ exportFormat }}</p>
+                    <div class="ql-export-options">
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="PDF"
+                                [checked]="exportFormat === 'PDF'" (change)="selectExportFormat('PDF')">
+                            <span>PDF Report</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="EXCEL"
+                                [checked]="exportFormat === 'EXCEL'" (change)="selectExportFormat('EXCEL')">
+                            <span>Excel Spreadsheet</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="CSV"
+                                [checked]="exportFormat === 'CSV'" (change)="selectExportFormat('CSV')">
+                            <span>CSV Data</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeExportModal()"
+                        [disabled]="isExporting">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmExport()"
+                        [disabled]="isExporting">
+                        <i class="fas" [class.fa-download]="!isExporting" [class.fa-spinner]="isExporting"
+                            [class.ql-spinning]="isExporting"></i>
+                        {{ isExporting ? 'Exporting...' : 'Export' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        SCHEDULE MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showScheduleModal"
+            (click)="$event.target === $event.currentTarget && closeScheduleModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-clock"></i> Schedule Report</h3>
+                    <button class="ql-modal-close" (click)="closeScheduleModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <form [formGroup]="scheduleForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">
+                                <input type="checkbox" formControlName="enabled">
+                                Enable Scheduling
+                            </label>
+                        </div>
+
+                        <div class="ql-field" *ngIf="scheduleForm.get('enabled')?.value">
+                            <label class="ql-flabel">Frequency</label>
+                            <select class="ql-input" formControlName="frequency">
+                                <option value="DAILY">Daily</option>
+                                <option value="WEEKLY">Weekly</option>
+                                <option value="MONTHLY">Monthly</option>
+                            </select>
+                        </div>
+
+                        <div class="ql-field"
+                            *ngIf="scheduleForm.get('enabled')?.value && scheduleForm.get('frequency')?.value === 'WEEKLY'">
+                            <label class="ql-flabel">Day of Week</label>
+                            <select class="ql-input" formControlName="dayOfWeek">
+                                <option value="MONDAY">Monday</option>
+                                <option value="TUESDAY">Tuesday</option>
+                                <option value="WEDNESDAY">Wednesday</option>
+                                <option value="THURSDAY">Thursday</option>
+                                <option value="FRIDAY">Friday</option>
+                                <option value="SATURDAY">Saturday</option>
+                                <option value="SUNDAY">Sunday</option>
+                            </select>
+                        </div>
+
+                        <div class="ql-field" *ngIf="scheduleForm.get('enabled')?.value">
+                            <label class="ql-flabel">Time</label>
+                            <input type="time" class="ql-input" formControlName="time">
+                        </div>
+
+                        <div class="ql-field" *ngIf="scheduleForm.get('enabled')?.value">
+                            <label class="ql-flabel">Recipients (Email)</label>
+                            <input type="email" class="ql-input" formControlName="recipients"
+                                placeholder="email@example.com, another@example.com">
+                            <span class="ql-field-error"
+                                *ngIf="scheduleForm.get('recipients')?.invalid && scheduleForm.get('recipients')?.touched">
+                                Please enter a valid email
+                            </span>
+                        </div>
+
+                        <div class="ql-field" *ngIf="scheduleForm.get('enabled')?.value">
+                            <label class="ql-flabel">Subject</label>
+                            <input type="text" class="ql-input" formControlName="subject"
+                                placeholder="Weekly Performance Report">
+                        </div>
+
+                        <div class="ql-field" *ngIf="scheduleForm.get('enabled')?.value">
+                            <label class="ql-flabel">Message</label>
+                            <textarea class="ql-input" formControlName="message" rows="3"
+                                placeholder="Add a personal message..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeScheduleModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="saveSchedule()">
+                        <i class="fas fa-save"></i> Save Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

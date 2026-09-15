@@ -1,0 +1,81 @@
+.radio-button {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .country {
+    margin-left: 8px;
+    font-size: 0.875em;
+    color: gray;
+  }
+  
+  .country-select, .currency-symbol {
+    width: 100%;
+    margin-top: 16px;
+  }
+  
+  .decimal-digits {
+    margin-top: 16px;
+  }
+  
+  mat-dialog-actions {
+    margin-top: 16px;
+  }
+  
+// *{
+//     padding: 0;
+//     margin: 0;
+
+// }
+
+
+// .currency-format-container {
+//     padding: 1rem;
+
+//   }
+  
+//   .form-group {
+//     margin-bottom: 20px;
+//   }
+  
+//   label {
+//     display: block;
+//     margin-bottom: 8px;
+//     font-weight: bold;
+//   }
+//   .number-format{
+//     cursor: pointer;
+//     padding: 1rem 0;
+//   }
+//   .number-format:hover{
+//     background-color: #224957;
+//     color: #fff;
+//   }
+//   input[type="radio"] {
+//     margin-right: 10px;
+//     color: #224957;
+//     background-color: #224957;
+//   }
+  
+//   input[type="text"] {
+//     width: calc(100% - 20px);
+//     padding: 8px;
+//     margin-top: 8px;
+//     border: 1px solid #ccc;
+//     border-radius: 4px;
+//   }
+  
+//   .save-button {
+//     background-color: #6200ee;
+//     color: white;
+//     padding: 10px 20px;
+//     border: none;
+//     border-radius: 4px;
+//     cursor: pointer;
+//   }
+  
+//   .save-button:hover {
+//     background-color: #3700b3;
+//   }
+  

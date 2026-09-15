@@ -1,0 +1,221 @@
+<!-- grn-detail.component.html -->
+<div class="grnd-root">
+
+  <div class="grnd-back">
+    <app-back-button (close)="goBack()"></app-back-button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="grnd-empty-state">
+    <i class="fas fa-spinner fa-spin grnd-empty-icon"></i>
+    <p>Loading goods received note…</p>
+  </div>
+
+  <!-- Not found -->
+  <div *ngIf="!isLoading && notFound" class="grnd-empty-state">
+    <i class="fas fa-clipboard-question grnd-empty-icon" style="color:#94a3b8;"></i>
+    <h3>GRN not found</h3>
+    <p>This goods received note may have been deleted, or the link is incorrect.</p>
+    <button type="button" class="grnd-btn grnd-btn--primary" (click)="goBack()">Back to list</button>
+  </div>
+
+  <ng-container *ngIf="!isLoading && grn as g">
+
+    <!-- Header -->
+    <div class="grnd-header">
+      <div class="grnd-header-left">
+        <div class="grnd-title-row">
+          <h1 class="grnd-title">{{ g.grnNumber || ('GRN #' + g.id) }}</h1>
+          <span class="grnd-status-badge" [class]="'grnd-status-badge--' + getGrnStatusSeverity(g.status)">
+            {{ getGrnStatusLabel(g.status) }}
+          </span>
+        </div>
+        <p class="grnd-subtitle">
+          LPO <strong>{{ g.lpoNumber || '—' }}</strong> · {{ g.vendorName || 'Unknown vendor' }}
+        </p>
+      </div>
+
+      <div class="grnd-header-actions">
+        <button type="button" class="grnd-btn grnd-btn--primary" *ngIf="canSubmit()" [disabled]="isUpdatingStatus" (click)="submitForApproval()">
+          <i class="fas fa-paper-plane"></i> Submit for Approval
+        </button>
+        <button type="button" class="grnd-btn grnd-btn--success" *ngIf="canApprove()" [disabled]="isUpdatingStatus" (click)="openApproveForm()">
+          <i class="fas fa-check"></i> Approve
+        </button>
+        <button type="button" class="grnd-btn grnd-btn--warning" *ngIf="canDispute()" [disabled]="isUpdatingStatus" (click)="dispute()">
+          <i class="fas fa-exclamation-triangle"></i> Dispute
+        </button>
+        <button type="button" class="grnd-btn grnd-btn--ghost" *ngIf="canCancel()" [disabled]="isUpdatingStatus" (click)="cancelGrn()">
+          Cancel GRN
+        </button>
+        <button type="button" class="grnd-btn grnd-btn--danger-outline" (click)="showDeleteModal = true">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Inline approve form -->
+    <div class="grnd-approve-form" *ngIf="showApproveForm">
+      <label class="grnd-flabel">Your name, to record as approver</label>
+      <div class="grnd-approve-row">
+        <input type="text" class="grnd-input" placeholder="e.g. Jane Doe" [(ngModel)]="approverName">
+        <button type="button" class="grnd-btn grnd-btn--success" [disabled]="isUpdatingStatus" (click)="confirmApprove()">
+          {{ isUpdatingStatus ? 'Approving…' : 'Confirm Approval' }}
+        </button>
+        <button type="button" class="grnd-btn grnd-btn--ghost" (click)="cancelApproveForm()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Value summary -->
+    <div class="grnd-value-grid">
+      <div class="grnd-value-card">
+        <span class="grnd-value-label">Ordered Value</span>
+        <span class="grnd-value-amount">{{ formatCurrency(g.totalOrderedValue) }}</span>
+      </div>
+      <div class="grnd-value-card">
+        <span class="grnd-value-label">Received Value</span>
+        <span class="grnd-value-amount">{{ formatCurrency(g.totalReceivedValue) }}</span>
+      </div>
+      <div class="grnd-value-card" [class.grnd-value-card--variance]="g.varianceAmount !== 0">
+        <span class="grnd-value-label">Variance</span>
+        <span class="grnd-value-amount" [class.grnd-value-amount--danger]="g.varianceAmount < 0" [class.grnd-value-amount--success]="g.varianceAmount > 0">
+          {{ g.varianceAmount > 0 ? '+' : '' }}{{ formatCurrency(g.varianceAmount) }}
+        </span>
+      </div>
+      <div class="grnd-value-card">
+        <span class="grnd-value-label">Overall Condition</span>
+        <span class="grnd-condition-badge" [class]="'grnd-condition-badge--' + (g.overallCondition || 'acceptable').toLowerCase()">
+          {{ g.overallCondition || 'ACCEPTABLE' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Delivery info -->
+    <div class="grnd-card">
+      <div class="grnd-card-header"><h3><i class="fas fa-truck-loading"></i> Delivery Information</h3></div>
+      <div class="grnd-info-grid">
+        <div class="grnd-info-item"><span class="grnd-info-label">Delivery Note #</span><span class="grnd-info-value">{{ g.deliveryNoteNumber || '—' }}</span></div>
+        <div class="grnd-info-item"><span class="grnd-info-label">Received By</span><span class="grnd-info-value">{{ g.receivedBy || '—' }}</span></div>
+        <div class="grnd-info-item"><span class="grnd-info-label">Received At</span><span class="grnd-info-value">{{ formatDateTime(g.receivedAt) }}</span></div>
+        <div class="grnd-info-item"><span class="grnd-info-label">Delivery Location</span><span class="grnd-info-value">{{ g.deliveryLocation || '—' }}</span></div>
+        <div class="grnd-info-item grnd-info-item--wide"><span class="grnd-info-label">Delivery Address</span><span class="grnd-info-value">{{ g.deliveryAddress || '—' }}</span></div>
+        <div class="grnd-info-item"><span class="grnd-info-label">Vehicle</span><span class="grnd-info-value">{{ g.vehicleDetails || '—' }}</span></div>
+        <div class="grnd-info-item"><span class="grnd-info-label">Driver</span><span class="grnd-info-value">{{ g.driverName || '—' }}<span *ngIf="g.driverPhone"> · {{ g.driverPhone }}</span></span></div>
+      </div>
+      <div class="grnd-discrepancy" *ngIf="g.discrepancyNotes">
+        <i class="fas fa-exclamation-circle"></i>
+        <div>
+          <strong>Discrepancy notes</strong>
+          <p>{{ g.discrepancyNotes }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Line items -->
+    <div class="grnd-card">
+      <div class="grnd-card-header"><h3><i class="fas fa-boxes-stacked"></i> Line Items</h3></div>
+      <div class="grnd-table-wrap">
+        <table class="grnd-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Ordered</th>
+              <th>Received</th>
+              <th>Accepted</th>
+              <th>Rejected</th>
+              <th>Condition</th>
+              <th>Unit Price</th>
+              <th>Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of g.items">
+              <td>
+                <span class="grnd-item-name">{{ item.name }}</span>
+                <span class="grnd-item-meta" *ngIf="item.batchNumber">Batch {{ item.batchNumber }}</span>
+              </td>
+              <td>{{ item.orderedQuantity }} {{ item.unit }}</td>
+              <td>{{ item.receivedQuantity }} {{ item.unit }}</td>
+              <td>{{ item.acceptedQuantity }} {{ item.unit }}</td>
+              <td [class.grnd-td-danger]="item.rejectedQuantity > 0">{{ item.rejectedQuantity }} {{ item.unit }}</td>
+              <td>
+                <span class="grnd-condition-badge" [class]="'grnd-condition-badge--item-' + getConditionClass(item.condition)">
+                  {{ getConditionLabel(item.condition) }}
+                </span>
+              </td>
+              <td>{{ formatCurrency(item.unitPrice) }}</td>
+              <td class="grnd-td-amount">{{ formatCurrency(getLineTotal(item)) }}</td>
+            </tr>
+            <tr *ngIf="!g.items || g.items.length === 0">
+              <td colspan="8" class="grnd-empty-row">No line items recorded.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Photos -->
+    <div class="grnd-card" *ngIf="g.photosUrls && g.photosUrls.length > 0">
+      <div class="grnd-card-header"><h3><i class="fas fa-camera"></i> Photos</h3></div>
+      <div class="grnd-photo-grid">
+        <a *ngFor="let url of g.photosUrls" [href]="url" target="_blank" rel="noopener" class="grnd-photo-thumb">
+          <img [src]="url" [alt]="g.grnNumber">
+        </a>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="grnd-card">
+      <div class="grnd-card-header"><h3><i class="fas fa-history"></i> Timeline</h3></div>
+      <div class="grnd-timeline">
+        <div class="grnd-timeline-item">
+          <span class="grnd-timeline-dot grnd-timeline-dot--done"></span>
+          <div>
+            <strong>Created</strong>
+            <span>{{ formatDateTime(g.createdAt) }}</span>
+          </div>
+        </div>
+        <div class="grnd-timeline-item" *ngIf="g.submittedAt">
+          <span class="grnd-timeline-dot grnd-timeline-dot--done"></span>
+          <div>
+            <strong>Submitted for approval</strong>
+            <span>{{ formatDateTime(g.submittedAt) }}</span>
+          </div>
+        </div>
+        <div class="grnd-timeline-item" *ngIf="g.approvedAt">
+          <span class="grnd-timeline-dot grnd-timeline-dot--done"></span>
+          <div>
+            <strong>Approved{{ g.approvedBy ? ' by ' + g.approvedBy : '' }}</strong>
+            <span>{{ formatDateTime(g.approvedAt) }}</span>
+          </div>
+        </div>
+        <div class="grnd-timeline-item">
+          <span class="grnd-timeline-dot"></span>
+          <div>
+            <strong>Last updated</strong>
+            <span>{{ formatDateTime(g.updatedAt) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>
+
+<!-- Delete confirmation -->
+<div class="grnd-confirm-backdrop" *ngIf="showDeleteModal" (click)="showDeleteModal = false">
+  <div class="grnd-confirm-modal" (click)="$event.stopPropagation()">
+    <div class="grnd-confirm-icon">🗑️</div>
+    <div class="grnd-confirm-title">Delete GRN</div>
+    <div class="grnd-confirm-sub">
+      Are you sure you want to delete <strong>{{ grn?.grnNumber }}</strong>?<br>
+      This action cannot be undone.
+    </div>
+    <div class="grnd-confirm-actions">
+      <button type="button" class="grnd-btn grnd-btn--ghost" (click)="showDeleteModal = false" [disabled]="isDeleting">Cancel</button>
+      <button type="button" class="grnd-btn grnd-btn--danger" (click)="confirmDelete()" [disabled]="isDeleting">
+        {{ isDeleting ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>

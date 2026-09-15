@@ -1,0 +1,39 @@
+<div class="rbm-wrap">
+
+  <!-- Search bar: for when the exact spot can't be found by eye on the map -->
+  <div class="rbm-search-bar">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="rbm-search-icon">
+      <circle cx="11" cy="11" r="7"></circle>
+      <path d="m21 21-4.3-4.3"></path>
+    </svg>
+    <input
+      type="text"
+      class="rbm-search-input"
+      [placeholder]="activeStop ? 'Search an address to place ' + activeStop.orderDisplayId + '...' : 'Select a stop below, then search or tap the map'"
+      [disabled]="!editable || !activeOrderId"
+      [ngModel]="searchTerm"
+      (ngModelChange)="onSearchInput($event)"
+    />
+  </div>
+
+  <div *ngIf="suggestions.length" class="rbm-suggestions">
+    <button type="button" *ngFor="let s of suggestions" class="rbm-suggestion" (click)="pickSuggestion(s)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa7ae" stroke-width="2" class="shrink-0">
+        <path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"></path>
+        <circle cx="12" cy="10" r="2.5"></circle>
+      </svg>
+      <span class="truncate">{{ s.label }}</span>
+    </button>
+  </div>
+
+  <div *ngIf="!activeOrderId && editable" class="rbm-hint">
+    Tap a stop on the left to select it, then search an address above or click/drag its pin on the map.
+  </div>
+
+  <div class="rbm-map-canvas-wrap">
+    <div #mapEl class="rbm-map-canvas"></div>
+    <div *ngIf="loadFailed" class="rbm-map-fallback">
+      <p class="text-[12.5px] text-[#9aa7ae] text-center px-4">Map preview couldn't load — you can still search an address above.</p>
+    </div>
+  </div>
+</div>

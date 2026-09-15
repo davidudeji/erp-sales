@@ -1,0 +1,154 @@
+<!-- grn-list.component.html -->
+<div class="grn-list-root">
+
+  <!-- Header -->
+  <div class="grn-header">
+    <div class="grn-header-left">
+      <h1 class="grn-title">Goods Received Notes</h1>
+      <p class="grn-subtitle">Every delivery received against a purchase order, and its approval status.</p>
+    </div>
+    <button type="button" class="grn-btn grn-btn--ghost" (click)="loadGrns()" [disabled]="isLoading">
+      <i class="fas fa-sync-alt" [class.grn-spinning]="isLoading"></i> Refresh
+    </button>
+  </div>
+
+  <!-- Stat pills -->
+  <div class="grn-stats">
+    <button type="button" class="grn-stat" [class.grn-stat--active]="selectedStatus === 'ALL'" (click)="onStatusFilterChange('ALL')">
+      <span class="grn-stat-value">{{ grns.length }}</span>
+      <span class="grn-stat-label">All</span>
+    </button>
+    <button type="button" class="grn-stat" [class.grn-stat--active]="selectedStatus === 'DRAFT'" (click)="onStatusFilterChange('DRAFT')">
+      <span class="grn-stat-value">{{ getStatusCount('DRAFT') }}</span>
+      <span class="grn-stat-label">Draft</span>
+    </button>
+    <button type="button" class="grn-stat" [class.grn-stat--active]="selectedStatus === 'SUBMITTED'" (click)="onStatusFilterChange('SUBMITTED')">
+      <span class="grn-stat-value grn-stat-value--warning">{{ getStatusCount('SUBMITTED') }}</span>
+      <span class="grn-stat-label">Awaiting Approval</span>
+    </button>
+    <button type="button" class="grn-stat" [class.grn-stat--active]="selectedStatus === 'APPROVED'" (click)="onStatusFilterChange('APPROVED')">
+      <span class="grn-stat-value grn-stat-value--success">{{ getStatusCount('APPROVED') }}</span>
+      <span class="grn-stat-label">Approved</span>
+    </button>
+    <button type="button" class="grn-stat" [class.grn-stat--active]="selectedStatus === 'DISPUTED'" (click)="onStatusFilterChange('DISPUTED')">
+      <span class="grn-stat-value grn-stat-value--danger">{{ getStatusCount('DISPUTED') }}</span>
+      <span class="grn-stat-label">Disputed</span>
+    </button>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="grn-filter-bar">
+    <div class="grn-search-wrap">
+      <i class="fas fa-search grn-search-icon"></i>
+      <input type="text" class="grn-search-input" placeholder="Search by GRN #, LPO #, or vendor…"
+             [(ngModel)]="searchTerm" (input)="onSearchChange()">
+    </div>
+    <select class="grn-select" [(ngModel)]="selectedStatus" (change)="onStatusFilterChange(selectedStatus)">
+      <option *ngFor="let opt of statusOptions" [value]="opt.value">{{ opt.label }}</option>
+    </select>
+    <button type="button" class="grn-btn grn-btn--ghost-sm" (click)="resetFilters()">Reset</button>
+  </div>
+
+  <!-- Table -->
+  <div class="grn-table-wrap">
+    <table class="grn-table">
+      <thead>
+        <tr>
+          <th>GRN #</th>
+          <th>LPO #</th>
+          <th>Vendor</th>
+          <th>Received</th>
+          <th>Condition</th>
+          <th>Received Value</th>
+          <th>Status</th>
+          <th class="grn-th-actions">Actions</th>
+        </tr>
+      </thead>
+
+      <!-- Loading -->
+      <tbody *ngIf="isLoading">
+        <tr class="grn-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+          <td colspan="8"><div class="grn-skeleton-bar"></div></td>
+        </tr>
+      </tbody>
+
+      <!-- Empty -->
+      <tbody *ngIf="!isLoading && filteredGrns.length === 0">
+        <tr>
+          <td colspan="8">
+            <div class="grn-empty">
+              <i class="fas fa-clipboard-check grn-empty-icon"></i>
+              <p class="grn-empty-title">No goods received notes found</p>
+              <p class="grn-empty-sub">Adjust your filters, or record a delivery from an LPO's Supply Chain &amp; Delivery tab.</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+
+      <!-- Rows -->
+      <tbody *ngIf="!isLoading && filteredGrns.length > 0">
+        <tr *ngFor="let grn of filteredGrns" (click)="viewGrn(grn)" class="grn-row">
+          <td class="grn-td-link">{{ grn.grnNumber || ('#' + grn.id) }}</td>
+          <td>{{ grn.lpoNumber || '—' }}</td>
+          <td class="grn-td-vendor">{{ grn.vendorName || '—' }}</td>
+          <td class="grn-td-date">{{ formatDate(grn.receivedAt) }}</td>
+          <td>
+            <span class="grn-condition-badge" [class]="'grn-condition-badge--' + (grn.overallCondition || 'acceptable').toLowerCase()">
+              {{ grn.overallCondition || 'ACCEPTABLE' }}
+            </span>
+          </td>
+          <td class="grn-td-amount">{{ formatCurrency(grn.totalReceivedValue) }}</td>
+          <td>
+            <span class="grn-status-badge" [class]="'grn-status-badge--' + getGrnStatusSeverity(grn.status)">
+              {{ getGrnStatusLabel(grn.status) }}
+            </span>
+          </td>
+          <td class="grn-td-actions">
+            <div class="grn-row-actions">
+              <button type="button" class="grn-action-btn" (click)="viewGrn(grn); $event.stopPropagation()" title="View">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button type="button" class="grn-action-btn grn-action-btn--danger" (click)="deleteGrn(grn, $event)" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="grn-pagination" *ngIf="totalPages > 1">
+    <span>Page {{ currentPage }} of {{ totalPages }} · {{ totalFiltered }} total</span>
+    <div class="grn-page-btns">
+      <button type="button" class="grn-page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button type="button" class="grn-page-btn" *ngFor="let p of getPageNumbers()"
+              [class.grn-page-btn--active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
+      <button type="button" class="grn-page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Delete confirmation -->
+<div class="grn-confirm-backdrop" *ngIf="showDeleteModal" (click)="cancelDelete()">
+  <div class="grn-confirm-modal" (click)="$event.stopPropagation()">
+    <div class="grn-confirm-icon">🗑️</div>
+    <div class="grn-confirm-title">Delete GRN</div>
+    <div class="grn-confirm-sub">
+      Are you sure you want to delete <strong>{{ pendingDeleteGrn?.grnNumber }}</strong>?<br>
+      This action cannot be undone.
+    </div>
+    <div class="grn-confirm-actions">
+      <button type="button" class="grn-btn grn-btn--ghost-sm" (click)="cancelDelete()" [disabled]="isDeleting">Cancel</button>
+      <button type="button" class="grn-btn grn-btn--danger-sm" (click)="confirmDelete()" [disabled]="isDeleting">
+        {{ isDeleting ? 'Deleting…' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+</div>

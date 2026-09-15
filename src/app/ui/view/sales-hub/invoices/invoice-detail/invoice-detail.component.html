@@ -1,0 +1,509 @@
+<div class="invoice-detail-container" *ngIf="!isLoading && invoice">
+  <div class="detail-wrapper">
+
+    <!-- Clean Header - Matching Quote Detail Style -->
+    <div class="detail-header">
+      <div class="header-back-title-group">
+        <app-back-button (click)="goBack()"></app-back-button>
+        <div class="header-content">
+          <div class="header-badge">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoice Details</span>
+          </div>
+          <h1 class="header-title">Invoice #{{ invoice.invoiceNumber }}</h1>
+          <p class="header-subtitle">Review and manage invoice details</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="invoice-status">
+          <span class="status-badge-large" [class]="'status-' + getStatusClass(invoice.status)">
+            <span class="status-dot"></span>
+            {{ getStatusLabel(invoice.status) | titlecase }}
+          </span>
+        </div>
+        <button (click)="goToInvoicesList()" class="btn-save-header"
+          style="background-color: #2E6276; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-left: 10px;">
+          <i class="fas fa-list"></i> See Invoices
+        </button>
+        <button *ngIf="invoice.status === 'DRAFT'" (click)="editInvoice()" class="btn-save-header">
+          <i class="fas fa-pencil-alt"></i> Edit
+        </button>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="action-bar glass">
+      <div class="action-bar-left">
+        <div class="meta-info">
+          <span><i class="fas fa-calendar-alt"></i> Issued: {{ formatDate(invoice.issueDate) }}</span>
+          <span class="meta-divider"></span>
+          <span><i class="fas fa-clock"></i> Due: {{ formatDate(invoice.dueDate) }}</span>
+          <span class="meta-divider"></span>
+          <span><i class="fas fa-money-bill-wave"></i> Total: {{ formatCurrency(invoice.totalAmount) }}</span>
+        </div>
+      </div>
+      <div class="action-bar-right">
+        <!-- Send Invoice (DRAFT) -->
+        <button *ngIf="invoice.status === 'DRAFT'" (click)="sendInvoice()" class="btn-action send">
+          <i class="fas fa-paper-plane"></i> Send Invoice
+        </button>
+
+        <!-- Download PDF -->
+        <button (click)="downloadPDF()" class="btn-action download" [disabled]="isDownloading">
+          <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading"
+            [class.fa-spin]="isDownloading"></i>
+          {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
+        </button>
+
+        <!-- Cancel Invoice (any status except CANCELLED) -->
+        <button *ngIf="invoice.status !== 'CANCELLED'" (click)="cancelInvoice()" class="btn-action decline">
+          <i class="fas fa-ban"></i> Cancel Invoice
+        </button>
+
+        <!-- Edit (DRAFT) -->
+        <button *ngIf="invoice.status === 'DRAFT'" (click)="editInvoice()" class="btn-action send">
+          <i class="fas fa-pencil-alt"></i> Edit
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="detail-grid">
+
+      <!-- Left Column: Invoice Content -->
+      <div class="detail-main">
+
+        <!-- Invoice PDF Document Sheet -->
+        <div id="invoice-detail-sheet" style="background:#fff;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1a2e3b;border-radius:8px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
+
+          <!-- HEADER -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;padding:36px 48px 22px;border-bottom:2px solid #E07820;">
+            <div>
+              <div style="font-size:2.2rem;font-weight:200;color:#1a2e3b;line-height:1;letter-spacing:-0.02em;">Invoice</div>
+              <div style="font-size:0.78rem;color:#999;margin-top:6px;">
+                Ref. {{ invoice.invoiceNumber }}&nbsp;·&nbsp;{{ formatDate(invoice.issueDate) }}&nbsp;·&nbsp;{{ getStatusLabel(invoice.status) }}
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <ng-container *ngIf="invoice.logoUrl; else invoiceNoLogo">
+                <img [src]="invoice.logoUrl" alt="Logo" style="max-height:72px;max-width:220px;object-fit:contain;">
+              </ng-container>
+              <ng-template #invoiceNoLogo>
+                <div style="font-size:1.9rem;font-weight:900;color:#E07820;letter-spacing:0.06em;line-height:1.1;text-transform:uppercase;">{{ ($any(invoice.merchantDetails))?.companyName || 'OPTIMAX' }}</div>
+                <div style="font-size:0.58rem;font-weight:700;color:#1a2e3b;letter-spacing:0.2em;text-transform:uppercase;margin-top:3px;">INFORMATION TECHNOLOGY LIMITED</div>
+                <div *ngIf="($any(invoice.merchantDetails))?.taxId" style="font-size:0.6rem;color:#E07820;margin-top:2px;">RC {{ ($any(invoice.merchantDetails))?.taxId }}</div>
+              </ng-template>
+            </div>
+          </div>
+
+          <!-- SUMMARY BAR -->
+          <div style="background:#1a2e3b;display:flex;">
+            <div style="flex:1;padding:18px 48px;border-right:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:8px;">INVOICE NO.</div>
+              <div style="font-size:1rem;font-weight:700;color:#fff;">{{ invoice.invoiceNumber }}</div>
+            </div>
+            <div style="flex:1;padding:18px 24px;border-right:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:8px;">DATE ISSUED</div>
+              <div style="font-size:1rem;font-weight:700;color:#fff;">{{ formatDate(invoice.issueDate) }}</div>
+            </div>
+            <div style="flex:1;padding:18px 24px;border-right:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:8px;">DUE DATE</div>
+              <div style="font-size:1rem;font-weight:700;color:#fff;">{{ formatDate(invoice.dueDate) }}</div>
+            </div>
+            <div style="flex:1;padding:18px 24px;text-align:right;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-bottom:8px;">TOTAL ({{ invoice.currency || 'NGN' }})</div>
+              <div style="font-size:1rem;font-weight:700;color:#E07820;">{{ formatCurrency(invoice.totalAmount) }}</div>
+            </div>
+          </div>
+
+          <!-- BILLED TO / PREPARED BY -->
+          <div style="display:flex;padding:28px 48px 24px;border-bottom:1px solid #eee;">
+            <div style="flex:1;padding-right:40px;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:#E07820;text-transform:uppercase;font-weight:700;margin-bottom:10px;">BILLED TO</div>
+              <div style="font-size:0.93rem;font-weight:700;color:#1a2e3b;margin-bottom:4px;">{{ getInvoiceCustomerName() }}</div>
+              <div style="font-size:0.78rem;color:#666;line-height:1.7;">{{ getCustomerAddressStr() }}</div>
+            </div>
+            <div style="width:1px;background:#eee;flex-shrink:0;"></div>
+            <div style="flex:1;padding-left:40px;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:#E07820;text-transform:uppercase;font-weight:700;margin-bottom:10px;">PREPARED BY</div>
+              <div style="font-size:0.93rem;font-weight:700;color:#1a2e3b;margin-bottom:4px;">{{ ($any(invoice.merchantDetails))?.companyName || 'Centrifuge Information Technology Limited' }}</div>
+              <div style="font-size:0.78rem;color:#666;line-height:1.7;">{{ getMerchantAddressStr() }}</div>
+            </div>
+          </div>
+
+          <!-- NOTES (if present) -->
+          <div *ngIf="invoice.notes" style="background:#f5f6f7;border-left:4px solid #1a2e3b;padding:14px 48px;margin:0;">
+            <div style="font-size:0.55rem;letter-spacing:0.2em;color:#1a2e3b;text-transform:uppercase;font-weight:700;margin-bottom:6px;">NOTES</div>
+            <div style="font-size:0.87rem;font-weight:600;color:#1a2e3b;">{{ invoice.notes }}</div>
+          </div>
+
+          <!-- ITEMS TABLE -->
+          <div style="padding:24px 48px 0;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+              <thead>
+                <tr style="background:#1a2e3b;">
+                  <th style="padding:10px 12px;text-align:left;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;width:5%;">S/N</th>
+                  <th style="padding:10px 12px;text-align:left;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;">DESCRIPTION</th>
+                  <th style="padding:10px 12px;text-align:center;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;width:7%;">QTY</th>
+                  <th style="padding:10px 12px;text-align:right;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;width:16%;">UNIT RATE</th>
+                  <th style="padding:10px 12px;text-align:right;font-size:0.55rem;letter-spacing:0.18em;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;width:18%;">AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of invoice.items; let i = index" [style.background]="i % 2 === 0 ? '#fff' : '#fafbfc'">
+                  <td style="padding:12px;color:#aaa;border-bottom:1px solid #f0f0f0;vertical-align:top;">{{ i + 1 }}</td>
+                  <td style="padding:12px;border-bottom:1px solid #f0f0f0;vertical-align:top;">
+                    <div style="font-weight:600;color:#1a2e3b;">{{ item.productName }}</div>
+                    <div *ngIf="item.description" style="font-size:0.75rem;color:#888;font-style:italic;margin-top:2px;">{{ item.description }}</div>
+                  </td>
+                  <td style="padding:12px;text-align:center;color:#555;border-bottom:1px solid #f0f0f0;vertical-align:top;">{{ item.quantity }}</td>
+                  <td style="padding:12px;text-align:right;color:#555;border-bottom:1px solid #f0f0f0;vertical-align:top;">{{ item.unitPrice | number:'1.0-0' }}</td>
+                  <td style="padding:12px;text-align:right;font-weight:700;color:#E07820;border-bottom:1px solid #f0f0f0;vertical-align:top;">{{ formatCurrency(item.total ?? item.amount) }}</td>
+                </tr>
+                <tr *ngIf="!invoice.items?.length">
+                  <td colspan="5" style="padding:24px;text-align:center;color:#aaa;font-size:0.82rem;">No items added to this invoice.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- TOTALS -->
+          <div style="display:flex;justify-content:flex-end;padding:20px 48px 24px;">
+            <div style="min-width:300px;">
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                <span style="color:#666;font-size:0.82rem;">Sub-total</span>
+                <span style="color:#333;font-weight:600;font-size:0.82rem;">{{ formatCurrency(invoice.subtotal) }}</span>
+              </div>
+              <ng-container *ngFor="let ch of getAdditionalCharges()">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                  <span style="color:#666;font-size:0.82rem;">{{ ch.label }}</span>
+                  <span style="color:#333;font-weight:600;font-size:0.82rem;">{{ formatCurrency(ch.amount) }}</span>
+                </div>
+              </ng-container>
+              <div *ngIf="invoice.discountAmount > 0" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                <span style="color:#666;font-size:0.82rem;">Discount</span>
+                <span style="color:#c0392b;font-weight:600;font-size:0.82rem;">-{{ formatCurrency(invoice.discountAmount) }}</span>
+              </div>
+              <div *ngIf="invoice.taxAmount > 0" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                <span style="color:#666;font-size:0.82rem;">VAT &#64; 7.5%</span>
+                <span style="color:#333;font-weight:600;font-size:0.82rem;">{{ formatCurrency(invoice.taxAmount) }}</span>
+              </div>
+              <div *ngIf="invoice.amountPaid > 0" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                <span style="color:#666;font-size:0.82rem;">Amount Paid</span>
+                <span style="color:#27ae60;font-weight:600;font-size:0.82rem;">-{{ formatCurrency(invoice.amountPaid) }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#1a2e3b;margin-top:6px;">
+                <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.14em;">{{ invoice.amountPaid > 0 ? 'BALANCE DUE' : 'TOTAL' }} ({{ invoice.currency || 'NGN' }})</span>
+                <span style="font-size:1.05rem;font-weight:800;color:#E07820;">{{ formatCurrency(invoice.amountPaid > 0 ? invoice.balanceDue : invoice.totalAmount) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- AMOUNT IN WORDS -->
+          <div style="background:#f5f6f7;border-left:4px solid #E07820;padding:16px 48px;margin:0 0 28px;">
+            <div style="font-size:0.55rem;letter-spacing:0.2em;color:#999;text-transform:uppercase;margin-bottom:6px;">AMOUNT IN WORDS</div>
+            <div style="font-size:0.88rem;font-weight:700;color:#1a2e3b;">{{ getTotalInWords(invoice.totalAmount) }} only.</div>
+          </div>
+
+          <!-- PAYMENT DETAILS & TERMS -->
+          <div style="display:flex;gap:0;padding:0 48px 32px;">
+            <div *ngIf="($any(invoice.merchantDetails))?.bankDetails" style="flex:1;padding-right:40px;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:#E07820;text-transform:uppercase;font-weight:700;margin-bottom:14px;">PAYMENT DETAILS</div>
+              <div style="display:flex;gap:12px;padding:6px 0;font-size:0.8rem;border-bottom:1px solid #f5f5f5;">
+                <span style="color:#999;min-width:110px;">Bank</span>
+                <span style="color:#1a2e3b;font-weight:700;">{{ ($any(invoice.merchantDetails))?.bankDetails?.bankName }}</span>
+              </div>
+              <div style="display:flex;gap:12px;padding:6px 0;font-size:0.8rem;border-bottom:1px solid #f5f5f5;">
+                <span style="color:#999;min-width:110px;">Account Name</span>
+                <span style="color:#1a2e3b;font-weight:700;">{{ ($any(invoice.merchantDetails))?.bankDetails?.accountName }}</span>
+              </div>
+              <div style="display:flex;gap:12px;padding:6px 0;font-size:0.8rem;">
+                <span style="color:#999;min-width:110px;">Account Number</span>
+                <span style="color:#1a2e3b;font-weight:700;">{{ ($any(invoice.merchantDetails))?.bankDetails?.accountNumber }}</span>
+              </div>
+            </div>
+            <div *ngIf="additionalInvoiceOpts?.terms" style="flex:1;padding-left:40px;border-left:1px solid #eee;">
+              <div style="font-size:0.55rem;letter-spacing:0.2em;color:#E07820;text-transform:uppercase;font-weight:700;margin-bottom:14px;">TERMS &amp; CONDITIONS</div>
+              <div style="font-size:0.78rem;color:#555;line-height:1.9;white-space:pre-wrap;">{{ additionalInvoiceOpts?.terms }}</div>
+            </div>
+          </div>
+
+          <!-- SIGN-OFF -->
+          <div *ngIf="additionalInvoiceOpts?.signatureText" style="padding:0 48px 24px;">
+            <div style="font-size:0.8rem;color:#555;font-style:italic;">{{ additionalInvoiceOpts?.signatureText }}</div>
+          </div>
+
+          <!-- FOOTER -->
+          <div style="border-top:1px solid #E07820;padding:14px 48px;text-align:center;">
+            <div style="font-size:0.72rem;color:#aaa;line-height:1.6;">
+              {{ getMerchantAddressStr() }}<ng-container *ngIf="($any(invoice.merchantDetails))?.email">&nbsp;·&nbsp;{{ ($any(invoice.merchantDetails))?.email }}</ng-container><ng-container *ngIf="($any(invoice.merchantDetails))?.phone">&nbsp;·&nbsp;{{ ($any(invoice.merchantDetails))?.phone }}</ng-container>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right Column: Sidebar -->
+      <div class="detail-sidebar">
+
+        <!-- Invoice Information -->
+        <div class="info-card glass">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-info-circle"></i>
+            </div>
+            <h3>Invoice Information</h3>
+          </div>
+          <div class="card-body">
+            <div class="details-list">
+              <div class="detail-row">
+                <span class="detail-label">Status</span>
+                <span class="detail-value">
+                  <span class="status-badge" [class]="'status-' + getStatusClass(invoice.status)">
+                    <span class="status-dot"></span>
+                    {{ getStatusLabel(invoice.status) | titlecase }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Invoice #</span>
+                <span class="detail-value">{{ invoice.invoiceNumber }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Issue Date</span>
+                <span class="detail-value">{{ formatDate(invoice.issueDate) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Due Date</span>
+                <span class="detail-value" [class.overdue]="isOverdue(invoice.dueDate)">{{ formatDate(invoice.dueDate)
+                  }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Currency</span>
+                <span class="detail-value">{{ invoice.currency }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Payment Terms</span>
+                <span class="detail-value">{{ invoice.paymentTerms }}</span>
+              </div>
+              <div class="detail-row" *ngIf="invoice.customerId">
+                <span class="detail-label">Customer ID</span>
+                <span class="detail-value">{{ invoice.customerId }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Summary -->
+        <div class="info-card glass">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-wallet"></i>
+            </div>
+            <h3>Payment Status</h3>
+          </div>
+          <div class="card-body">
+            <div class="payment-overview">
+              <div class="overview-row"
+                style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                <span class="label" style="color: #4a5a6e;">Total Amount:</span>
+                <span class="value font-bold" style="font-weight: 700;">{{ formatCurrency(invoice.totalAmount) }}</span>
+              </div>
+              <div class="overview-row text-success"
+                style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem; color: #137333;">
+                <span class="label">Paid to Date:</span>
+                <span class="value font-bold" style="font-weight: 700;">{{ formatCurrency(invoice.amountPaid) }}</span>
+              </div>
+              <div class="overview-row text-danger"
+                style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.95rem; color: #c5221f;">
+                <span class="label">Balance Due:</span>
+                <span class="value font-bold" style="font-weight: 700;">{{ formatCurrency(invoice.balanceDue) }}</span>
+              </div>
+            </div>
+
+            <!-- List of recorded payments for this invoice -->
+            <div class="payment-ledger" *ngIf="invoicePayments.length > 0"
+              style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #dce3ec;">
+              <h4
+                style="font-size: 0.75rem; font-weight: 700; color: #7a8a9e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+                Transaction History</h4>
+              <div class="ledger-item" *ngFor="let p of invoicePayments"
+                style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eef2f7;">
+                <div class="ledger-meta" style="display: flex; flex-direction: column;">
+                  <span class="payment-no" style="font-weight: 600; font-size: 0.85rem; color: #0f1a2e;">{{
+                    p.paymentNumber }}</span>
+                  <span class="payment-date" style="font-size: 0.75rem; color: #7a8a9e;">{{ formatDate(p.orderDate)
+                    }}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <div class="ledger-amount" style="display: flex; flex-direction: column; text-align: right;">
+                    <span class="amount" style="font-weight: 700; font-size: 0.85rem; color: #137333;">{{
+                      formatCurrency(p.paidAmount || 0) }}</span>
+                    <span class="method" style="font-size: 0.75rem; color: #7a8a9e;">via {{ (p.paymentMethod || 'CASH').replace('_', ' ') |
+                      titlecase }}</span>
+                  </div>
+                  <button (click)="openReceiptForPayment(p.id)" title="View Payment Receipt" style="background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.35rem 0.65rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-receipt"></i> Receipt
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="no-payments-yet" *ngIf="invoicePayments.length === 0"
+              style="margin-top: 0.75rem; font-size: 0.8rem; color: #7a8a9e;">
+              <p><i class="fas fa-info-circle" style="margin-right: 0.25rem;"></i> No payment transactions recorded yet.
+              </p>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Customer Info -->
+        <div class="info-card glass">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-user"></i>
+            </div>
+            <h3>Customer</h3>
+          </div>
+          <div class="card-body">
+            <div class="customer-info">
+              <div class="customer-avatar">
+                <span>{{ (invoice.customerName?.name || '').charAt(0).toUpperCase() || '?' }}</span>
+              </div>
+              <div class="customer-details">
+                <strong>{{ invoice.customerName?.name || invoice.customerName }}</strong>
+              </div>
+            </div>
+            <button class="btn-view-customer" (click)="viewCustomer()">
+              <i class="fas fa-external-link-alt"></i> View Customer
+            </button>
+          </div>
+        </div>
+
+        <!-- Actions Card (Mobile) -->
+        <div class="info-card glass mobile-actions">
+          <div class="card-header">
+            <div class="card-header-icon">
+              <i class="fas fa-cog"></i>
+            </div>
+            <h3>Actions</h3>
+          </div>
+          <div class="card-body">
+            <div class="mobile-action-buttons">
+              <!-- Send Invoice (DRAFT) -->
+              <button *ngIf="invoice.status === 'DRAFT'" (click)="sendInvoice()" class="btn-action-mobile send">
+                <i class="fas fa-paper-plane"></i> Send Invoice
+              </button>
+
+
+
+              <!-- Download PDF -->
+              <button (click)="downloadPDF()" class="btn-action-mobile download" [disabled]="isDownloading">
+                <i class="fas" [class.fa-download]="!isDownloading" [class.fa-spinner]="isDownloading"
+                  [class.fa-spin]="isDownloading"></i>
+                {{ isDownloading ? 'Downloading...' : 'Download PDF' }}
+              </button>
+
+              <!-- Cancel Invoice (any status except CANCELLED) -->
+              <button *ngIf="invoice.status !== 'CANCELLED'" (click)="cancelInvoice()"
+                class="btn-action-mobile decline">
+                <i class="fas fa-ban"></i> Cancel Invoice
+              </button>
+
+              <!-- Edit (DRAFT) -->
+              <button *ngIf="invoice.status === 'DRAFT'" (click)="editInvoice()" class="btn-action-mobile edit">
+                <i class="fas fa-pencil-alt"></i> Edit
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="isLoading" class="loading-state">
+  <div class="spinner-glow"></div>
+  <p>Loading invoice details...</p>
+</div>
+
+<!-- Error State -->
+<div *ngIf="!isLoading && !invoice" class="error-state">
+  <div class="error-content">
+    <i class="fas fa-file-invoice-dollar fa-4x"></i>
+    <h2>Invoice Not Found</h2>
+    <p>The invoice you're looking for doesn't exist or has been removed.</p>
+    <button class="btn-primary" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i> Back to Invoices
+    </button>
+  </div>
+</div>
+
+<!-- Official Payment Receipt Overlay -->
+<app-payment-receipt *ngIf="showReceiptModal" [paymentId]="selectedReceiptPaymentId" (closed)="closeReceipt()"></app-payment-receipt>
+
+<!-- Custom Send Invoice Confirmation Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showSendInvoiceModal" (click)="showSendInvoiceModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(46, 178, 112, 0.12); color: #2EB270;">
+          <i class="fas fa-paper-plane"></i>
+        </div>
+        <h3>Send Invoice</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showSendInvoiceModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(46, 178, 112, 0.1); color: #2EB270; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
+        <i class="fas fa-paper-plane"></i>
+      </div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Send Invoice?</h4>
+      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Send invoice <strong>{{ pendingInvoiceNumber }}</strong> to <strong>{{ pendingCustomerName }}</strong>?
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showSendInvoiceModal = false">Cancel</button>
+      <button type="button" class="btn-modal-save" (click)="confirmSendInvoice()">
+        <i class="fas fa-paper-plane"></i> Send Invoice
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Cancel Invoice Confirmation Modal Overlay -->
+<div class="custom-modal-backdrop" *ngIf="showCancelInvoiceModal" (click)="showCancelInvoiceModal = false">
+  <div class="custom-modal-card" (click)="$event.stopPropagation()" style="max-width: 440px;">
+    <div class="custom-modal-header">
+      <div class="header-title-group">
+        <div class="icon-badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+          <i class="fas fa-ban"></i>
+        </div>
+        <h3>Cancel Invoice</h3>
+      </div>
+      <button type="button" class="btn-close-modal" (click)="showCancelInvoiceModal = false">&times;</button>
+    </div>
+
+    <div class="custom-modal-body" style="padding: 1.5rem; text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem auto;">
+        <i class="fas fa-ban"></i>
+      </div>
+      <h4 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; font-weight: 700; color: #0f172a;">Cancel Invoice?</h4>
+      <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+        Are you sure you want to cancel invoice <strong>{{ pendingInvoiceNumber }}</strong>?
+      </p>
+    </div>
+
+    <div class="custom-modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; gap: 0.75rem; justify-content: flex-end;">
+      <button type="button" class="btn-modal-cancel" (click)="showCancelInvoiceModal = false">Close</button>
+      <button type="button" class="btn-modal-save" (click)="confirmCancelInvoice()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);">
+        <i class="fas fa-ban"></i> Cancel Invoice
+      </button>
+    </div>
+  </div>
+</div>

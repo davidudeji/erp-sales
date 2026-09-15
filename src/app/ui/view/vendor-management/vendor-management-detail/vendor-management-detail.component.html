@@ -1,0 +1,404 @@
+<!-- vendor-management-detail.component.html -->
+<div class="vendor-detail">
+    <div class="detail-wrapper">
+
+        <!-- ============================================================
+        LOADING STATE
+        ============================================================ -->
+        <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner-glow"></div>
+            <p>Loading vendor details...</p>
+        </div>
+
+        <!-- ============================================================
+        ERROR STATE
+        ============================================================ -->
+        <div *ngIf="error && !isLoading" class="error-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Failed to Load Vendor</h3>
+            <p>{{ error }}</p>
+            <button class="btn-primary" (click)="retry()">
+                <i class="fas fa-sync-alt"></i> Retry
+            </button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading && vendor && !error">
+
+            <!-- ==========================================================
+            HEADER - Dark Blue Premium Card
+            ========================================================== -->
+            <div class="detail-header">
+                <div class="header-top">
+                    <div class="header-left">
+                        <button class="back-btn" (click)="goBack()">
+                            <i class="fas fa-arrow-left"></i>
+                            Back to Directory
+                        </button>
+                        <div class="vendor-brand">
+                            <div class="vendor-avatar-large">
+                                {{ vendor.companyName.charAt(0) }}
+                            </div>
+                            <div class="vendor-title">
+                                <h1 class="vendor-name">{{ vendor.companyName }}</h1>
+                                <div class="vendor-meta">
+                                    <span class="meta-item">
+                                        <i class="fas fa-id-card"></i>
+                                        {{ vendor.registrationNumber }}
+                                    </span>
+                                    <span class="meta-item">
+                                        <i class="fas fa-envelope"></i>
+                                        {{ vendor.email }}
+                                    </span>
+                                    <span class="meta-item">
+                                        <i class="fas fa-phone"></i>
+                                        {{ vendor.phone }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <div class="header-badges">
+                            <span class="badge-tier" [class.preferred]="vendor.tier === VendorTier.PREFERRED"
+                                [class.approved]="vendor.tier === VendorTier.APPROVED"
+                                [class.conditional]="vendor.tier === VendorTier.CONDITIONAL">
+                                {{ getVendorTierLabel(vendor.tier) }}
+                            </span>
+                            <span class="badge-status" [style.background]="getVendorStatusColor(vendor.status) + '20'"
+                                [style.color]="getVendorStatusColor(vendor.status)">
+                                <span class="status-dot"
+                                    [style.background]="getVendorStatusColor(vendor.status)"></span>
+                                {{ getStatusLabel(vendor.status) }}
+                            </span>
+                            <span class="badge-risk" [style.background]="getRiskLevelColor(vendor.riskLevel) + '20'"
+                                [style.color]="getRiskLevelColor(vendor.riskLevel)">
+                                <i class="fas fa-shield-alt"></i>
+                                {{ vendor.riskLevel }}
+                            </span>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn-refresh" (click)="refresh()" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <div class="status-dropdown" (click)="$event.stopPropagation()">
+                                <button class="btn-status" (click)="showStatusDropdown = !showStatusDropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                    Status
+                                    <i class="fas fa-chevron-down" [class.open]="showStatusDropdown"></i>
+                                </button>
+                                <div class="dropdown-menu" *ngIf="showStatusDropdown">
+                                    <button *ngFor="let status of getStatusOptions()" (click)="changeStatus(status)"
+                                        [class.active]="vendor.status === status">
+                                        <span class="status-dot"
+                                            [style.background]="getVendorStatusColor(status)"></span>
+                                        {{ getStatusLabel(status) }}
+                                    </button>
+                                </div>
+                            </div>
+                            <button class="btn-edit" (click)="toggleEdit()">
+                                <i class="fas" [class.fa-edit]="!isEditing" [class.fa-times]="isEditing"></i>
+                                {{ isEditing ? 'Cancel' : 'Edit' }}
+                            </button>
+                            <button class="btn-save" (click)="saveVendor()" [disabled]="!isEditing || isSaving">
+                                <i class="fas fa-save"></i>
+                                {{ isSaving ? 'Saving...' : 'Save' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Mode Indicator -->
+                <div class="edit-banner" *ngIf="isEditing">
+                    <i class="fas fa-pencil-alt"></i>
+                    You are editing vendor information. Changes will be saved when you click Save.
+                </div>
+            </div>
+
+            <!-- ==========================================================
+            TABS
+            ========================================================== -->
+            <div class="tabs-container" #tabsContainer>
+                <div class="tabs-scroll">
+                    <button *ngFor="let tab of (registration ? ['overview','registration','performance','risk','documents','contracts','activity'] : ['overview','performance','risk','documents','contracts','activity'])"
+                        class="tab-btn" [class.active]="activeTab === tab" (click)="setActiveTab(tab)">
+                        <i class="fas" [class.fa-home]="tab === 'overview'"
+                            [class.fa-clipboard-list]="tab === 'registration'"
+                            [class.fa-chart-line]="tab === 'performance'" [class.fa-shield-alt]="tab === 'risk'"
+                            [class.fa-file-alt]="tab === 'documents'" [class.fa-file-contract]="tab === 'contracts'"
+                            [class.fa-history]="tab === 'activity'"></i>
+                        {{ getTabLabel(tab) }}
+                        <span class="tab-badge"
+                            *ngIf="tab === 'risk' && openRiskAlertsCount > 0">
+                            {{ openRiskAlertsCount }}
+                        </span>
+                        <span class="tab-badge"
+                            *ngIf="tab === 'documents' && expiringOrExpiredDocsCount > 0">
+                            {{ expiringOrExpiredDocsCount }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==========================================================
+            TAB CONTENT
+            ========================================================== -->
+            <div class="tab-content">
+
+                <!-- ========================================================
+                OVERVIEW TAB - Using the component
+                ======================================================== -->
+                <div *ngIf="activeTab === 'overview'" class="tab-panel">
+                    <app-overview
+                        [vendor]="vendor"
+                        (navigateToPerformance)="setActiveTab('performance')"
+                        (navigateToRisk)="setActiveTab('risk')"
+                        (navigateToDocuments)="setActiveTab('documents')"
+                        (navigateToEdit)="navigateToEdit()">
+                    </app-overview>
+                </div>
+
+                <!-- ========================================================
+                REGISTRATION TAB - Everything the vendor entered on the portal
+                ======================================================== -->
+                <div *ngIf="activeTab === 'registration' && registration as reg" class="tab-panel">
+
+                    <!-- Business Identity -->
+                    <div class="info-card" *ngIf="reg.step1 as s1">
+                        <h3><i class="fas fa-building"></i> Business Identity</h3>
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">Business Name</span><span class="info-value">{{ s1.businessName || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Trading Name</span><span class="info-value">{{ s1.tradingName || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Business Type</span><span class="info-value">{{ getBusinessTypeLabel(s1.businessType) }}</span></div>
+                            <div class="info-item"><span class="info-label">Business Size</span><span class="info-value">{{ getBusinessSizeLabel(s1.businessSize) }}</span></div>
+                            <div class="info-item"><span class="info-label">Ownership Type</span><span class="info-value">{{ getOwnershipTypeLabel(s1.ownershipType) }}</span></div>
+                            <div class="info-item"><span class="info-label">Year Established</span><span class="info-value">{{ s1.yearEstablished || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Number of Employees</span><span class="info-value">{{ s1.numberOfEmployees || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Annual Turnover</span><span class="info-value">{{ s1.annualTurnoverRange || '—' }} {{ s1.currency }}</span></div>
+                            <div class="info-item"><span class="info-label">Website</span><span class="info-value">{{ s1.websiteUrl || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">LinkedIn</span><span class="info-value">{{ s1.linkedinUrl || '—' }}</span></div>
+                            <div class="info-item full-width"><span class="info-label">Business Description</span><span class="info-value">{{ s1.businessDescription || '—' }}</span></div>
+                            <div class="info-item full-width" *ngIf="s1.missionStatement"><span class="info-label">Mission Statement</span><span class="info-value">{{ s1.missionStatement }}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Legal & Compliance -->
+                    <div class="info-card" *ngIf="reg.step2 as s2">
+                        <h3><i class="fas fa-gavel"></i> Legal &amp; Compliance</h3>
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">CAC Registration No.</span><span class="info-value">{{ s2.cacRegistrationNumber || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">CAC Registration Date</span><span class="info-value">{{ formatDate(s2.cacRegistrationDate) }}</span></div>
+                            <div class="info-item"><span class="info-label">TIN</span><span class="info-value">{{ s2.tinNumber || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">VAT Registered</span><span class="info-value">{{ yesNo(s2.vatRegistered) }} {{ s2.vatNumber ? '(' + s2.vatNumber + ')' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Tax Clearance Expiry</span><span class="info-value">{{ formatDate(s2.taxClearanceExpiryDate) }}</span></div>
+                            <div class="info-item"><span class="info-label">NAFDAC No.</span><span class="info-value">{{ s2.nafdacNumber || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">DPR Licence No.</span><span class="info-value">{{ s2.dprLicenceNumber || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">SON Certification No.</span><span class="info-value">{{ s2.sonCertificationNumber || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">PENCOM No.</span><span class="info-value">{{ s2.pencomNumber || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">NSC No.</span><span class="info-value">{{ s2.nscNumber || '—' }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.otherLicences"><span class="info-label">Other Licences</span><span class="info-value">{{ s2.otherLicences }}</span></div>
+                            <div class="info-item"><span class="info-label">Public Liability Insurance</span><span class="info-value">{{ yesNo(s2.hasPublicLiabilityInsurance) }} {{ s2.publicLiabilityInsurer ? '— ' + s2.publicLiabilityInsurer : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Professional Indemnity</span><span class="info-value">{{ yesNo(s2.hasProfessionalIndemnity) }} {{ s2.professionalIndemnityInsurer ? '— ' + s2.professionalIndemnityInsurer : '' }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.isoStandards?.length"><span class="info-label">ISO Standards</span><span class="info-value">{{ s2.isoStandards.join(', ') }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.otherCertifications"><span class="info-label">Other Certifications</span><span class="info-value">{{ s2.otherCertifications }}</span></div>
+                            <div class="info-item"><span class="info-label">Previously Blacklisted</span><span class="info-value">{{ yesNo(s2.hasBeenBlacklisted) }}</span></div>
+                            <div class="info-item"><span class="info-label">Pending Litigation</span><span class="info-value">{{ yesNo(s2.hasLitigationPending) }}</span></div>
+                            <div class="info-item"><span class="info-label">Criminal Conviction</span><span class="info-value">{{ yesNo(s2.hasCriminalConviction) }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.blacklistedDetails"><span class="info-label">Blacklist Details</span><span class="info-value">{{ s2.blacklistedDetails }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.litigationDetails"><span class="info-label">Litigation Details</span><span class="info-value">{{ s2.litigationDetails }}</span></div>
+                            <div class="info-item full-width" *ngIf="s2.criminalDetails"><span class="info-label">Criminal Details</span><span class="info-value">{{ s2.criminalDetails }}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Contact & Location -->
+                    <div class="info-card" *ngIf="reg.step3 as s3">
+                        <h3><i class="fas fa-map-marker-alt"></i> Contact &amp; Location</h3>
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">Primary Contact</span><span class="info-value">{{ s3.primaryContactName || '—' }} ({{ s3.primaryContactTitle }})</span></div>
+                            <div class="info-item"><span class="info-label">Primary Email / Phone</span><span class="info-value">{{ s3.primaryContactEmail || '—' }} · {{ s3.primaryContactPhone || '—' }}</span></div>
+                            <div class="info-item" *ngIf="s3.hasSecondaryContact"><span class="info-label">Secondary Contact</span><span class="info-value">{{ s3.secondaryContactName }} ({{ s3.secondaryContactTitle }})</span></div>
+                            <div class="info-item" *ngIf="s3.hasSecondaryContact"><span class="info-label">Secondary Email / Phone</span><span class="info-value">{{ s3.secondaryContactEmail || '—' }} · {{ s3.secondaryContactPhone || '—' }}</span></div>
+                            <div class="info-item full-width"><span class="info-label">Registered Address</span><span class="info-value">{{ s3.registeredAddressLine1 }} {{ s3.registeredAddressLine2 }}, {{ s3.registeredCity }}, {{ s3.registeredState }}, {{ s3.registeredCountry }} {{ s3.registeredPostalCode }}</span></div>
+                            <div class="info-item full-width" *ngIf="!s3.operatingAddressSameAsRegistered"><span class="info-label">Operating Address</span><span class="info-value">{{ s3.operatingAddressLine1 }} {{ s3.operatingAddressLine2 }}, {{ s3.operatingCity }}, {{ s3.operatingState }} {{ s3.operatingPostalCode }}</span></div>
+                            <div class="info-item full-width" *ngIf="s3.hasWarehouse"><span class="info-label">Warehouse</span><span class="info-value">{{ s3.warehouseAddressLine1 }}, {{ s3.warehouseCity }}, {{ s3.warehouseState }} — Capacity: {{ s3.warehouseCapacity || '—' }}</span></div>
+                            <div class="info-item full-width"><span class="info-label">Delivery Regions</span><span class="info-value">{{ getDeliveryRegionLabels(s3.deliveryRegions) }}</span></div>
+                            <div class="info-item"><span class="info-label">Own Delivery Fleet</span><span class="info-value">{{ yesNo(s3.hasOwnDeliveryFleet) }} {{ s3.fleetSize ? '(' + s3.fleetSize + ' vehicles)' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Delivery Lead Time</span><span class="info-value">{{ s3.deliveryLeadTimeDays }} day(s)</span></div>
+                            <div class="info-item"><span class="info-label">Nationwide Delivery</span><span class="info-value">{{ yesNo(s3.canDeliverNationwide) }}</span></div>
+                            <div class="info-item"><span class="info-label">International Delivery</span><span class="info-value">{{ yesNo(s3.canDeliverInternationally) }}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Banking & Finance -->
+                    <div class="info-card" *ngIf="reg.step4 as s4">
+                        <h3><i class="fas fa-university"></i> Banking &amp; Finance</h3>
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">Primary Bank</span><span class="info-value">{{ s4.primaryBankName || '—' }} {{ s4.primaryBankBranch ? '(' + s4.primaryBankBranch + ')' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Primary Account</span><span class="info-value">{{ s4.primaryAccountName || '—' }} · {{ s4.primaryAccountNumber || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Account Type / Currency</span><span class="info-value">{{ s4.primaryAccountType }} · {{ s4.primaryCurrency }}</span></div>
+                            <div class="info-item"><span class="info-label">Sort / SWIFT / IBAN</span><span class="info-value">{{ s4.primarySortCode || '—' }} / {{ s4.primarySwiftCode || '—' }} / {{ s4.primaryIban || '—' }}</span></div>
+                            <div class="info-item" *ngIf="s4.hasSecondaryBankAccount"><span class="info-label">Secondary Bank</span><span class="info-value">{{ s4.secondaryBankName }} — {{ s4.secondaryAccountName }} · {{ s4.secondaryAccountNumber }}</span></div>
+                            <div class="info-item"><span class="info-label">Preferred Payment Terms</span><span class="info-value">{{ s4.preferredPaymentTerms || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Advance Payment</span><span class="info-value">{{ yesNo(s4.acceptsAdvancePayment) }} {{ s4.advancePaymentPercentage ? '(' + s4.advancePaymentPercentage + '%)' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Letter of Credit</span><span class="info-value">{{ yesNo(s4.acceptsLetterOfCredit) }}</span></div>
+                            <div class="info-item"><span class="info-label">Mobile Money</span><span class="info-value">{{ yesNo(s4.acceptsMobileMoney) }} {{ s4.mobileMoneyNumber ? '— ' + s4.mobileMoneyNumber : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Credit Rating</span><span class="info-value">{{ s4.creditRating || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Audited Accounts</span><span class="info-value">{{ yesNo(s4.annualAuditedAccounts) }} {{ s4.auditFirmName ? '— ' + s4.auditFirmName : '' }} {{ s4.lastAuditYear || '' }}</span></div>
+                            <div class="info-item" *ngIf="s4.bankReference1Name"><span class="info-label">Bank Reference</span><span class="info-value">{{ s4.bankReference1Name }} — {{ s4.bankReference1Contact }}</span></div>
+                            <div class="info-item" *ngIf="s4.tradeReference1Company"><span class="info-label">Trade Reference 1</span><span class="info-value">{{ s4.tradeReference1Company }} — {{ s4.tradeReference1Contact }} ({{ s4.tradeReference1Email }})</span></div>
+                            <div class="info-item" *ngIf="s4.tradeReference2Company"><span class="info-label">Trade Reference 2</span><span class="info-value">{{ s4.tradeReference2Company }} — {{ s4.tradeReference2Contact }} ({{ s4.tradeReference2Email }})</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Capabilities & Experience -->
+                    <div class="info-card" *ngIf="reg.step5 as s5">
+                        <h3><i class="fas fa-tools"></i> Capabilities &amp; Experience</h3>
+                        <div class="info-grid">
+                            <div class="info-item full-width"><span class="info-label">Supply Categories</span><span class="info-value">{{ getSupplyCategoryLabels(s5.supplyCategories) }}</span></div>
+                            <div class="info-item"><span class="info-label">Primary Category</span><span class="info-value">{{ getSupplyCategoryLabel(s5.primaryCategory) }}</span></div>
+                            <div class="info-item full-width"><span class="info-label">Category Description</span><span class="info-value">{{ s5.categoryDescription || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Emergency Orders</span><span class="info-value">{{ yesNo(s5.canHandleEmergencyOrders) }} {{ s5.emergencyLeadTimeHours ? '(' + s5.emergencyLeadTimeHours + 'h)' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Order Value Range</span><span class="info-value">{{ s5.minimumOrderValue || '—' }} – {{ s5.maximumOrderValue || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Bulk Discount</span><span class="info-value">{{ yesNo(s5.bulkDiscountAvailable) }} {{ s5.bulkDiscountDetails ? '— ' + s5.bulkDiscountDetails : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Quality Mgmt System</span><span class="info-value">{{ yesNo(s5.hasQualityManagementSystem) }} {{ s5.qmsStandard ? '(' + s5.qmsStandard + ')' : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Inspection Facility</span><span class="info-value">{{ yesNo(s5.hasInspectionFacility) }}</span></div>
+                            <div class="info-item full-width"><span class="info-label">Business Role</span><span class="info-value">
+                                <ng-container *ngIf="s5.isManufacturer">Manufacturer&nbsp;&nbsp;</ng-container>
+                                <ng-container *ngIf="s5.isDistributor">Distributor&nbsp;&nbsp;</ng-container>
+                                <ng-container *ngIf="s5.isServiceProvider">Service Provider&nbsp;&nbsp;</ng-container>
+                                <ng-container *ngIf="s5.isImporter">Importer</ng-container>
+                                <ng-container *ngIf="!s5.isManufacturer && !s5.isDistributor && !s5.isServiceProvider && !s5.isImporter">—</ng-container>
+                            </span></div>
+                            <div class="info-item"><span class="info-label">Completed Projects</span><span class="info-value">{{ s5.completedProjectsCount || 0 }}</span></div>
+                            <div class="info-item"><span class="info-label">Largest Project</span><span class="info-value">{{ formatCurrency(s5.largestProjectValue || 0) }} {{ s5.largestProjectDescription ? '— ' + s5.largestProjectDescription : '' }}</span></div>
+                            <div class="info-item"><span class="info-label">Technical Staff</span><span class="info-value">{{ s5.technicalStaffCount || '—' }}</span></div>
+                            <div class="info-item full-width" *ngIf="s5.industryAssociations"><span class="info-label">Industry Associations</span><span class="info-value">{{ s5.industryAssociations }}</span></div>
+                            <div class="info-item full-width" *ngIf="s5.awardsRecognitions"><span class="info-label">Awards &amp; Recognitions</span><span class="info-value">{{ s5.awardsRecognitions }}</span></div>
+                        </div>
+
+                        <!-- Major Clients -->
+                        <div *ngIf="s5.majorClients?.length" style="margin-top: 1rem;">
+                            <span class="info-label">Major Clients</span>
+                            <div class="contacts-list" style="margin-top: 0.5rem;">
+                                <div class="contact-item" *ngFor="let c of s5.majorClients">
+                                    <div>
+                                        <strong>{{ c.companyName }}</strong>
+                                        <span *ngIf="c.contractValue"> — {{ formatCurrency(c.contractValue) }} ({{ c.contractYear }})</span>
+                                        <div *ngIf="c.description" style="color: #6a8e89; font-size: 0.85rem;">{{ c.description }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Personnel -->
+                        <div *ngIf="s5.keyPersonnelList?.length" style="margin-top: 1rem;">
+                            <span class="info-label">Key Personnel</span>
+                            <div class="contacts-list" style="margin-top: 0.5rem;">
+                                <div class="contact-item" *ngFor="let p of s5.keyPersonnelList">
+                                    <div>
+                                        <strong>{{ p.name }}</strong> — {{ p.title }}
+                                        <span *ngIf="p.qualification">, {{ p.qualification }}</span>
+                                        <span *ngIf="p.yearsExperience"> ({{ p.yearsExperience }} yrs experience)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents & Declaration -->
+                    <div class="info-card" *ngIf="reg.step6 as s6">
+                        <h3><i class="fas fa-file-signature"></i> Declaration</h3>
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">Declarant</span><span class="info-value">{{ s6.declarantName || '—' }} ({{ s6.declarantTitle }})</span></div>
+                            <div class="info-item"><span class="info-label">Declarant Contact</span><span class="info-value">{{ s6.declarantEmail || '—' }} · {{ s6.declarantPhone || '—' }}</span></div>
+                            <div class="info-item"><span class="info-label">Declaration Date</span><span class="info-value">{{ formatDate(s6.declarationDate) }}</span></div>
+                            <div class="info-item full-width"><span class="info-label">Agreements Accepted</span><span class="info-value">
+                                Terms: {{ yesNo(s6.agreedToTerms) }} · Privacy: {{ yesNo(s6.agreedToPrivacyPolicy) }} ·
+                                Code of Conduct: {{ yesNo(s6.agreedToCodeOfConduct) }} · Anti-Corruption: {{ yesNo(s6.agreedToAntiCorruption) }} ·
+                                Accuracy Confirmed: {{ yesNo(s6.confirmedAccuracy) }}
+                            </span></div>
+                        </div>
+                        <p style="margin: 0.75rem 0 0; font-size: 0.8rem; color: #6a8e89;">
+                            <i class="fas fa-paperclip"></i> {{ (s6.uploadedDocuments?.length || 0) }} document(s) submitted — see the
+                            <a href="javascript:void(0)" (click)="setActiveTab('documents')">Documents tab</a> for files and verification status.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- ========================================================
+                PERFORMANCE TAB - Using the component
+                ======================================================== -->
+                <div *ngIf="activeTab === 'performance'" class="tab-panel">
+                    <app-vendor-performance [performance]="performance">
+                    </app-vendor-performance>
+                </div>
+
+                <!-- ========================================================
+                RISK TAB - Using the component
+                ======================================================== -->
+                <div *ngIf="activeTab === 'risk'" class="tab-panel">
+                    <app-vendor-risk
+                        [vendor]="vendor"
+                        [riskAlerts]="riskAlerts">
+                    </app-vendor-risk>
+                </div>
+
+               <!-- ========================================================
+                DOCUMENTS TAB - Using the component
+                ======================================================== -->
+                <div *ngIf="activeTab === 'documents'" class="tab-panel">
+                    <app-vendor-documents
+                        [documents]="documents"
+                        [vendorId]="vendorId"
+                        [isLoading]="isLoading"
+                        (uploadDocument)="handleDocumentUpload($event)"
+                        (deleteDocument)="handleDocumentDelete($event)"
+                        (verifyDocument)="handleDocumentVerify($event)"
+                        (refresh)="loadRelatedData()">
+                    </app-vendor-documents>
+                </div>
+
+                <!-- ========================================================
+                CONTRACTS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'contracts'" class="tab-panel">
+                    <!-- Contracts content goes here -->
+                </div>
+
+                <!-- ========================================================
+                ACTIVITY TAB
+                ======================================================== -->
+               <div *ngIf="activeTab === 'activity'" class="tab-panel">
+                    <app-vendor-activity
+                        [vendorId]="vendorId"
+                        [lifecycleHistory]="lifecycleHistory">
+                    </app-vendor-activity>
+                </div>
+
+            </div>
+        </ng-container>
+
+        <!-- ============================================================
+        CONFIRM DIALOG
+        ============================================================ -->
+        <div class="confirm-overlay" *ngIf="showConfirmDialog">
+            <div class="confirm-dialog">
+                <div class="confirm-header">
+                    <i class="fas fa-exclamation-triangle" style="color: #DC2626;"></i>
+                    <h3>Confirm Action</h3>
+                </div>
+                <p>{{ confirmMessage }}</p>
+                <div class="confirm-actions">
+                    <button class="btn-secondary" (click)="cancelDialog()">Cancel</button>
+                    <button class="btn-danger" (click)="confirmDialogAction()" [disabled]="isSaving">
+                        {{ isSaving ? 'Processing...' : 'Confirm' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(grep -B15 \"Error occurs in the template of component VendorManagementDetailComponent\" /tmp/build_out.txt | head -40)",
+      "Read(//private/tmp/**)",
+      "Bash(grep -E \"\\\\[ERROR\\\\]|Build failed|Application bundle generation complete\" /tmp/build_out.txt)",
+      "Bash(npx ng *)",
+      "Bash(tee /tmp/build_alerts.txt)",
+      "Read(//tmp/**)",
+      "Bash(grep -n \"</ng-container>\\\\|^\\\\s*</div>\\\\s*$\")",
+      "Bash(grep -n \"^\\\\.paper-document-preview\\\\s*{$\\\\|paper-document-preview\\\\.standard\\\\|paper-document-preview\\\\.minimal\\\\|paper-document-preview\\\\.detailed\\\\|paper-document-preview\\\\.compact\\\\|paper-document-preview\\\\.custom-client\\\\|paper-document-preview\\\\.emirates\" /Users/eseoseodion/erp-sales/src/app/ui/view/sales-hub/invoices/invoice-form/invoice-form.component.scss)",
+      "Bash(rm -rf .angular/cache)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(lsof -ti:4200 -sTCP:LISTEN)"
+    ]
+  }
+}

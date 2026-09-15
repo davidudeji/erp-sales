@@ -1,0 +1,81 @@
+<div class="container-fluid">
+  <div class="container-header">
+    <!-- <button routerLink="/invoice-modal" class="btn create-invoice-btn">
+        Create New Quotation <i class="fas fa-plus"></i>
+      </button> -->
+  </div>
+  <div class="bottom-container">
+    <div class="top-products-container">
+      <div class="top-products">
+        <!-- <p class="top-products-title">Recent Purcheases</p> -->
+        <div class="top-products-table-container">
+          <table class="top-products-table w3-table w3-striped">
+            <thead>
+              <tr class="top-products-table-row">
+                <th class="top-products-table-head">Invoice Number</th>
+                <th class="top-products-table-head">Vendor ID</th>
+                <th class="top-products-table-head">Invoice Date</th>
+                <th class="top-products-table-head">Due Date</th>
+                <th class="top-products-table-head">Invoice Amount</th>
+                <th class="top-products-table-head">Payment Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                class="top-products-table-row"
+                *ngFor="let item of tableData; let i = index"
+              >
+                <td class="top-products-table-data">{{ item.dateAndTime }}</td>
+                <td class="top-products-table-data">{{ item.invoice }}</td>
+                <td class="top-products-table-data">{{ item.invoiceNo }}</td>
+                <td class="top-products-table-data">{{ item.clientName }}</td>
+                <td class="top-products-table-data">₦{{ item.amount }}</td>
+                <td class="top-products-table-data">{{ item.status }}</td>
+                <td class="top-products-table-data action">
+                  <span
+                    class="tb-action-btn1"
+                    mat-raised-button
+                    #tooltip="matTooltip"
+                    matTooltip="Open"
+                    matTooltipPosition="below"
+                  >
+                    <i class="fa-regular fa-folder-open"></i>
+                  </span>
+                  <span
+                    class="tb-action-btn2 ms-4 me-4"
+                    mat-raised-button
+                    #tooltip="matTooltip"
+                    matTooltip="Edit"
+                    matTooltipPosition="below"
+                  >
+                    <i class="fas fa-file-pen"></i>
+                  </span>
+                  <span
+                    class="tb-action-btn3"
+                    mat-raised-button
+                    #tooltip="matTooltip"
+                    matTooltip="Delete"
+                    matTooltipPosition="below"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index">
+                  <td class="top-products-table-data">{{ item.id }}</td>
+                  <td class="top-products-table-data">{{ item.name }}</td>
+                  <td class="top-products-table-data">
+                    <tr class="progress-bar mt-2">
+                      <td class="progress" [style.width.%]="item.progress" [style.background-color]="item.color"></td>
+                    </tr>
+                  </td>
+                  <td class="top-products-table-data"><span>{{ item.progress }}%</span></td>
+                </tr> -->
+    </div>
+  </div>
+</div>

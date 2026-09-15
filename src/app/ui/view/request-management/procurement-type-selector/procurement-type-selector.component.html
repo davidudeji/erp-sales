@@ -1,0 +1,41 @@
+<div class="procurement-type-selector">
+  <div class="selector-header">
+    <app-back-button></app-back-button>
+    <div class="header-content">
+      <h2>What would you like to procure?</h2>
+      <p class="subtitle">Select the type of procurement to get started with the right form</p>
+    </div>
+  </div>
+
+  <div class="type-grid">
+    <div 
+      *ngFor="let type of procurementTypes"
+      class="type-card"
+      [class.selected]="typeForm.get('procurementType')?.value === type.value"
+      [class.locked]="type.value === 'SERVICE'"
+      (click)="selectType(type.value)">
+      <div class="type-card-inner">
+        <div class="type-icon-wrapper">
+          <i [class]="type.icon"></i>
+        </div>
+        <div class="type-content">
+          <h3>{{ type.label }}</h3>
+          <p>{{ type.description }}</p>
+          <span class="coming-soon-badge" *ngIf="type.value === 'SERVICE'">Coming Soon</span>
+        </div>
+        <div class="type-check" *ngIf="typeForm.get('procurementType')?.value === type.value">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="selector-footer">
+    <button 
+      class="btn-proceed" 
+      [disabled]="!typeForm.valid"
+      (click)="proceed()">
+      Proceed to Details <i class="fas fa-arrow-right"></i>
+    </button>
+  </div>
+</div>

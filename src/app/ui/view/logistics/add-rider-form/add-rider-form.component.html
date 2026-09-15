@@ -1,0 +1,85 @@
+<app-side-modal (close)="close()">
+  <div class="h-full flex flex-col">
+    <!-- Header -->
+    <div class="flex items-start justify-between pb-4 border-b border-[#e5eaed]">
+      <div>
+        <p class="text-[11px] font-medium text-[#9aa7ae] uppercase tracking-wide mb-1">Rider Activity</p>
+        <h2 class="text-[19px] font-bold text-[#14181b]">Add Rider</h2>
+      </div>
+      <button
+        type="button"
+        (click)="close()"
+        class="w-8 h-8 rounded-full flex items-center justify-center text-[#71828a] hover:bg-[#eef2f5] hover:text-[#14181b] transition-colors shrink-0"
+        aria-label="Close"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18 6 6 18M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <form class="flex-1 overflow-y-auto py-5 space-y-5" (ngSubmit)="submit()">
+
+      <div>
+        <label class="arf-label">Full Name</label>
+        <input type="text" class="arf-input" placeholder="e.g. Amaka Nwosu" [(ngModel)]="form.name" name="name" required />
+      </div>
+
+      <div>
+        <label class="arf-label">Email Address</label>
+        <input type="email" class="arf-input" placeholder="rider@logistics.com" [(ngModel)]="form.email" name="email" required />
+      </div>
+
+      <div>
+        <label class="arf-label">Phone Number</label>
+        <input type="tel" class="arf-input" placeholder="+234 800 000 0000" [(ngModel)]="form.phone" name="phone" required />
+      </div>
+
+      <div>
+        <label class="arf-label">Vehicle Type</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            *ngFor="let vt of [VehicleType.BIKE, VehicleType.VAN, VehicleType.TRUCK]"
+            class="arf-option"
+            [class.selected]="form.vehicleType === vt"
+            (click)="form.vehicleType = vt"
+          >
+            {{ vt | titlecase }}
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="arf-label">Initial Status</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            class="arf-option"
+            [class.selected]="form.activeStatus === RiderActiveStatus.AVAILABLE"
+            (click)="form.activeStatus = RiderActiveStatus.AVAILABLE"
+          >
+            Available
+          </button>
+          <button
+            type="button"
+            class="arf-option"
+            [class.selected]="form.activeStatus === RiderActiveStatus.OFFLINE"
+            (click)="form.activeStatus = RiderActiveStatus.OFFLINE"
+          >
+            Offline
+          </button>
+        </div>
+      </div>
+
+      <p *ngIf="errorMessage" class="text-[12.5px] text-[#dc2626] font-medium">{{ errorMessage }}</p>
+    </form>
+
+    <div class="pt-4 border-t border-[#eef2f5] flex justify-end gap-2">
+      <button type="button" class="arf-btn arf-btn-outline" (click)="close()">Cancel</button>
+      <button type="button" class="arf-btn arf-btn-primary" [disabled]="isSubmitting" (click)="submit()">
+        {{ isSubmitting ? 'Adding…' : 'Add Rider' }}
+      </button>
+    </div>
+  </div>
+</app-side-modal>

@@ -1,0 +1,44 @@
+<nav>
+  <div class="card">
+    <div class="logo-wrapper">
+      <img src="../../../../../assets/Logo-green.png" alt="Logo" />
+    </div>
+  </div>
+</nav>
+
+<div class="---">
+  <div class="container card">
+    <div class="d-flex justify-between" *ngIf="job">
+      <div class="job-info">
+        <h1 class="h1-color" style="font-size: 3.5rem;"><strong>{{ job.title }}</strong></h1>
+        <p class="color-pdate"><span>By Admin</span> - {{ job.postedDate }}</p>
+        <br>
+        <p *ngIf="job.expiryDate"><strong>Expiring on:</strong> {{ job.expiryDate }}</p>
+        <br>
+        <p *ngIf="job.category"><strong>Category:</strong> {{ job.category }}</p>
+        <p *ngIf="job.emplomentType"><strong>Employment Type:</strong> {{ job.employmentType }}</p>
+        <p *ngIf="job.experience"><strong>Experience:</strong> {{ job.experience }}</p>
+        <p *ngIf="job.location"><strong>Location:</strong> {{ job.location }}</p>
+        <!-- <p><strong>Posted Date:</strong> {{ job.postedDate }}</p> -->
+        <p *ngIf="job.qualification"><strong>Qualification:</strong> {{ job.qualification }}</p>
+        <p *ngIf="job.specification"><strong>Specification:</strong> {{ job.specification }}</p>
+        <p><strong>Description:</strong></p>
+        <div style="text-align: justify;" [innerHTML]="job.description"></div>
+      </div>
+      <div class="job-form d-flex justify-center item-center" >
+        <div class="card p-4">
+          <h2><strong>Apply for this position</strong></h2>
+          <div *ngFor="let field of job.fields">
+            <label>{{ field.label }}:</label>
+            <input class="editInput" [type]="field.type" [required]="field.required">
+          </div>
+          <div class="btn-wrapper">
+          <app-button text="Submit" class="btn-save" ></app-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-dashboard-footer></app-dashboard-footer>

@@ -1,0 +1,6 @@
+{
+  "outputDirectory": "dist/erp-sales/browser",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

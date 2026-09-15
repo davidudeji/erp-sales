@@ -1,0 +1,753 @@
+<p-toast position="top-right"></p-toast>
+
+<!-- ══ OVERDUE BANNER ══════════════════════════════════════════════════════ -->
+<div class="if-overdue-banner"
+     *ngIf="isEditMode && invoiceForm.get('dueDate')?.value && invoiceForm.get('dueDate')?.value < today">
+  <i class="fas fa-exclamation-triangle"></i>
+  <span>This invoice is <strong>overdue</strong>. Due date was {{ invoiceForm.get('dueDate')?.value | date:'dd MMM yyyy' }}.</span>
+</div>
+
+<!-- ══ LOADING ═════════════════════════════════════════════════════════════ -->
+<div class="if-loading" *ngIf="isLoading">
+  <i class="fas fa-circle-notch if-loading-spinner"></i>
+  <span>Loading invoice data…</span>
+</div>
+
+<!-- ══ SHELL ═══════════════════════════════════════════════════════════════ -->
+<div class="if-shell" *ngIf="!isLoading">
+
+  <!-- TOP ACTION BAR -->
+  <header class="if-topbar">
+    <div class="if-topbar-left">
+      <app-back-button (click)="cancel()"></app-back-button>
+      <nav class="if-breadcrumb">
+        <span>Sales</span>
+        <i class="fas fa-chevron-right"></i>
+        <span>Invoices</span>
+        <i class="fas fa-chevron-right"></i>
+        <span class="if-breadcrumb-active">{{ isEditMode ? 'Edit Invoice' : 'New Invoice' }}</span>
+      </nav>
+      <span class="if-chip" *ngIf="quoteId"><i class="fas fa-exchange-alt"></i> From Quote</span>
+    </div>
+    <div class="if-topbar-right">
+      <button type="button" class="if-btn if-btn--ghost" (click)="cancel()">
+        <i class="fas fa-times"></i> Discard
+      </button>
+      <button type="button" class="if-btn if-btn--draft" [disabled]="isSavingDraft || isSubmitting" (click)="saveDraft()" title="Save as draft">
+        <i class="fas fa-circle-notch fa-spin" *ngIf="isSavingDraft"></i>
+        <i class="fas fa-save" *ngIf="!isSavingDraft"></i>
+        {{ isSavingDraft ? 'Saving…' : 'Save Draft' }}
+      </button>
+      <button type="button" class="if-btn if-btn--ghost" (click)="prevStep()" *ngIf="currentStep > 1">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <button type="button" class="if-btn if-btn--primary" [disabled]="isSubmitting" (click)="currentStep < 4 ? nextStep() : onSubmit()">
+        <i class="fas fa-circle-notch fa-spin" *ngIf="isSubmitting"></i>
+        <ng-container *ngIf="!isSubmitting">
+          <ng-container *ngIf="currentStep < 4">Continue <i class="fas fa-arrow-right"></i></ng-container>
+          <ng-container *ngIf="currentStep === 4"><i class="fas fa-check"></i> {{ isEditMode ? 'Update Invoice' : 'Create Invoice' }}</ng-container>
+        </ng-container>
+      </button>
+    </div>
+  </header>
+
+  <!-- STEP INDICATOR -->
+  <nav class="if-steps">
+    <div class="if-step" [class.if-step--active]="currentStep === 1" [class.if-step--done]="currentStep > 1" (click)="goToStep(1)">
+      <div class="if-step-bubble">{{ currentStep > 1 ? '✓' : '1' }}</div>
+      <span>Invoice Details</span>
+    </div>
+    <div class="if-step-line" [class.if-step-line--done]="currentStep > 1"></div>
+    <div class="if-step" [class.if-step--active]="currentStep === 2" [class.if-step--done]="currentStep > 2" (click)="goToStep(2)">
+      <div class="if-step-bubble">{{ currentStep > 2 ? '✓' : '2' }}</div>
+      <span>Payment Terms</span>
+    </div>
+    <div class="if-step-line" [class.if-step-line--done]="currentStep > 2"></div>
+    <div class="if-step" [class.if-step--active]="currentStep === 3" [class.if-step--done]="currentStep > 3" (click)="goToStep(3)">
+      <div class="if-step-bubble">{{ currentStep > 3 ? '✓' : '3' }}</div>
+      <span>Template</span>
+    </div>
+    <div class="if-step-line" [class.if-step-line--done]="currentStep > 3"></div>
+    <div class="if-step" [class.if-step--active]="currentStep === 4" (click)="goToStep(4)">
+      <div class="if-step-bubble">4</div>
+      <span>Preview &amp; Send</span>
+    </div>
+  </nav>
+
+  <!-- ══ STEP 1: Invoice Details + Live Preview ════════════════════════════ -->
+  <div class="if-body" *ngIf="currentStep === 1" [formGroup]="invoiceForm">
+
+    <!-- LEFT: Form -->
+    <div class="if-form-col">
+
+      <!-- Invoice Info -->
+      <div class="if-card">
+        <div class="if-card-head"><i class="fas fa-file-invoice"></i> Invoice Information</div>
+        <div class="if-card-body">
+          <div class="if-grid-2">
+            <div class="if-field">
+              <label class="if-label">Invoice Number</label>
+              <input class="if-input" formControlName="invoiceNumber" readonly>
+            </div>
+            <div class="if-field">
+              <label class="if-label">Currency <span class="if-req">*</span></label>
+              <select class="if-select" formControlName="currency">
+                <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="if-grid-2">
+            <div class="if-field">
+              <label class="if-label">Issue Date <span class="if-req">*</span></label>
+              <input type="date" class="if-input" formControlName="issueDate" [class.if-input--err]="isFieldInvalid('issueDate')">
+              <span class="if-field-err" *ngIf="isFieldInvalid('issueDate')">Issue date is required</span>
+            </div>
+            <div class="if-field">
+              <label class="if-label">Due Date <span class="if-req">*</span></label>
+              <input type="date" class="if-input" formControlName="dueDate" [class.if-input--err]="isFieldInvalid('dueDate')">
+              <span class="if-field-err" *ngIf="invoiceForm.get('dueDate')?.errors?.['pastDate']">Due date is in the past</span>
+              <span class="if-field-err" *ngIf="invoiceForm.get('dueDate')?.errors?.['dateBefore']">Must be after issue date</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bill To -->
+      <div class="if-card">
+        <div class="if-card-head">
+          <i class="fas fa-user"></i> Bill To
+          <button type="button" class="if-card-action" (click)="showNewCustomerModal = true">
+            <i class="fas fa-plus"></i> Quick Add Client
+          </button>
+        </div>
+        <div class="if-card-body">
+          <div class="if-field">
+            <label class="if-label">Customer <span class="if-req">*</span></label>
+            <select class="if-select" formControlName="customerId" (change)="onCustomerSelect(invoiceForm.get('customerId')?.value)" [class.if-select--err]="isFieldInvalid('customerId')">
+              <option value="">— Select Customer —</option>
+              <option *ngFor="let c of customers" [value]="c.customerId || c.id">{{ c.name }}</option>
+            </select>
+            <span class="if-field-err" *ngIf="isFieldInvalid('customerId')">Customer is required</span>
+          </div>
+          <div class="if-field" *ngIf="selectedCustomerBankAccounts.length > 0">
+            <label class="if-label">Payment Bank Account</label>
+            <select class="if-select" formControlName="selectedCustomerBankIndex">
+              <option [value]="-1">— Select Bank Account —</option>
+              <option *ngFor="let b of selectedCustomerBankAccounts; let i = index" [value]="i">
+                {{ b.bankName }} — {{ b.accountNumber }} ({{ b.accountName }})
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="if-card">
+        <div class="if-card-head">
+          <i class="fas fa-list"></i> Line Items
+          <span class="if-card-badge">{{ items.length }} item{{ items.length !== 1 ? 's' : '' }}</span>
+        </div>
+        <div class="if-card-body--flush">
+          <div class="if-items-wrap">
+            <table class="if-items-table" formArrayName="items">
+              <thead>
+                <tr>
+                  <th class="if-th-desc">Description</th>
+                  <th class="if-th-med">Product</th>
+                  <th class="if-th-sm if-th-right">Qty</th>
+                  <th class="if-th-med if-th-right">Unit Price</th>
+                  <th class="if-th-sm if-th-right">Tax %</th>
+                  <th class="if-th-med if-th-right">Total</th>
+                  <th class="if-th-del"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="if-item-row" *ngFor="let item of items.controls; let i = index" [formGroupName]="i">
+                  <td>
+                    <input type="text" class="if-cell-input if-cell-input--wide" formControlName="productName" placeholder="Item name…">
+                  </td>
+                  <td>
+                    <div class="if-product-cell">
+                      <select class="if-cell-select" formControlName="productId" (change)="onProductSelect(i, item.get('productId')?.value)">
+                        <option value="">Select…</option>
+                        <option *ngFor="let p of products" [value]="p.productId || p.id">{{ p.name }}</option>
+                      </select>
+                      <button type="button" class="if-btn-new-product" (click)="openNewProductModal(i)" title="Create new product">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                  </td>
+                  <td>
+                    <input type="number" class="if-cell-input if-cell-input--num" formControlName="quantity" min="1">
+                  </td>
+                  <td>
+                    <input type="number" class="if-cell-input if-cell-input--num" formControlName="unitPrice" min="0" step="0.01">
+                  </td>
+                  <td>
+                    <input type="number" class="if-cell-input if-cell-input--num" formControlName="taxRate" min="0" max="100">
+                  </td>
+                  <td class="if-line-total">
+                    {{ formatCurrency(item.get('total')?.value || 0) }}
+                  </td>
+                  <td>
+                    <button type="button" class="if-del-btn" (click)="removeLineItem(i)" [disabled]="items.length === 1" title="Remove">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="if-add-item-row">
+            <button type="button" class="if-btn if-btn--dashed if-btn--sm" (click)="addLineItem()">
+              <i class="fas fa-plus"></i> Add Item
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing Summary -->
+      <div class="if-card">
+        <div class="if-card-head"><i class="fas fa-calculator"></i> Pricing</div>
+        <div class="if-card-body">
+          <div class="if-pricing-rows">
+            <div class="if-pricing-row">
+              <span class="if-pricing-label">Subtotal</span>
+              <span class="if-pricing-value">{{ formatCurrency(subtotal) }}</span>
+            </div>
+            <div class="if-pricing-row">
+              <div class="if-pricing-label">
+                Discount
+                <button type="button" class="if-btn if-btn--ghost if-btn--sm" style="margin-left:8px" (click)="addDiscounts()">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+              </div>
+              <span class="if-pricing-value" *ngIf="discountAmount > 0">−{{ formatCurrency(discountAmount) }}</span>
+              <span class="if-pricing-value" style="color:var(--muted)" *ngIf="discountAmount === 0">None</span>
+            </div>
+            <div class="if-pricing-row">
+              <span class="if-pricing-label">Tax</span>
+              <div class="if-discount-ctrl">
+                <input type="number" class="if-input if-input--sm" style="width:70px" formControlName="taxRate" min="0" max="100" placeholder="0">
+                <span class="if-pricing-label">%</span>
+                <span class="if-pricing-value">{{ formatCurrency(taxAmount || totalTax) }}</span>
+              </div>
+            </div>
+            <div class="if-pricing-row">
+              <div class="if-pricing-label">
+                Additional Charges
+                <button type="button" class="if-btn if-btn--ghost if-btn--sm" style="margin-left:8px" (click)="addAdditionalCharges()">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <span class="if-pricing-value" *ngIf="additionalCharges > 0">+{{ formatCurrency(additionalCharges) }}</span>
+              <span class="if-pricing-value" style="color:var(--muted)" *ngIf="additionalCharges === 0">None</span>
+            </div>
+            <div class="if-pricing-row if-pricing-row--total">
+              <span class="if-pricing-label" style="font-weight:700;color:var(--text)">Grand Total</span>
+              <span class="if-pricing-value if-pricing-value--grand">{{ formatCurrency(grandTotal) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="if-card">
+        <div class="if-card-head"><i class="fas fa-sticky-note"></i> Notes &amp; Terms</div>
+        <div class="if-card-body">
+          <div class="if-field">
+            <label class="if-label">Notes (visible to client)</label>
+            <textarea class="if-textarea" formControlName="notes" rows="3" placeholder="Thank you for your business…"></textarea>
+          </div>
+          <div class="if-field">
+            <label class="if-label">Terms &amp; Conditions</label>
+            <textarea class="if-textarea" formControlName="terms" rows="3" placeholder="Payment is due within 30 days…"></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Live Invoice Preview -->
+    <div class="if-preview-col">
+      <div class="if-preview-toolbar">
+        <span class="if-preview-label"><i class="fas fa-eye"></i> Live Preview</span>
+        <button type="button" class="if-logo-btn" (click)="triggerLogoUpload()">
+          <i class="fas fa-image"></i> {{ logoFileName || 'Add Logo' }}
+        </button>
+      </div>
+
+      <div class="if-doc-card" id="invoice-preview-document">
+        <!-- Document Header -->
+        <div class="if-doc-header">
+          <div class="if-doc-brand">
+            <img *ngIf="logoUrl" [src]="logoUrl" class="if-doc-logo" alt="logo">
+            <span class="if-doc-company-name">{{ billedBy.name || billedByDraft.name || 'Your Company' }}</span>
+            <span class="if-doc-company-sub" *ngIf="billedBy.address || billedByDraft.address">{{ billedBy.address || billedByDraft.address }}</span>
+          </div>
+          <div class="if-doc-badge-wrap">
+            <div class="if-doc-badge">INVOICE</div>
+            <div class="if-doc-badge-num">Auto-generated</div>
+          </div>
+        </div>
+
+        <!-- Meta grid -->
+        <div class="if-doc-meta">
+          <div>
+            <span class="if-doc-meta-label">Issue Date</span>
+            {{ invoiceForm.get('issueDate')?.value | date:'dd MMM yyyy' }}
+          </div>
+          <div>
+            <span class="if-doc-meta-label">Due Date</span>
+            {{ invoiceForm.get('dueDate')?.value | date:'dd MMM yyyy' }}
+            <span class="if-doc-overdue"
+                  *ngIf="invoiceForm.get('dueDate')?.value && invoiceForm.get('dueDate')?.value < today">
+              OVERDUE
+            </span>
+          </div>
+          <div>
+            <span class="if-doc-meta-label">Currency</span>
+            {{ invoiceForm.get('currency')?.value }}
+          </div>
+          <div>
+            <span class="if-doc-meta-label">Payment Terms</span>
+            {{ invoiceForm.get('paymentTerms')?.value || '—' }}
+          </div>
+        </div>
+
+        <!-- Prepared For / Prepared By -->
+        <div class="if-doc-parties">
+          <div class="if-doc-party">
+            <div class="if-doc-section-label">PREPARED FOR</div>
+            <div class="if-doc-billto">
+              <strong>{{ invoiceForm.get('customerName')?.value || 'Client Name' }}</strong>
+              <span *ngIf="selectedCustomer?.address?.length" class="if-doc-party-addr">{{ selectedCustomer?.address?.join(', ') }}</span>
+            </div>
+          </div>
+          <div class="if-doc-party">
+            <div class="if-doc-section-label">
+              PREPARED BY
+              <button type="button" class="if-doc-edit-link" (click)="editBilledBy()" title="Edit sender details">
+                <i class="fas fa-pen"></i> Edit
+              </button>
+            </div>
+            <div class="if-doc-billto">
+              <strong>{{ billedBy.name || billedByDraft.name || 'Your Company' }}</strong>
+              <span *ngIf="billedBy.address || billedByDraft.address" class="if-doc-party-addr">{{ billedBy.address || billedByDraft.address }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items mini-table -->
+        <div class="if-doc-section">
+          <div class="if-doc-section-label">Items</div>
+          <table class="if-doc-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="if-doc-th-r">Qty</th>
+                <th class="if-doc-th-r">Price</th>
+                <th class="if-doc-th-r">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of items.controls">
+                <td>{{ item.get('productName')?.value || '—' }}</td>
+                <td class="if-doc-td-r">{{ item.get('quantity')?.value }}</td>
+                <td class="if-doc-td-r">{{ formatCurrency(item.get('unitPrice')?.value || 0) }}</td>
+                <td class="if-doc-td-r">{{ formatCurrency(item.get('total')?.value || 0) }}</td>
+              </tr>
+              <tr *ngIf="items.length === 0">
+                <td colspan="4" class="if-doc-empty">No items added yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totals -->
+        <div class="if-doc-totals">
+          <div class="if-doc-totals-row">
+            <span>Subtotal</span><span>{{ formatCurrency(subtotal) }}</span>
+          </div>
+          <div class="if-doc-totals-row" *ngIf="discountAmount > 0">
+            <span>Discount</span><span>−{{ formatCurrency(discountAmount) }}</span>
+          </div>
+          <div class="if-doc-totals-row" *ngFor="let charge of additionalChargeItems">
+            <span>{{ charge.label }}</span><span>{{ formatCurrency(charge.amount) }}</span>
+          </div>
+          <div class="if-doc-totals-row" *ngIf="(taxAmount || totalTax) > 0">
+            <span>Tax</span><span>{{ formatCurrency(taxAmount || totalTax) }}</span>
+          </div>
+          <div class="if-doc-totals-row if-doc-totals-grand">
+            <span>Total Due</span><span>{{ formatCurrency(grandTotal) }}</span>
+          </div>
+        </div>
+
+        <!-- Payment Details -->
+        <div class="if-doc-section" *ngIf="billedBy.bankName || billedBy.accountNumber">
+          <div class="if-doc-section-label">PAYMENT DETAILS</div>
+          <div class="if-doc-bank">
+            <div class="if-doc-bank-row" *ngIf="billedBy.bankName">
+              <span class="if-doc-bank-key">Bank</span>
+              <span class="if-doc-bank-val">{{ billedBy.bankName }}</span>
+            </div>
+            <div class="if-doc-bank-row" *ngIf="billedBy.accountName">
+              <span class="if-doc-bank-key">Account Name</span>
+              <span class="if-doc-bank-val">{{ billedBy.accountName }}</span>
+            </div>
+            <div class="if-doc-bank-row" *ngIf="billedBy.accountNumber">
+              <span class="if-doc-bank-key">Account Number</span>
+              <span class="if-doc-bank-val if-doc-bank-num">{{ billedBy.accountNumber }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="if-doc-notes" *ngIf="invoiceForm.get('notes')?.value">
+          <div class="if-doc-section-label">NOTES</div>
+          <p style="white-space:pre-line">{{ invoiceForm.get('notes')?.value }}</p>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="if-doc-notes" *ngIf="invoiceForm.get('terms')?.value">
+          <div class="if-doc-section-label">TERMS &amp; CONDITIONS</div>
+          <p style="white-space:pre-line">{{ invoiceForm.get('terms')?.value }}</p>
+        </div>
+
+        <div class="if-doc-footer">
+          <span *ngIf="billedBy.address || billedByDraft.address">{{ billedBy.address || billedByDraft.address }}</span>
+          <span *ngIf="billedBy.email || billedBy.phone">{{ billedBy.email }}{{ billedBy.email && billedBy.phone ? ' · ' : '' }}{{ billedBy.phone }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ STEP 2: Payment Terms ════════════════════════════════════════════ -->
+  <div class="if-body if-body--centered" *ngIf="currentStep === 2">
+    <div style="max-width:760px;width:100%">
+
+      <div class="if-terms-box">
+        <div class="if-section-label">Select Payment Terms</div>
+        <div class="if-terms-grid">
+          <div *ngFor="let term of presetTermsList"
+               class="if-term-card"
+               [class.if-term-card--active]="selectedPresetTerm === term.id"
+               (click)="selectPresetTerm(term.id)">
+            <div class="if-term-icon"><i class="fas" [class]="'fa-' + term.icon"></i></div>
+            <div class="if-term-name">{{ term.name }}</div>
+            <div class="if-term-desc">{{ term.desc }}</div>
+          </div>
+        </div>
+
+        <div *ngIf="selectedPresetTerm === 'Custom'" style="margin-bottom:16px">
+          <label class="if-section-label">Custom Days</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" class="if-input" style="width:120px" [value]="paymentPeriodDays" (change)="onCustomDaysChange(+$any($event.target).value)" min="1" max="365">
+            <span style="font-size:13px;color:var(--muted)">days from invoice date</span>
+          </div>
+        </div>
+
+        <div class="if-section-label" style="margin-top:16px">Payment Mode</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <label class="if-method-card" [class.if-method-card--active]="paymentMode === 'ONE-OFF'" (click)="paymentMode = 'ONE-OFF'" style="cursor:pointer">
+            <i class="fas fa-file-invoice-dollar"></i> One-Off
+          </label>
+          <label class="if-method-card" [class.if-method-card--active]="paymentMode === 'MONTHLY'" (click)="paymentMode = 'MONTHLY'" style="cursor:pointer">
+            <i class="fas fa-calendar-alt"></i> Installments
+          </label>
+        </div>
+
+        <div *ngIf="paymentMode === 'MONTHLY'" style="margin-bottom:16px">
+          <label class="if-section-label">Number of Installments</label>
+          <input type="number" class="if-input" style="max-width:120px" [(ngModel)]="numberOfInstallments" min="2" max="60">
+        </div>
+
+        <div class="if-section-label" style="margin-top:16px">Accepted Payment Methods</div>
+        <div class="if-method-grid">
+          <div *ngFor="let m of paymentMethodsList"
+               class="if-method-card"
+               [class.if-method-card--active]="paymentMethod === m.value"
+               (click)="paymentMethod = m.value">
+            <i class="fas" [class]="'fa-' + m.icon"></i>
+            <span>{{ m.label }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="if-terms-box" *ngIf="selectedPresetTerm">
+        <div class="if-section-label">Terms Text (sent to client)</div>
+        <textarea class="if-textarea" style="width:100%" rows="4" [(ngModel)]="customTermsText"></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: Template ═════════════════════════════════════════════════ -->
+  <div class="if-body if-body--centered" *ngIf="currentStep === 3">
+    <app-template-types [quoteData]="invoiceDataForTemplate" (templateSelected)="onTemplateSelected($event)"></app-template-types>
+  </div>
+
+  <!-- ══ STEP 4: Preview & Send ═══════════════════════════════════════════ -->
+  <div class="if-body if-body--centered" *ngIf="currentStep === 4">
+    <div class="if-deliver-card">
+      <div class="if-deliver-icon"><i class="fas fa-paper-plane"></i></div>
+      <h2 class="if-deliver-title">Ready to Send?</h2>
+      <p class="if-deliver-sub">Choose how you want to deliver this invoice to your client.</p>
+
+      <div class="if-deliver-options">
+        <label class="if-deliver-opt" [class.active]="selectedAction === 'pdf'" (click)="selectedAction = 'pdf'">
+          <input type="radio" name="deliverAction" value="pdf">
+          <i class="fas fa-file-pdf"></i>
+          Download PDF
+        </label>
+        <label class="if-deliver-opt" [class.active]="selectedAction === 'email'" (click)="selectedAction = 'email'">
+          <input type="radio" name="deliverAction" value="email">
+          <i class="fas fa-envelope"></i>
+          Send Email
+        </label>
+        <label class="if-deliver-opt" [class.active]="selectedAction === 'both'" (click)="selectedAction = 'both'">
+          <input type="radio" name="deliverAction" value="both">
+          <i class="fas fa-share-alt"></i>
+          Both
+        </label>
+      </div>
+
+      <button type="button" class="if-btn if-btn--primary if-btn--lg" [disabled]="isSubmitting" (click)="onSubmit()">
+        <i class="fas fa-circle-notch fa-spin" *ngIf="isSubmitting"></i>
+        <ng-container *ngIf="!isSubmitting">
+          <i class="fas fa-check"></i> {{ isEditMode ? 'Update Invoice' : 'Create Invoice' }}
+        </ng-container>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ QUICK CLIENT MODAL ════════════════════════════════════════════════ -->
+<div class="if-modal-backdrop" *ngIf="showNewCustomerModal" (click)="$event.target === $event.currentTarget && (showNewCustomerModal = false)">
+  <div class="if-modal" [formGroup]="quickCustomerForm">
+    <div class="if-modal-head">
+      <span>Quick Add Client</span>
+      <button type="button" class="if-modal-close" (click)="showNewCustomerModal = false"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="if-modal-body">
+      <div class="if-grid-2">
+        <div class="if-field">
+          <label class="if-label">Name <span class="if-req">*</span></label>
+          <input class="if-input" [class.if-input--err]="isQuickFieldInvalid('name')" formControlName="name" placeholder="Full name">
+        </div>
+        <div class="if-field">
+          <label class="if-label">Email <span class="if-req">*</span></label>
+          <input type="email" class="if-input" [class.if-input--err]="isQuickFieldInvalid('email')" formControlName="email" placeholder="email@example.com">
+        </div>
+      </div>
+      <div class="if-grid-2">
+        <div class="if-field">
+          <label class="if-label">Phone</label>
+          <input class="if-input" formControlName="phone" placeholder="+234…">
+        </div>
+        <div class="if-field">
+          <label class="if-label">Tax ID / RC Number</label>
+          <input class="if-input" formControlName="taxId" placeholder="Optional">
+        </div>
+      </div>
+      <div class="if-field">
+        <label class="if-label">Address <span class="if-req">*</span></label>
+        <textarea class="if-textarea" formControlName="address" rows="2" placeholder="Client address…"></textarea>
+      </div>
+
+      <div style="margin-bottom:10px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Bank Accounts</div>
+      <div formArrayName="bankAccounts">
+        <div *ngFor="let bank of quickCustomerBankAccounts.controls; let i = index" [formGroupName]="i" class="if-bank-row">
+          <div class="if-field" style="flex:1;margin-bottom:0">
+            <input class="if-input if-input--sm" formControlName="bankName" placeholder="Bank name">
+          </div>
+          <div class="if-field" style="flex:1;margin-bottom:0">
+            <input class="if-input if-input--sm" formControlName="accountNumber" placeholder="Account number">
+          </div>
+          <div class="if-field" style="flex:1;margin-bottom:0">
+            <input class="if-input if-input--sm" formControlName="accountName" placeholder="Account name">
+          </div>
+          <button type="button" class="if-del-btn" (click)="removeQuickCustomerBankAccount(i)"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <button type="button" class="if-btn if-btn--dashed if-btn--sm" (click)="addQuickCustomerBankAccount()">
+        <i class="fas fa-plus"></i> Add Bank
+      </button>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+        <input type="checkbox" id="savePermCb" formControlName="savePermanently">
+        <label for="savePermCb" style="font-size:13px;cursor:pointer">Save client permanently to CRM</label>
+      </div>
+    </div>
+    <div class="if-modal-foot">
+      <button type="button" class="if-btn if-btn--ghost" [disabled]="isSavingCustomer" (click)="showNewCustomerModal = false">Cancel</button>
+      <button type="button" class="if-btn if-btn--primary" [disabled]="isSavingCustomer" (click)="onQuickCustomerSubmit()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSavingCustomer"></i>
+        <i class="fas fa-user-plus" *ngIf="!isSavingCustomer"></i>
+        {{ isSavingCustomer ? 'Saving…' : 'Add Client' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT SENDER (PREPARED BY) MODAL ══════════════════════════════════ -->
+<div class="if-modal-backdrop" *ngIf="showBilledByModal" (click)="$event.target === $event.currentTarget && cancelBilledByEdit()">
+  <div class="if-modal" style="max-width:480px">
+    <div class="if-modal-head">
+      <span><i class="fas fa-building"></i> Sender Details</span>
+      <button type="button" class="if-modal-close" (click)="cancelBilledByEdit()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="if-modal-body">
+      <div class="if-field">
+        <label class="if-label">Company Name <span class="if-req">*</span></label>
+        <input class="if-input" [(ngModel)]="billedByDraft.name" [ngModelOptions]="{standalone:true}" placeholder="e.g. Optimax Suites Ltd">
+      </div>
+      <div class="if-field">
+        <label class="if-label">Address</label>
+        <textarea class="if-textarea" rows="2" [(ngModel)]="billedByDraft.address" [ngModelOptions]="{standalone:true}" placeholder="Company address"></textarea>
+      </div>
+      <div class="if-grid-2">
+        <div class="if-field">
+          <label class="if-label">Email</label>
+          <input type="email" class="if-input" [(ngModel)]="billedByDraft.email" [ngModelOptions]="{standalone:true}" placeholder="company@example.com">
+        </div>
+        <div class="if-field">
+          <label class="if-label">Phone</label>
+          <input class="if-input" [(ngModel)]="billedByDraft.phone" [ngModelOptions]="{standalone:true}" placeholder="+234…">
+        </div>
+      </div>
+      <div class="if-field">
+        <label class="if-label">Bank Name</label>
+        <input class="if-input" [(ngModel)]="billedByDraft.bankName" [ngModelOptions]="{standalone:true}" placeholder="e.g. First Bank">
+      </div>
+      <div class="if-grid-2">
+        <div class="if-field">
+          <label class="if-label">Account Name</label>
+          <input class="if-input" [(ngModel)]="billedByDraft.accountName" [ngModelOptions]="{standalone:true}">
+        </div>
+        <div class="if-field">
+          <label class="if-label">Account Number</label>
+          <input class="if-input" [(ngModel)]="billedByDraft.accountNumber" [ngModelOptions]="{standalone:true}">
+        </div>
+      </div>
+    </div>
+    <div class="if-modal-foot">
+      <button type="button" class="if-btn if-btn--ghost" [disabled]="isSavingBilledBy" (click)="cancelBilledByEdit()">Cancel</button>
+      <button type="button" class="if-btn if-btn--primary" [disabled]="isSavingBilledBy" (click)="saveBilledBy()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSavingBilledBy"></i>
+        <i class="fas fa-check" *ngIf="!isSavingBilledBy"></i>
+        {{ isSavingBilledBy ? 'Saving…' : 'Save' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DISCOUNT MODAL ════════════════════════════════════════════════════ -->
+<div class="if-modal-backdrop" *ngIf="showDiscountModal" (click)="$event.target === $event.currentTarget && (showDiscountModal = false)">
+  <div class="if-modal" style="max-width:380px">
+    <div class="if-modal-head">
+      <span>Set Discount</span>
+      <button type="button" class="if-modal-close" (click)="showDiscountModal = false"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="if-modal-body">
+      <div class="if-field">
+        <label class="if-label">Discount Type</label>
+        <div style="display:flex;gap:8px">
+          <label class="if-method-card" [class.if-method-card--active]="modalDiscountType === 'PERCENTAGE'" (click)="modalDiscountType = 'PERCENTAGE'" style="cursor:pointer;flex:1;justify-content:center">
+            <i class="fas fa-percent"></i> Percentage
+          </label>
+          <label class="if-method-card" [class.if-method-card--active]="modalDiscountType === 'FIXED'" (click)="modalDiscountType = 'FIXED'" style="cursor:pointer;flex:1;justify-content:center">
+            <i class="fas fa-tag"></i> Fixed
+          </label>
+        </div>
+      </div>
+      <div class="if-field">
+        <label class="if-label">Amount</label>
+        <input type="number" class="if-input" [(ngModel)]="modalDiscountAmount" min="0" [max]="modalDiscountType === 'PERCENTAGE' ? 100 : null">
+      </div>
+    </div>
+    <div class="if-modal-foot">
+      <button type="button" class="if-btn if-btn--ghost" (click)="showDiscountModal = false">Cancel</button>
+      <button type="button" class="if-btn if-btn--primary" (click)="saveDiscountModal()"><i class="fas fa-check"></i> Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADDITIONAL CHARGES MODAL ═════════════════════════════════════════ -->
+<div class="if-modal-backdrop" *ngIf="showChargesModal" (click)="$event.target === $event.currentTarget && (showChargesModal = false)">
+  <div class="if-modal">
+    <div class="if-modal-head">
+      <span>Additional Charges</span>
+      <button type="button" class="if-modal-close" (click)="showChargesModal = false"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="if-modal-body">
+      <!-- Existing charges (editable) -->
+      <div *ngFor="let charge of modalChargesList; let i = index" style="margin-bottom:8px">
+        <input class="if-input" style="width:100%;margin-bottom:4px" [(ngModel)]="charge.label" placeholder="Label (e.g. Shipping, Service Fee…)">
+        <div class="if-bank-row" style="margin:0">
+          <input type="number" class="if-input if-input--grow" [(ngModel)]="charge.amount" min="0" placeholder="Amount">
+          <button type="button" class="if-del-btn" (click)="removeChargeItemFromModal(i)"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <!-- Add new charge -->
+      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+        <input class="if-input" style="width:100%;margin-bottom:6px" [(ngModel)]="newChargeLabel" placeholder="New charge label (e.g. Delivery, Installation, Tax…)">
+        <div class="if-bank-row" style="margin:0">
+          <input type="number" class="if-input if-input--grow" [(ngModel)]="newChargeAmount" min="0" placeholder="Amount">
+          <button type="button" class="if-btn if-btn--dashed if-btn--sm" (click)="addChargeItemToModal()"><i class="fas fa-plus"></i> Add</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:13px;font-weight:700;color:var(--p)" *ngIf="modalChargesList.length > 0">
+        Total Extra Charges: <strong>{{ formatCurrency(modalTotalCharges) }}</strong>
+      </div>
+    </div>
+    <div class="if-modal-foot">
+      <button type="button" class="if-btn if-btn--ghost" (click)="showChargesModal = false">Cancel</button>
+      <button type="button" class="if-btn if-btn--primary" (click)="saveChargesModal()"><i class="fas fa-check"></i> Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CREATE PRODUCT MODAL ══════════════════════════════════════════════ -->
+<div class="if-modal-backdrop" *ngIf="showNewProductModal" (click)="showNewProductModal = false">
+  <div class="if-modal" (click)="$event.stopPropagation()" style="max-width:480px">
+    <div class="if-modal-head">
+      <span><i class="fas fa-box-open"></i> Create New Product</span>
+      <button type="button" class="if-modal-close" (click)="showNewProductModal = false"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="if-modal-body">
+      <div style="display:flex;flex-direction:column;gap:.75rem">
+        <div class="if-field">
+          <label class="if-label">Product Name <span class="if-req">*</span></label>
+          <input class="if-input" [(ngModel)]="newProduct.name" placeholder="e.g. Website Design Package" />
+        </div>
+        <div class="if-field">
+          <label class="if-label">Description</label>
+          <textarea class="if-input" rows="2" [(ngModel)]="newProduct.description" placeholder="Optional description…"></textarea>
+        </div>
+        <div class="if-grid-2">
+          <div class="if-field">
+            <label class="if-label">Unit Price</label>
+            <input class="if-input" type="number" min="0" [(ngModel)]="newProduct.unitPrice" placeholder="0.00" />
+          </div>
+          <div class="if-field">
+            <label class="if-label">Tax Rate (%)</label>
+            <input class="if-input" type="number" min="0" max="100" [(ngModel)]="newProduct.taxRate" placeholder="0" />
+          </div>
+        </div>
+      </div>
+      <p *ngIf="newProductError" style="color:#dc2626;font-size:.85rem;margin-top:.5rem">{{ newProductError }}</p>
+    </div>
+    <div class="if-modal-foot">
+      <button type="button" class="if-btn if-btn--ghost" (click)="showNewProductModal = false">Cancel</button>
+      <button type="button" class="if-btn if-btn--primary" [disabled]="isSavingProduct" (click)="saveNewProduct()">
+        <i class="fas fa-spinner fa-spin" *ngIf="isSavingProduct"></i>
+        <i class="fas fa-check" *ngIf="!isSavingProduct"></i>
+        {{ isSavingProduct ? 'Saving…' : 'Create & Select' }}
+      </button>
+    </div>
+  </div>
+</div>
+

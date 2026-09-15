@@ -1,0 +1,195 @@
+<!-- branch-transfer-history.component.html -->
+<div class="ql-transfer-history" [class.ql-transfer-history--compact]="compact">
+
+    <!-- ============================================================
+    HEADER
+    ============================================================ -->
+    <div class="ql-transfer-header">
+        <div class="ql-transfer-header-left">
+            <h3><i class="fas fa-exchange-alt"></i> Transfer History</h3>
+            <span class="ql-transfer-count">{{ stats.total }} movements</span>
+        </div>
+        <div class="ql-transfer-header-right">
+            <button class="ql-btn ql-btn--ghost-sm" (click)="refresh()" [disabled]="isLoading">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+            </button>
+            <button class="ql-btn ql-btn--ghost-sm" (click)="showFilterDrawer = !showFilterDrawer" *ngIf="showFilters">
+                <i class="fas fa-sliders-h"></i>
+                <span *ngIf="getActiveFilterCount() > 0" class="ql-filter-badge">{{ getActiveFilterCount() }}</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    STATS ROW
+    ============================================================ -->
+    <div class="ql-transfer-stats" *ngIf="!compact">
+        <div class="ql-transfer-stat">
+            <span class="ql-transfer-stat-value">{{ stats.total }}</span>
+            <span class="ql-transfer-stat-label">Total</span>
+        </div>
+        <div class="ql-transfer-stat">
+            <span class="ql-transfer-stat-value" style="color:#2EB270;">{{ stats.incoming }}</span>
+            <span class="ql-transfer-stat-label">Incoming</span>
+        </div>
+        <div class="ql-transfer-stat">
+            <span class="ql-transfer-stat-value" style="color:#F59E0B;">{{ stats.outgoing }}</span>
+            <span class="ql-transfer-stat-label">Outgoing</span>
+        </div>
+        <div class="ql-transfer-stat">
+            <span class="ql-transfer-stat-value" style="color:#3B82F6;">{{ stats.inTransit }}</span>
+            <span class="ql-transfer-stat-label">In Transit</span>
+        </div>
+        <div class="ql-transfer-stat">
+            <span class="ql-transfer-stat-value" style="color:#2EB270;">{{ stats.completed }}</span>
+            <span class="ql-transfer-stat-label">Completed</span>
+        </div>
+        <div class="ql-transfer-stat">
+            <span class="ql-transfer-stat-value" style="color:#F59E0B;">{{ stats.pending }}</span>
+            <span class="ql-transfer-stat-label">Pending</span>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    FILTER DRAWER
+    ============================================================ -->
+    <div class="ql-transfer-filters" *ngIf="showFilterDrawer && showFilters" [formGroup]="filterForm">
+        <div class="ql-filter-row">
+            <div class="ql-filter-group">
+                <label class="ql-flabel">Search</label>
+                <input type="text" class="ql-filter-input" placeholder="Search products..." 
+                       (input)="onSearchInput($event)" [value]="filterForm.get('search')?.value || ''">
+            </div>
+            <div class="ql-filter-group">
+                <label class="ql-flabel">Type</label>
+                <select class="ql-filter-select" formControlName="type" (change)="applyFilters()">
+                    <option *ngFor="let type of movementTypes" [value]="type">
+                        {{ type === 'ALL' ? 'All Types' : getMovementTypeLabel(type) }}
+                    </option>
+                </select>
+            </div>
+            <div class="ql-filter-group">
+                <label class="ql-flabel">Status</label>
+                <select class="ql-filter-select" formControlName="status" (change)="applyFilters()">
+                    <option *ngFor="let status of movementStatuses" [value]="status">
+                        {{ status === 'ALL' ? 'All Statuses' : getMovementStatusLabel(status) }}
+                    </option>
+                </select>
+            </div>
+            <div class="ql-filter-group">
+                <label class="ql-flabel">From</label>
+                <input type="date" class="ql-filter-input" formControlName="dateFrom" (change)="applyFilters()">
+            </div>
+            <div class="ql-filter-group">
+                <label class="ql-flabel">To</label>
+                <input type="date" class="ql-filter-input" formControlName="dateTo" (change)="applyFilters()">
+            </div>
+            <button class="ql-btn ql-btn--ghost-sm" (click)="clearFilters()">
+                <i class="fas fa-undo-alt"></i> Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    LOADING STATE
+    ============================================================ -->
+    <div *ngIf="isLoading" class="ql-transfer-loading">
+        <div class="ql-spinner"></div>
+        <span>Loading transfer history...</span>
+    </div>
+
+    <!-- ============================================================
+    ERROR STATE
+    ============================================================ -->
+    <div *ngIf="error && !isLoading" class="ql-transfer-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+        <button (click)="refresh()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
+    <!-- ============================================================
+    TRANSFER LIST
+    ============================================================ -->
+    <div *ngIf="!isLoading && !error" class="ql-transfer-list">
+        <div *ngFor="let movement of getPaginatedItems()" class="ql-transfer-item" 
+             (click)="viewMovement(movement.id)">
+            <!-- Direction Icon -->
+            <div class="ql-transfer-item-icon" [style.color]="getDirectionColor(movement)">
+                <i class="fas" [class]="getDirectionIcon(movement)"></i>
+            </div>
+
+            <!-- Content -->
+            <div class="ql-transfer-item-content">
+                <div class="ql-transfer-item-top">
+                    <span class="ql-transfer-item-product">{{ movement.productName }}</span>
+                    <span class="ql-transfer-item-qty">{{ movement.quantity }} units</span>
+                </div>
+                <div class="ql-transfer-item-middle">
+                    <span class="ql-transfer-item-location">
+                        <span class="ql-transfer-item-from">{{ movement.fromLocation.name }}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span class="ql-transfer-item-to">{{ movement.toLocation.name }}</span>
+                    </span>
+                    <span class="ql-transfer-item-type">
+                        <i class="fas" [class]="getMovementTypeIcon(movement.movementType)"></i>
+                        {{ getMovementTypeLabel(movement.movementType) }}
+                    </span>
+                </div>
+                <div class="ql-transfer-item-bottom">
+                    <span class="ql-transfer-item-time">{{ formatDate(movement.createdAt) }} at {{ formatTime(movement.createdAt) }}</span>
+                    <span class="ql-transfer-item-direction" [style.color]="getDirectionColor(movement)">
+                        <i class="fas" [class]="getDirectionIcon(movement)"></i>
+                        {{ getDirectionLabel(movement) }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <span class="ql-transfer-item-status" [class]="'ql-transfer-status--' + getMovementStatusBadgeClass(movement.status)">
+                <span class="ql-status-dot" [style.background]="getMovementStatusColor(movement.status)"></span>
+                {{ getMovementStatusLabel(movement.status) }}
+            </span>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="getPaginatedItems().length === 0" class="ql-transfer-empty">
+            <i class="fas fa-exchange-alt"></i>
+            <p>No transfer history found</p>
+            <span *ngIf="getActiveFilterCount() > 0">Try adjusting your filters</span>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    PAGINATION
+    ============================================================ -->
+    <div class="ql-transfer-pagination" *ngIf="!isLoading && totalItems > 0 && !compact">
+        <div class="ql-transfer-pagination-info">
+            Showing {{ (currentPage - 1) * pageSize + 1 }} to 
+            {{ Math.min(currentPage * pageSize, totalItems) }} of 
+            {{ totalItems }} transfers
+        </div>
+
+        <div class="ql-transfer-pagination-controls">
+            <div class="ql-page-size-selector">
+                <select (change)="changePageSize($any($event.target).value)" [value]="pageSize">
+                    <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+                </select>
+            </div>
+
+            <div class="ql-page-buttons">
+                <button class="ql-page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="ql-page-btn" *ngFor="let page of getPageNumbers()" 
+                        [class.ql-page-btn--active]="page === currentPage" 
+                        [class.ql-page-btn--ellipsis]="page === '...'"
+                        (click)="page !== '...' && goToPage(page)">
+                    {{ page }}
+                </button>
+                <button class="ql-page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

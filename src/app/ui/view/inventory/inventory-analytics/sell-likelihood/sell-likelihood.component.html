@@ -1,0 +1,511 @@
+<!-- sell-likelihood.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Sell Likelihood</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Prediction Summary -->
+        <div class="ql-filter-section" *ngIf="prediction">
+            <div class="ql-filter-heading">Prediction</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Score</span>
+                <span class="ql-sidebar-stat-value" [style.color]="getLikelihoodColor(prediction.likelihood)">
+                    {{ prediction.score }}%
+                </span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Confidence</span>
+                <span class="ql-sidebar-stat-value">{{ prediction.confidence.toFixed(0) }}%</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Monthly Sales</span>
+                <span class="ql-sidebar-stat-value">{{ formatNumber(prediction.predictedMonthlySales) }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Quarterly Sales</span>
+                <span class="ql-sidebar-stat-value">{{ formatNumber(prediction.predictedQuarterlySales) }}</span>
+            </div>
+            <div class="ql-sidebar-stat"
+                style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label" style="font-size: 10px; color: var(--muted);">Last Updated</span>
+                <span class="ql-sidebar-stat-value" style="font-size: 12px;">{{ formatDate(prediction.lastCalculated)
+                    }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refreshPrediction()" [disabled]="isPredicting">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isPredicting"></i>
+                {{ isPredicting ? 'Calculating...' : 'Recalculate' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="viewProduct()" *ngIf="productId">
+                <i class="fas fa-box"></i> View Product
+            </button>
+            <button class="ql-sidebar-action" (click)="viewBranch()" *ngIf="branchId">
+                <i class="fas fa-store"></i> View Branch
+            </button>
+            <button class="ql-sidebar-action" (click)="exportReport()" *ngIf="prediction">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refreshPrediction()"><i class="fas fa-sync-alt"></i>
+                Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Selection Form -->
+            <div class="ql-selection-form" *ngIf="!prediction || (!productId && !branchId)">
+                <div class="ql-form-container">
+                    <div class="ql-form-section">
+                        <h3 class="ql-section-title"><i class="fas fa-brain"></i> Sell Likelihood Predictor</h3>
+                        <p class="ql-section-desc">Select a product and branch to predict sales performance</p>
+
+                        <form [formGroup]="predictionForm" (ngSubmit)="loadPrediction()">
+                            <div class="ql-form-row">
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Product <span class="ql-required">*</span></label>
+                                    <div class="ql-search-wrap">
+                                        <i class="fas fa-search ql-search-icon"></i>
+                                        <input type="text" class="ql-search-input"
+                                            placeholder="Search product by name or SKU..." [value]="productSearchTerm"
+                                            (input)="onProductSearch($event)" (focus)="showProductDropdown = true"
+                                            (blur)="onProductInputBlur()"
+                                            autocomplete="off">
+                                        <div class="ql-product-dropdown"
+                                            *ngIf="showProductDropdown && filteredProducts.length > 0">
+                                            <div *ngFor="let product of filteredProducts" class="ql-product-option"
+                                                (mousedown)="selectProduct(product)">
+                                                <span class="ql-product-name">{{ product.name }}</span>
+                                                <span class="ql-product-sku">{{ product.sku }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="ql-product-dropdown ql-product-dropdown--empty"
+                                            *ngIf="showProductDropdown && filteredProducts.length === 0">
+                                            <span>No products found</span>
+                                        </div>
+                                    </div>
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('productId')">
+                                        Please select a product
+                                    </span>
+                                </div>
+
+                                <div class="ql-field">
+                                    <label class="ql-flabel">Branch <span class="ql-required">*</span></label>
+                                    <select class="ql-input" formControlName="branchId" (change)="onBranchChange()">
+                                        <option value="">Select Branch</option>
+                                        <option *ngFor="let branch of branches" [value]="branch.id">
+                                            {{ branch.name }} ({{ branch.location.city }})
+                                        </option>
+                                    </select>
+                                    <span class="ql-field-error" *ngIf="isFieldInvalid('branchId')">
+                                        Please select a branch
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="ql-form-actions">
+                                <button type="submit" class="ql-btn ql-btn--primary" [disabled]="isPredicting">
+                                    <i class="fas" [class.fa-spinner]="isPredicting" [class.fa-brain]="!isPredicting"
+                                        [class.ql-spinning]="isPredicting"></i>
+                                    {{ isPredicting ? 'Predicting...' : 'Predict' }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction Results -->
+            <ng-container *ngIf="prediction">
+
+                <!-- Top bar -->
+                <div class="ql-top-bar">
+                    <div class="ql-top-bar-left">
+                        <h1 class="ql-title">Sell Likelihood</h1>
+                        <span class="ql-total-badge">AI Prediction</span>
+                        <span class="ql-likelihood-badge"
+                            [style.background]="getLikelihoodColor(prediction.likelihood) + '20'"
+                            [style.color]="getLikelihoodColor(prediction.likelihood)">
+                            <i class="fas" [class]="getLikelihoodIcon(prediction.likelihood)"></i>
+                            {{ getLikelihoodLabel(prediction.likelihood) }} ({{ prediction.score }}%)
+                        </span>
+                    </div>
+                    <div class="ql-top-bar-right">
+                        <div class="ql-confidence-badge">
+                            <i class="fas fa-check-circle" style="color: #3B82F6;"></i>
+                            Confidence: {{ prediction.confidence.toFixed(0) }}%
+                        </div>
+                        <button type="button" class="ql-btn ql-btn--ghost" (click)="refreshPrediction()"
+                            [disabled]="isPredicting">
+                            <i class="fas fa-sync-alt" [class.ql-spinning]="isPredicting"></i>
+                            {{ isPredicting ? 'Calculating...' : 'Recalculate' }}
+                        </button>
+                        <button type="button" class="ql-btn ql-btn--primary" (click)="exportReport()">
+                            <i class="fas fa-file-export"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="ql-tabs">
+                    <button class="ql-tab" [class.ql-tab--active]="activeTab === 'overview'"
+                        (click)="setActiveTab('overview')">
+                        <i class="fas fa-chart-pie"></i> Overview
+                    </button>
+                    <button class="ql-tab" [class.ql-tab--active]="activeTab === 'factors'"
+                        (click)="setActiveTab('factors')">
+                        <i class="fas fa-sliders-h"></i> Factors
+                    </button>
+                    <button class="ql-tab" [class.ql-tab--active]="activeTab === 'recommendations'"
+                        (click)="setActiveTab('recommendations')">
+                        <i class="fas fa-lightbulb"></i> Recommendations
+                    </button>
+                    <button class="ql-tab" [class.ql-tab--active]="activeTab === 'history'"
+                        (click)="setActiveTab('history')">
+                        <i class="fas fa-history"></i> History
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="ql-tab-content">
+
+                    <!-- ========================================================
+                    OVERVIEW TAB
+                    ======================================================== -->
+                    <div *ngIf="activeTab === 'overview'" class="ql-tab-panel">
+                        <div class="ql-overview-grid">
+                            <div class="ql-overview-left">
+                                <!-- Product & Branch Info -->
+                                <div class="ql-info-card">
+                                    <h3 class="ql-info-title"><i class="fas fa-info-circle"></i> Product & Branch</h3>
+                                    <div class="ql-info-grid">
+                                        <div class="ql-info-item">
+                                            <span class="ql-info-label">Product</span>
+                                            <span class="ql-info-value" (click)="viewProduct()"
+                                                style="cursor: pointer; color: var(--p);">
+                                                {{ prediction.productName }}
+                                            </span>
+                                        </div>
+                                        <div class="ql-info-item">
+                                            <span class="ql-info-label">SKU</span>
+                                            <span class="ql-info-value">{{ prediction.sku }}</span>
+                                        </div>
+                                        <div class="ql-info-item">
+                                            <span class="ql-info-label">Branch</span>
+                                            <span class="ql-info-value" (click)="viewBranch()"
+                                                style="cursor: pointer; color: var(--p);">
+                                                {{ prediction.branchName }}
+                                            </span>
+                                        </div>
+                                        <div class="ql-info-item">
+                                            <span class="ql-info-label">Likelihood</span>
+                                            <span class="ql-info-value"
+                                                [style.color]="getLikelihoodColor(prediction.likelihood)">
+                                                <i class="fas" [class]="getLikelihoodIcon(prediction.likelihood)"></i>
+                                                {{ getLikelihoodLabel(prediction.likelihood) }}
+                                            </span>
+                                        </div>
+                                        <div class="ql-info-item">
+                                            <span class="ql-info-label">Score</span>
+                                            <span class="ql-info-value"
+                                                [style.color]="getLikelihoodColor(prediction.likelihood)">
+                                                {{ prediction.score }}%
+                                            </span>
+                                        </div>
+                                        <div class="ql-info-item">
+                                            <span class="ql-info-label">Confidence</span>
+                                            <span class="ql-info-value">{{ prediction.confidence.toFixed(0) }}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sales Predictions -->
+                                <div class="ql-info-card">
+                                    <h3 class="ql-info-title"><i class="fas fa-shopping-cart"></i> Sales Predictions
+                                    </h3>
+                                    <div class="ql-prediction-grid">
+                                        <div class="ql-prediction-item">
+                                            <span class="ql-prediction-value">{{
+                                                formatNumber(prediction.predictedMonthlySales) }}</span>
+                                            <span class="ql-prediction-label">Monthly Sales</span>
+                                        </div>
+                                        <div class="ql-prediction-item">
+                                            <span class="ql-prediction-value">{{
+                                                formatNumber(prediction.predictedQuarterlySales) }}</span>
+                                            <span class="ql-prediction-label">Quarterly Sales</span>
+                                        </div>
+                                        <div class="ql-prediction-item">
+                                            <span class="ql-prediction-value"
+                                                [style.color]="getLikelihoodColor(prediction.likelihood)">
+                                                {{ prediction.score }}%
+                                            </span>
+                                            <span class="ql-prediction-label">Likelihood Score</span>
+                                        </div>
+                                        <div class="ql-prediction-item">
+                                            <span class="ql-prediction-value">{{ prediction.confidence.toFixed(0)
+                                                }}%</span>
+                                            <span class="ql-prediction-label">Confidence</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ql-overview-right">
+                                <!-- Score Gauge -->
+                                <div class="ql-info-card">
+                                    <h3 class="ql-info-title"><i class="fas fa-chart-simple"></i> Likelihood Score</h3>
+                                    <div class="ql-gauge-container">
+                                        <div class="ql-gauge">
+                                            <svg viewBox="0 0 200 120">
+                                                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e2e8f0"
+                                                    stroke-width="20" stroke-linecap="round" />
+                                                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none"
+                                                    [style.stroke]="getLikelihoodColor(prediction.likelihood)"
+                                                    stroke-width="20" stroke-linecap="round"
+                                                    [attr.stroke-dasharray]="(prediction.score / 100) * 251 + ', 251'" />
+                                                <circle cx="100" cy="100" r="8" fill="white"
+                                                    [style.stroke]="getLikelihoodColor(prediction.likelihood)"
+                                                    stroke-width="4" />
+                                            </svg>
+                                            <div class="ql-gauge-value">{{ prediction.score }}%</div>
+                                            <div class="ql-gauge-label">Likelihood Score</div>
+                                        </div>
+                                        <div class="ql-gauge-legend">
+                                            <span class="ql-gauge-legend-item">
+                                                <span class="ql-gauge-dot" style="background: #2EB270;"></span>
+                                                High
+                                            </span>
+                                            <span class="ql-gauge-legend-item">
+                                                <span class="ql-gauge-dot" style="background: #F5A623;"></span>
+                                                Medium
+                                            </span>
+                                            <span class="ql-gauge-legend-item">
+                                                <span class="ql-gauge-dot" style="background: #DC2626;"></span>
+                                                Low
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Insights -->
+                                <div class="ql-info-card">
+                                    <h3 class="ql-info-title"><i class="fas fa-bolt"></i> Quick Insights</h3>
+                                    <div class="ql-insights-list">
+                                        <div class="ql-insight-item"
+                                            [class.ql-insight--positive]="prediction.likelihood === 'HIGH'">
+                                            <i class="fas" [class.fa-check-circle]="prediction.likelihood === 'HIGH'"
+                                                [class.fa-exclamation-triangle]="prediction.likelihood === 'MEDIUM'"
+                                                [class.fa-times-circle]="prediction.likelihood === 'LOW'"></i>
+                                            <span>
+                                                {{ prediction.likelihood === 'HIGH' ? 'Strong sell potential for this
+                                                product at this branch' :
+                                                prediction.likelihood === 'MEDIUM' ? 'Moderate sell potential — monitor
+                                                closely' :
+                                                'Low sell potential — consider reviewing strategy' }}
+                                            </span>
+                                        </div>
+                                        <div class="ql-insight-item">
+                                            <i class="fas fa-arrow-up" style="color: #2EB270;"></i>
+                                            <span>Predicted monthly sales: <strong>{{
+                                                    formatNumber(prediction.predictedMonthlySales) }}</strong>
+                                                units</span>
+                                        </div>
+                                        <div class="ql-insight-item" *ngIf="prediction.confidence > 80">
+                                            <i class="fas fa-shield-alt" style="color: #3B82F6;"></i>
+                                            <span>High confidence prediction ({{ prediction.confidence.toFixed(0)
+                                                }}%)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========================================================
+                    FACTORS TAB
+                    ======================================================== -->
+                    <div *ngIf="activeTab === 'factors'" class="ql-tab-panel">
+                        <div class="ql-factors-container">
+                            <div class="ql-factors-header">
+                                <h3><i class="fas fa-sliders-h"></i> Contributing Factors</h3>
+                                <span class="ql-factors-count">{{ prediction.factors.length }} factors analyzed</span>
+                            </div>
+
+                            <div class="ql-factors-grid">
+                                <div *ngFor="let factor of prediction.factors" class="ql-factor-card">
+                                    <div class="ql-factor-header">
+                                        <span class="ql-factor-name">{{ factor.name }}</span>
+                                        <span class="ql-factor-impact" [style.color]="getImpactColor(factor.impact)">
+                                            <i class="fas" [class]="getImpactIcon(factor.impact)"></i>
+                                            {{ factor.impact }}
+                                        </span>
+                                    </div>
+                                    <div class="ql-factor-body">
+                                        <div class="ql-factor-value">{{ factor.value }}</div>
+                                        <div class="ql-factor-weight-bar">
+                                            <div class="ql-factor-weight-fill" [style.width.%]="factor.weight"></div>
+                                        </div>
+                                        <div class="ql-factor-weight-label">Weight: {{ factor.weight }}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========================================================
+                    RECOMMENDATIONS TAB
+                    ======================================================== -->
+                    <div *ngIf="activeTab === 'recommendations'" class="ql-tab-panel">
+                        <div class="ql-recommendations-container">
+                            <div class="ql-recommendations-header">
+                                <h3><i class="fas fa-lightbulb"></i> Recommendations</h3>
+                                <span class="ql-recommendations-count">{{ prediction.recommendations.length }}
+                                    recommendations</span>
+                            </div>
+
+                            <div class="ql-recommendations-list">
+                                <div *ngFor="let rec of prediction.recommendations; let i = index"
+                                    class="ql-recommendation-item">
+                                    <div class="ql-recommendation-number">{{ i + 1 }}</div>
+                                    <div class="ql-recommendation-text">{{ rec }}</div>
+                                    <div class="ql-recommendation-priority"
+                                        [style.color]="i < 2 ? '#DC2626' : i < 4 ? '#F5A623' : '#3B82F6'">
+                                        {{ i < 2 ? 'High' : i < 4 ? 'Medium' : 'Low' }} Priority </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ========================================================
+                    HISTORY TAB
+                    ======================================================== -->
+                        <div *ngIf="activeTab === 'history'" class="ql-tab-panel">
+                            <div class="ql-history-container">
+                                <div class="ql-history-header">
+                                    <h3><i class="fas fa-history"></i> Prediction History</h3>
+                                    <span class="ql-history-period">Last 6 months</span>
+                                </div>
+
+                                <div class="ql-history-chart-container">
+                                    <div class="ql-history-chart">
+                                        <svg viewBox="0 0 500 280" preserveAspectRatio="none">
+                                            <!-- Area -->
+                                            <path
+                                                [attr.d]="getHistoryAreaPath(historyData, getMaxHistoryScore(), 'score')"
+                                                fill="rgba(24, 68, 64, 0.15)" stroke="none" />
+                                            <!-- Line -->
+                                            <path [attr.d]="getHistoryPath(historyData, getMaxHistoryScore(), 'score')"
+                                                stroke="#184440" stroke-width="3" fill="none" stroke-linecap="round" />
+                                            <!-- Points -->
+                                            <circle *ngFor="let d of historyData; let i = index"
+                                                [attr.cx]="getPointX(i, historyData.length)"
+                                                [attr.cy]="getPointY(d.score, getMaxHistoryScore())" r="6"
+                                                fill="#184440" stroke="white" stroke-width="2" />
+                                        </svg>
+                                    </div>
+                                    <div class="ql-history-labels">
+                                        <span *ngFor="let d of historyData" class="ql-history-label">{{ d.month
+                                            }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="ql-history-stats">
+                                    <div class="ql-history-stat">
+                                        <span class="ql-history-stat-value">{{ (historyData[historyData.length -
+                                            1]?.score || 0).toFixed(0) }}%</span>
+                                        <span class="ql-history-stat-label">Current Score</span>
+                                    </div>
+                                    <div class="ql-history-stat">
+                                        <span class="ql-history-stat-value">{{ (historyData[0]?.score ||
+                                            0).toFixed(0) }}%</span>
+                                        <span class="ql-history-stat-label">Initial Score</span>
+                                    </div>
+                                    <div class="ql-history-stat">
+                                        <span class="ql-history-stat-value" [style.color]="getHistoryChangeColor()">
+                                            {{ ((historyData[historyData.length - 1]?.score || 0) -
+                                            (historyData[0]?.score || 0)) > 0 ? '+' : '' }}
+                                            {{ ((historyData[historyData.length - 1]?.score || 0) -
+                                            (historyData[0]?.score || 0)).toFixed(0) }}%
+                                        </span>
+                                        <span class="ql-history-stat-label">Change</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+            </ng-container>
+
+        </ng-container>
+
+        <!-- ============================================================
+        EXPORT MODAL
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showExportModal"
+            (click)="$event.target === $event.currentTarget && closeExportModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-file-export"></i> Export Report</h3>
+                    <button class="ql-modal-close" (click)="closeExportModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Export sell likelihood report for <strong>{{ prediction?.productName }}</strong> at <strong>{{
+                            prediction?.branchName }}</strong></p>
+                    <div class="ql-export-options">
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="pdf" checked>
+                            <span>PDF Report</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="excel">
+                            <span>Excel Spreadsheet</span>
+                        </label>
+                        <label class="ql-export-option">
+                            <input type="radio" name="format" value="csv">
+                            <span>CSV Data</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeExportModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmExport()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

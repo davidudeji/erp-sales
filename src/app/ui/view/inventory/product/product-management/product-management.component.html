@@ -1,0 +1,794 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="ql-layout">
+
+  <!-- ══ SIDEBAR FILTERS ═══════════════════════════════════════════════════ -->
+  <aside class="ql-sidebar">
+
+    <div class="ql-sidebar-title">
+      <span>Filters</span>
+      <button class="ql-reset-link" (click)="resetFilters()" type="button">Reset</button>
+    </div>
+
+    <!-- Quick search -->
+    <div class="ql-filter-section">
+      <div class="ql-search-wrap">
+        <i class="fas fa-search ql-search-icon"></i>
+        <input type="text" class="ql-search-input" placeholder="Search products…" [(ngModel)]="filters.searchTerm"
+          (input)="applyFilters()">
+      </div>
+    </div>
+
+    <!-- Status filters -->
+    <div class="ql-filter-section">
+      <div class="ql-filter-heading">Status</div>
+      <button class="ql-status-btn" type="button" [class.ql-status-btn--active]="filters.status === 'ALL'"
+        (click)="filters.status = 'ALL'; applyFilters()">
+        <i class="fas fa-layer-group"></i>
+        <span>All Products</span>
+        <span class="ql-count-pill">{{ stats.total }}</span>
+      </button>
+      <button class="ql-status-btn" type="button" [class.ql-status-btn--active]="filters.status === 'ACTIVE'"
+        (click)="filters.status = 'ACTIVE'; applyFilters()">
+        <i class="fas fa-check-circle"></i>
+        <span>Active</span>
+        <span class="ql-count-pill ql-count-pill--green">{{ stats.active }}</span>
+      </button>
+      <button class="ql-status-btn" type="button" [class.ql-status-btn--active]="filters.status === 'OUT_OF_STOCK'"
+        (click)="filters.status = 'OUT_OF_STOCK'; applyFilters()">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Out of Stock</span>
+        <span class="ql-count-pill ql-count-pill--orange">{{ stats.outOfStock }}</span>
+      </button>
+      <button class="ql-status-btn" type="button" [class.ql-status-btn--active]="filters.status === 'DISCONTINUED'"
+        (click)="filters.status = 'DISCONTINUED'; applyFilters()">
+        <i class="fas fa-ban"></i>
+        <span>Discontinued</span>
+        <span class="ql-count-pill ql-count-pill--red">{{ stats.discontinued }}</span>
+      </button>
+    </div>
+
+    <!-- Price range -->
+    <div class="ql-filter-section">
+      <div class="ql-filter-heading">Price Range</div>
+      <div class="ql-field">
+        <label class="ql-flabel">Min</label>
+        <input type="number" class="ql-date-input" [(ngModel)]="filters.minPrice" (input)="applyFilters()"
+          placeholder="0">
+      </div>
+      <div class="ql-field">
+        <label class="ql-flabel">Max</label>
+        <input type="number" class="ql-date-input" [(ngModel)]="filters.maxPrice" (input)="applyFilters()"
+          placeholder="1000000">
+      </div>
+    </div>
+
+    <!-- Category -->
+    <div class="ql-filter-section">
+      <div class="ql-filter-heading">Category</div>
+      <select class="ql-search-input" [(ngModel)]="filters.category" (change)="applyFilters()">
+        <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+      </select>
+    </div>
+
+  </aside>
+
+  <!-- ══ MAIN AREA ═════════════════════════════════════════════════════════ -->
+  <main class="ql-main">
+
+    <!-- Top bar -->
+    <div class="ql-top-bar">
+      <div class="ql-top-bar-left">
+        <div class="ql-title-row">
+          <h1 class="ql-title">Product Catalog</h1>
+          <span class="ql-total-badge">{{ totalElements }}</span>
+        </div>
+        <p class="ql-subtitle">Manage your product listings, categories, units, and suppliers.</p>
+      </div>
+      <div class="ql-top-bar-right">
+        <div class="ql-view-switcher">
+          <button (click)="setViewMode('list')" [class.active]="viewMode === 'list'" class="ql-switch-btn"
+            title="List View">
+            <i class="fas fa-th-list"></i>
+          </button>
+          <button (click)="setViewMode('icon')" [class.active]="viewMode === 'icon'" class="ql-switch-btn"
+            title="Grid View">
+            <i class="fas fa-th"></i>
+          </button>
+        </div>
+        <div class="ql-page-size-wrap">
+          <label class="ql-flabel">Per page</label>
+          <select class="ql-page-size-select" [(ngModel)]="filters.size" (change)="onPageSizeChange(filters.size)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+        <button type="button" class="ql-btn ql-btn--secondary" (click)="navigateToBulkImport()">
+          <i class="fas fa-upload"></i> Bulk Import
+        </button>
+        <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewProduct()">
+          <i class="fas fa-plus"></i> Add Product
+        </button>
+        <button type="button" class="ql-btn ql-btn--secondary" (click)="openCategoryModal()">
+          <i class="fas fa-tags"></i> Add Category
+        </button>
+        <button type="button" class="ql-btn ql-btn--secondary" (click)="openUnitModal()">
+          <i class="fas fa-balance-scale"></i> Add Unit
+        </button>
+        <button type="button" class="ql-btn ql-btn--secondary" (click)="openSupplierModal()">
+          <i class="fas fa-truck"></i> Add Supplier
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Insight Banner -->
+    <div class="ql-ai-banner" *ngIf="!aiDismissed && (stats.outOfStock > 0 || stats.discontinued > 2)">
+      <div class="ql-ai-icon"><i class="fas fa-robot"></i></div>
+      <div class="ql-ai-body">
+        <div class="ql-ai-title">AI Insight</div>
+        <div class="ql-ai-text">
+          <ng-container *ngIf="stats.outOfStock > 0">
+            <strong>{{ stats.outOfStock }}</strong> product{{ stats.outOfStock > 1 ? 's are' : ' is' }} out of stock —
+            consider restocking urgently.
+          </ng-container>
+          <ng-container *ngIf="stats.discontinued > 2 && stats.outOfStock === 0">
+            <strong>{{ stats.discontinued }}</strong> product{{ stats.discontinued > 1 ? 's have' : ' has' }} been
+            discontinued. Update your catalog.
+          </ng-container>
+        </div>
+      </div>
+      <button type="button" class="ql-ai-dismiss" (click)="aiDismissed = true" *ngIf="!aiDismissed"><i
+          class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Bulk action bar -->
+    <div class="ql-bulk-bar" *ngIf="selectedProductIds.length > 0">
+      <i class="fas fa-check-square"></i>
+      <span><strong>{{ selectedProductIds.length }}</strong> product{{ selectedProductIds.length > 1 ? 's' : '' }}
+        selected</span>
+      <button type="button" class="ql-btn ql-btn--danger-sm">
+        <i class="fas fa-trash"></i> Delete Selected
+      </button>
+      <button type="button" class="ql-btn ql-btn--ghost-sm" (click)="selectedProductIds = []">
+        Clear
+      </button>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="ql-loading">
+      <div class="ql-spinner"></div>
+      <span>Loading products...</span>
+    </div>
+
+    <!-- List View Table -->
+    <div class="ql-table-wrap" *ngIf="!isLoading && viewMode === 'list'">
+      <table class="ql-table">
+        <thead>
+          <tr>
+            <th class="ql-th-chk"><input type="checkbox" (change)="toggleSelectAll($event)" [checked]="isAllSelected()">
+            </th>
+            <th>#</th>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th class="ql-th-actions">Actions</th>
+          </tr>
+        </thead>
+
+        <!-- Loading skeleton -->
+        <tbody *ngIf="isLoading">
+          <tr class="ql-skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
+            <td colspan="9">
+              <div class="ql-skeleton-bar"></div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Empty state -->
+        <tbody *ngIf="!isLoading && products.length === 0">
+          <tr>
+            <td colspan="9">
+              <div class="ql-empty">
+                <i class="fas fa-boxes ql-empty-icon"></i>
+                <p class="ql-empty-title">No products found</p>
+                <p class="ql-empty-sub">Try adjusting your filters or add a new product</p>
+                <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewProduct()">
+                  <i class="fas fa-plus"></i> Add Product
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <!-- Data rows -->
+        <tbody *ngIf="!isLoading && products.length > 0">
+          <tr *ngFor="let product of products; let i = index"
+            [class.ql-row--lowstock]="product.stockQuantity <= 5 && product.stockQuantity > 0"
+            [class.ql-row--outofstock]="product.stockQuantity === 0">
+            <td class="ql-td-chk"><input type="checkbox" [checked]="isSelected(product.id)"
+                (change)="toggleSelection(product.id, $event)"></td>
+
+            <td class="ql-td-num">{{ (currentPage * pageSize) + i + 1 }}</td>
+
+            <td class="ql-td-product">
+              <div class="ql-product-info">
+                <div class="ql-product-avatar">
+                  <img *ngIf="product.images && product.images.length > 0; else listNoImage" [src]="product.images[0]"
+                    [alt]="product.name" class="ql-product-image">
+                  <ng-template #listNoImage>
+                    <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+                  </ng-template>
+                </div>
+                <div>
+                  <div class="ql-product-name">{{ product.name }}</div>
+                  <div class="ql-product-desc">{{ product.description | slice:0:50 }}{{ product.description.length > 50
+                    ? '...' : '' }}</div>
+                </div>
+              </div>
+            </td>
+
+            <td class="ql-td-sku">{{ product.sku }}</td>
+
+            <td class="ql-td-category">
+              <span class="ql-category-badge">{{ getCategoryName(product) }}</span>
+            </td>
+
+            <td class="ql-td-amount">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</td>
+
+            <td class="ql-td-stock">
+              <div class="ql-stock-info">
+                <span class="ql-stock-badge"
+                  [class.ql-stock--good]="getStockStatusClass(product.stockQuantity) === 'stock-good'"
+                  [class.ql-stock--low]="getStockStatusClass(product.stockQuantity) === 'stock-low'"
+                  [class.ql-stock--out]="getStockStatusClass(product.stockQuantity) === 'stock-out'">
+                  {{ product.stockQuantity }}
+                </span>
+                <span class="ql-stock-label">{{ getStockStatusLabel(product.stockQuantity) }}</span>
+              </div>
+            </td>
+
+            <td>
+              <span class="ql-status-badge ql-status-badge--{{ product.status?.toLowerCase() }}">
+                {{ getStatusLabel(product.status) }}
+              </span>
+            </td>
+
+            <td class="ql-td-actions">
+              <div class="ql-row-actions">
+                <button type="button" class="ql-action-btn" (click)="viewProduct(product.id)" title="View">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button type="button" class="ql-action-btn" (click)="editProduct(product.id)" title="Edit">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button type="button" class="ql-action-btn ql-action-btn--danger" (click)="deleteProduct(product)"
+                  title="Delete">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Grid View -->
+    <div class="ql-grid-container" *ngIf="!isLoading && viewMode === 'icon'">
+      <div class="ql-grid-card" *ngFor="let product of products; let i = index"
+        [class.ql-grid--lowstock]="product.stockQuantity <= 5 && product.stockQuantity > 0"
+        [class.ql-grid--outofstock]="product.stockQuantity === 0">
+
+        <div class="ql-grid-top">
+          <div class="ql-grid-check">
+            <input type="checkbox" [checked]="isSelected(product.id)" (change)="toggleSelection(product.id, $event)">
+          </div>
+          <span class="ql-grid-number">#{{ (currentPage * pageSize) + i + 1 }}</span>
+        </div>
+
+        <div class="ql-grid-image">
+          <img *ngIf="product.images && product.images.length > 0; else gridNoImage" [src]="product.images[0]"
+            [alt]="product.name" class="ql-grid-img">
+          <ng-template #gridNoImage>
+            <span>{{ product.name.charAt(0).toUpperCase() }}</span>
+          </ng-template>
+        </div>
+
+        <div class="ql-grid-body">
+          <h4 class="ql-grid-title" [title]="product.name">{{ product.name }}</h4>
+          <div class="ql-grid-sku">{{ product.sku }}</div>
+          <p class="ql-grid-desc">{{ product.description | slice:0:60 }}{{ product.description.length > 60 ? '...' : ''
+            }}</p>
+
+          <div class="ql-grid-meta">
+            <span class="ql-category-badge">{{ getCategoryName(product) }}</span>
+            <span class="ql-status-badge ql-status-badge--{{ product.status?.toLowerCase() }}">
+              {{ getStatusLabel(product.status) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="ql-grid-footer">
+          <div class="ql-grid-price">{{ formatCurrency(product.unitPrice || product.sellingPrice) }}</div>
+          <div class="ql-grid-stock">
+            <span class="ql-stock-badge"
+              [class.ql-stock--good]="getStockStatusClass(product.stockQuantity) === 'stock-good'"
+              [class.ql-stock--low]="getStockStatusClass(product.stockQuantity) === 'stock-low'"
+              [class.ql-stock--out]="getStockStatusClass(product.stockQuantity) === 'stock-out'">
+              {{ product.stockQuantity }}
+            </span>
+          </div>
+          <div class="ql-grid-actions">
+            <button type="button" class="ql-action-btn" (click)="viewProduct(product.id)" title="View">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button type="button" class="ql-action-btn" (click)="editProduct(product.id)" title="Edit">
+              <i class="fas fa-pencil-alt"></i>
+            </button>
+            <button type="button" class="ql-action-btn ql-action-btn--danger" (click)="deleteProduct(product)"
+              title="Delete">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty grid state -->
+      <div *ngIf="products.length === 0" class="ql-empty ql-empty--grid">
+        <i class="fas fa-boxes ql-empty-icon"></i>
+        <p class="ql-empty-title">No products found</p>
+        <p class="ql-empty-sub">Try adjusting your filters or add a new product</p>
+        <button type="button" class="ql-btn ql-btn--primary" (click)="navigateToNewProduct()">
+          <i class="fas fa-plus"></i> Add Product
+        </button>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="ql-pagination" *ngIf="totalElements > 0">
+      <span class="ql-page-info">
+        Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{
+        totalElements }}
+      </span>
+      <div class="ql-page-btns">
+        <button type="button" class="ql-page-btn" [disabled]="currentPage === 0"
+          (click)="onPageChange(currentPage - 1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button type="button" class="ql-page-btn" *ngFor="let p of getPageNumbers()"
+          [class.ql-page-btn--active]="p === currentPage" (click)="onPageChange(p)">{{ p + 1 }}</button>
+        <button type="button" class="ql-page-btn" [disabled]="currentPage >= totalPages - 1"
+          (click)="onPageChange(currentPage + 1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ DELETE PRODUCT CONFIRM ══════════════════════════════════════════ -->
+<div class="ql-confirm-backdrop" *ngIf="showDeleteModal"
+  (click)="$event.target === $event.currentTarget && (showDeleteModal = false)">
+  <div class="ql-confirm-modal">
+    <div class="ql-confirm-icon" style="color:#dc2626"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="ql-confirm-title">Delete Product?</div>
+    <div class="ql-confirm-sub">
+      Permanently delete <strong>{{ pendingDeleteProductName }}</strong>?
+    </div>
+    <div class="ql-confirm-actions">
+      <button type="button" class="ql-btn ql-btn--ghost-sm" style="padding:8px 16px;font-size:13px"
+        (click)="showDeleteModal = false">Keep</button>
+      <button type="button" class="ql-btn"
+        style="background:#dc2626;color:#fff;padding:8px 16px;font-size:13px;border-radius:5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer"
+        (click)="confirmDeleteProduct()">
+        <i class="fas fa-trash"></i> Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Management Side Modal -->
+<div class="category-side-modal" [class.open]="showCategoryModal">
+    <div class="modal-overlay" (click)="closeCategoryModal()"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3><i class="fas fa-tags"></i> Manage Categories</h3>
+        <button class="btn-close" (click)="closeCategoryModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- View Category Details Card -->
+        <div class="view-category-details-card" *ngIf="viewingCategoryDetails"
+          style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 1.25rem; position: relative; margin-bottom: 1rem;">
+          <button
+            style="position: absolute; right: 0.75rem; top: 0.75rem; background: transparent; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;"
+            (click)="closeCategoryDetails()">
+            <i class="fas fa-times"></i>
+          </button>
+          <h4
+            style="margin-top: 0; margin-bottom: 1rem; color: #0f1a2e; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+            <i class="fas fa-info-circle" style="color: #3b82f6;"></i> Category Details
+          </h4>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Category
+              ID</span>
+            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingCategoryDetails.id
+              }}</span>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Name</span>
+            <span style="font-size: 1rem; color: #0f1a2e; margin-top: 0.15rem; font-weight: 700;">{{
+              viewingCategoryDetails.name }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column;">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Description</span>
+            <span
+              style="font-size: 0.95rem; color: #334155; margin-top: 0.15rem; line-height: 1.5; white-space: pre-wrap;">{{
+              viewingCategoryDetails.description || 'No description provided.' }}</span>
+          </div>
+        </div>
+
+        <!-- Create/Edit Category Form -->
+        <div class="create-category-card" [class.editing]="editingCategory">
+          <label class="form-label">{{ editingCategory ? 'Edit Category Name' : 'New Category Name' }}</label>
+          <input type="text" class="form-control" placeholder="e.g. Accessories, Furniture, Electronics..."
+            [(ngModel)]="newCategoryName" style="width: 100%; margin-bottom: 0.75rem;">
+
+          <label class="form-label">Description (Optional)</label>
+          <textarea class="form-control textarea" placeholder="Describe what items are included in this category..."
+            [(ngModel)]="newCategoryDesc"
+            style="width: 100%; margin-bottom: 1rem; min-height: 80px; resize: vertical;"></textarea>
+
+          <div class="action-buttons-row" style="display: flex;">
+            <button class="btn-submit-category" (click)="submitCategory()"
+              [style.background]="editingCategory ? '#10b981' : '#1a2d4a'">
+              <i class="fas" [class.fa-save]="editingCategory" [class.fa-plus]="!editingCategory"></i>
+              {{ editingCategory ? 'Update Category' : 'Save Category' }}
+            </button>
+            <button class="btn-cancel-edit" *ngIf="editingCategory" (click)="cancelEditCategory()"
+              style="margin-left: 0.5rem; background: #94a3b8; border: none; color: white; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Existing Categories List -->
+        <div class="categories-list-wrapper">
+          <div class="list-header">
+            <h4>Existing Categories</h4>
+            <span class="category-count-badge">{{ rawCategories.length }}</span>
+          </div>
+
+          <div class="categories-scroll-area">
+            <div class="category-list-item" *ngFor="let cat of rawCategories; let i = index"
+              (click)="startViewCategory(cat)"
+              [class.active]="(editingCategory && cat.id && editingCategory.id === cat.id) || (viewingCategoryDetails && cat.id && viewingCategoryDetails.id === cat.id)"
+              style="cursor: pointer; position: relative;">
+              <div class="item-icon-wrapper">
+                <i class="fas fa-tag"></i>
+              </div>
+              <div class="item-content" style="flex: 1;">
+                <div class="item-name" style="font-weight: 700; color: #0f1a2e;">{{ cat.name }}</div>
+                <div class="item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.15rem;"
+                  *ngIf="cat.description">{{ cat.description }}</div>
+              </div>
+              <div class="item-actions-row" style="display: flex; gap: 0.25rem;">
+                <button class="btn-view-cat" (click)="$event.stopPropagation(); startViewCategory(cat)"
+                  title="View Details"
+                  style="background: transparent; border: none; color: #64748b; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn-edit-cat" (click)="$event.stopPropagation(); startEditCategory(cat)"
+                  title="Edit Category"
+                  style="background: transparent; border: none; color: #3b82f6; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="btn-delete-cat"
+                  (click)="$event.stopPropagation(); confirmDeleteCategory(cat.id, cat.name)" title="Delete Category"
+                  style="background: transparent; border: none; color: #ef4444; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+            <div class="empty-categories" *ngIf="rawCategories.length === 0">
+              <i class="fas fa-folder-open"></i>
+              <p>No categories found. Add one above!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Measurement Unit Management Side Modal -->
+  <div class="category-side-modal" [class.open]="showUnitModal">
+    <div class="modal-overlay" (click)="closeUnitModal()"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3><i class="fas fa-balance-scale"></i> Manage Units</h3>
+        <button class="btn-close" (click)="closeUnitModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- View Unit Details Card -->
+        <div class="view-category-details-card" *ngIf="viewingUnitDetails"
+          style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 1.25rem; position: relative; margin-bottom: 1rem;">
+          <button
+            style="position: absolute; right: 0.75rem; top: 0.75rem; background: transparent; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;"
+            (click)="closeUnitDetails()">
+            <i class="fas fa-times"></i>
+          </button>
+          <h4
+            style="margin-top: 0; margin-bottom: 1rem; color: #0f1a2e; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+            <i class="fas fa-info-circle" style="color: #3b82f6;"></i> Unit Details
+          </h4>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Unit
+              ID</span>
+            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingUnitDetails.id }}</span>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Name</span>
+            <span style="font-size: 1rem; color: #0f1a2e; margin-top: 0.15rem; font-weight: 700;">{{
+              viewingUnitDetails.name }}</span>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;" *ngIf="viewingUnitDetails.code">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Short
+              Code</span>
+            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem; font-family: monospace;">{{
+              viewingUnitDetails.code }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column;">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Description</span>
+            <span
+              style="font-size: 0.95rem; color: #334155; margin-top: 0.15rem; line-height: 1.5; white-space: pre-wrap;">{{
+              viewingUnitDetails.description || 'No description provided.' }}</span>
+          </div>
+        </div>
+
+        <!-- Create/Edit Unit Form -->
+        <div class="create-category-card" [class.editing]="editingUnit">
+          <label class="form-label">{{ editingUnit ? 'Edit Unit Name' : 'New Unit Name' }}</label>
+          <input type="text" class="form-control" placeholder="e.g. Kilogram, Liters, Carton..."
+            [(ngModel)]="newUnitName" style="width: 100%; margin-bottom: 0.75rem;">
+
+          <label class="form-label">Short Code / Abbreviation</label>
+          <input type="text" class="form-control" placeholder="e.g. kg, L, ctn..." [(ngModel)]="newUnitCode"
+            style="width: 100%; margin-bottom: 0.75rem;">
+
+          <label class="form-label">Description (Optional)</label>
+          <textarea class="form-control textarea" placeholder="Describe unit purpose or capacity..."
+            [(ngModel)]="newUnitDesc"
+            style="width: 100%; margin-bottom: 1rem; min-height: 80px; resize: vertical;"></textarea>
+
+          <div class="action-buttons-row" style="display: flex;">
+            <button class="btn-submit-category" (click)="submitUnit()"
+              [style.background]="editingUnit ? '#10b981' : '#1a2d4a'">
+              <i class="fas" [class.fa-save]="editingUnit" [class.fa-plus]="!editingUnit"></i>
+              {{ editingUnit ? 'Update Unit' : 'Save Unit' }}
+            </button>
+            <button class="btn-cancel-edit" *ngIf="editingUnit" (click)="cancelEditUnit()"
+              style="margin-left: 0.5rem; background: #94a3b8; border: none; color: white; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Existing Units List -->
+        <div class="categories-list-wrapper">
+          <div class="list-header">
+            <h4>Existing Units</h4>
+            <span class="category-count-badge">{{ rawUnits.length }}</span>
+          </div>
+
+          <div class="categories-scroll-area">
+            <div class="category-list-item" *ngFor="let unit of rawUnits; let i = index" (click)="startViewUnit(unit)"
+              [class.active]="(editingUnit && unit.id && editingUnit.id === unit.id) || (viewingUnitDetails && unit.id && viewingUnitDetails.id === unit.id)"
+              style="cursor: pointer; position: relative;">
+              <div class="item-icon-wrapper">
+                <i class="fas fa-balance-scale"></i>
+              </div>
+              <div class="item-content" style="flex: 1;">
+                <div class="item-name" style="font-weight: 700; color: #0f1a2e;">
+                  {{ unit.name }} <span
+                    style="font-size: 0.8rem; font-weight: 400; color: #64748b; margin-left: 0.25rem;"
+                    *ngIf="unit.code">({{ unit.code }})</span>
+                </div>
+                <div class="item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.15rem;"
+                  *ngIf="unit.description">{{ unit.description }}</div>
+              </div>
+              <div class="item-actions-row" style="display: flex; gap: 0.25rem;">
+                <button class="btn-view-cat" (click)="$event.stopPropagation(); startViewUnit(unit)"
+                  title="View Details"
+                  style="background: transparent; border: none; color: #64748b; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn-edit-cat" (click)="$event.stopPropagation(); startEditUnit(unit)" title="Edit Unit"
+                  style="background: transparent; border: none; color: #3b82f6; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="btn-delete-cat" (click)="$event.stopPropagation(); confirmDeleteUnit(unit.id, unit.name)"
+                  title="Delete Unit"
+                  style="background: transparent; border: none; color: #ef4444; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+            <div class="empty-categories" *ngIf="rawUnits.length === 0">
+              <i class="fas fa-balance-scale"></i>
+              <p>No measurement units found. Add one above!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supplier Management Side Modal -->
+  <div class="category-side-modal" [class.open]="showSupplierModal">
+    <div class="modal-overlay" (click)="closeSupplierModal()"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3><i class="fas fa-truck"></i> Manage Suppliers</h3>
+        <button class="btn-close" (click)="closeSupplierModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- View Supplier Details Card -->
+        <div class="view-category-details-card" *ngIf="viewingSupplierDetails"
+          style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 1.25rem; position: relative; margin-bottom: 1rem;">
+          <button
+            style="position: absolute; right: 0.75rem; top: 0.75rem; background: transparent; border: none; font-size: 1.1rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;"
+            (click)="closeSupplierDetails()">
+            <i class="fas fa-times"></i>
+          </button>
+          <h4
+            style="margin-top: 0; margin-bottom: 1rem; color: #0f1a2e; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+            <i class="fas fa-info-circle" style="color: #3b82f6;"></i> Supplier Details
+          </h4>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Supplier
+              ID</span>
+            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingSupplierDetails.supplierId
+              }}</span>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Name</span>
+            <span style="font-size: 1rem; color: #0f1a2e; margin-top: 0.15rem; font-weight: 700;">{{
+              viewingSupplierDetails.name }}</span>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;"
+            *ngIf="viewingSupplierDetails.email">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Email</span>
+            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingSupplierDetails.email
+              }}</span>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;"
+            *ngIf="viewingSupplierDetails.phone">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Phone</span>
+            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{ viewingSupplierDetails.phone
+              }}</span>
+          </div>
+          <div style="margin-bottom: 0.75rem; display: flex; flex-direction: column;"
+            *ngIf="viewingSupplierDetails.contactPerson">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Contact
+              Person</span>
+            <span style="font-size: 0.95rem; color: #0f1a2e; margin-top: 0.15rem;">{{
+              viewingSupplierDetails.contactPerson }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column;" *ngIf="viewingSupplierDetails.address">
+            <span
+              style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Address</span>
+            <span
+              style="font-size: 0.95rem; color: #334155; margin-top: 0.15rem; line-height: 1.5; white-space: pre-wrap;">{{
+              viewingSupplierDetails.address }}</span>
+          </div>
+        </div>
+
+        <!-- Create/Edit Supplier Form -->
+        <div class="create-category-card" [class.editing]="editingSupplier">
+          <label class="form-label">{{ editingSupplier ? 'Edit Supplier Name' : 'New Supplier Name' }}</label>
+          <input type="text" class="form-control" placeholder="e.g. Centrifuge Group, Dangote Wholesales..."
+            [(ngModel)]="newSupplierName" style="width: 100%; margin-bottom: 0.75rem;">
+
+          <label class="form-label">Contact Person</label>
+          <input type="text" class="form-control" placeholder="e.g. John Doe..." [(ngModel)]="newSupplierContactPerson"
+            style="width: 100%; margin-bottom: 0.75rem;">
+
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" placeholder="e.g. sales@supplier.com..."
+            [(ngModel)]="newSupplierEmail" style="width: 100%; margin-bottom: 0.75rem;">
+
+          <label class="form-label">Phone Number</label>
+          <input type="text" class="form-control" placeholder="e.g. +234 803 000 0000..." [(ngModel)]="newSupplierPhone"
+            style="width: 100%; margin-bottom: 0.75rem;">
+
+          <label class="form-label">Address</label>
+          <textarea class="form-control textarea" placeholder="Enter physical address..."
+            [(ngModel)]="newSupplierAddress"
+            style="width: 100%; margin-bottom: 1rem; min-height: 60px; resize: vertical;"></textarea>
+
+          <div class="action-buttons-row" style="display: flex;">
+            <button class="btn-submit-category" (click)="submitSupplier()"
+              [style.background]="editingSupplier ? '#10b981' : '#1a2d4a'">
+              <i class="fas" [class.fa-save]="editingSupplier" [class.fa-plus]="!editingSupplier"></i>
+              {{ editingSupplier ? 'Update Supplier' : 'Save Supplier' }}
+            </button>
+            <button class="btn-cancel-edit" *ngIf="editingSupplier" (click)="cancelEditSupplier()"
+              style="margin-left: 0.5rem; background: #94a3b8; border: none; color: white; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Existing Suppliers List -->
+        <div class="categories-list-wrapper">
+          <div class="list-header">
+            <h4>Existing Suppliers</h4>
+            <span class="category-count-badge">{{ rawSuppliers.length }}</span>
+          </div>
+
+          <div class="categories-scroll-area">
+            <div class="category-list-item" *ngFor="let sup of rawSuppliers; let i = index"
+              (click)="startViewSupplier(sup)"
+              [class.active]="(editingSupplier && sup.id && editingSupplier.id === sup.id) || (viewingSupplierDetails && sup.id && viewingSupplierDetails.id === sup.id)"
+              style="cursor: pointer; position: relative;">
+              <div class="item-icon-wrapper">
+                <i class="fas fa-truck"></i>
+              </div>
+              <div class="item-content" style="flex: 1;">
+                <div class="item-name" style="font-weight: 700; color: #0f1a2e;">
+                  {{ sup.name }}
+                </div>
+                <div class="item-desc" style="font-size: 0.8rem; color: #64748b; margin-top: 0.15rem;"
+                  *ngIf="sup.contactPerson">Contact: {{ sup.contactPerson }}</div>
+              </div>
+              <div class="item-actions-row" style="display: flex; gap: 0.25rem;">
+                <button class="btn-view-cat" (click)="$event.stopPropagation(); startViewSupplier(sup)"
+                  title="View Details"
+                  style="background: transparent; border: none; color: #64748b; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn-edit-cat" (click)="$event.stopPropagation(); startEditSupplier(sup)"
+                  title="Edit Supplier"
+                  style="background: transparent; border: none; color: #3b82f6; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="btn-delete-cat"
+                  (click)="$event.stopPropagation(); confirmDeleteSupplier(sup.id, sup.name)" title="Delete Supplier"
+                  style="background: transparent; border: none; color: #ef4444; font-size: 1rem; padding: 0.35rem; cursor: pointer; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+            <div class="empty-categories" *ngIf="rawSuppliers.length === 0">
+              <i class="fas fa-truck-moving"></i>
+              <p>No suppliers found. Add one above!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

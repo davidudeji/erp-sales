@@ -1,0 +1,69 @@
+<app-side-modal (close)="close()">
+  <div class="h-full flex flex-col" *ngIf="attempt as a">
+    <!-- Header -->
+    <div class="flex items-start justify-between pb-4 border-b border-[#e5eaed]">
+      <div>
+        <p class="text-[11px] font-medium text-[#9aa7ae] uppercase tracking-wide mb-1">Proof of Delivery</p>
+        <h2 class="text-[19px] font-bold text-[#14181b]">{{ a.orderDisplayId }}</h2>
+      </div>
+      <button
+        type="button"
+        (click)="close()"
+        class="w-8 h-8 rounded-full flex items-center justify-center text-[#71828a] hover:bg-[#eef2f5] hover:text-[#14181b] transition-colors shrink-0"
+        aria-label="Close"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18 6 6 18M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-5 space-y-5">
+
+      <!-- Evidence -->
+      <div class="bg-white rounded-xl border border-[#e5eaed] overflow-hidden">
+        <div class="aspect-square bg-[#f5f7f8] flex items-center justify-center p-6">
+          <ng-container [ngSwitch]="a.proof?.type">
+            <img *ngSwitchCase="ProofType.PHOTO" [src]="a.proof?.dataUrl || 'https://placehold.co/400x400?text=Delivery+Photo'" class="max-w-full max-h-full rounded-lg object-contain" alt="Delivery photo proof" />
+            <div *ngSwitchCase="ProofType.SIGNATURE" class="w-full h-full flex items-center justify-center">
+              <svg width="220" height="90" viewBox="0 0 220 90" fill="none" stroke="#14181b" stroke-width="2" stroke-linecap="round">
+                <path d="M10 60 Q 30 10, 55 55 T 100 50 Q 120 20, 140 60 T 190 45"></path>
+              </svg>
+            </div>
+            <div *ngSwitchCase="ProofType.CODE" class="text-center">
+              <p class="text-[12px] text-[#9aa7ae] mb-2">Confirmation Code</p>
+              <p class="text-[36px] font-bold tracking-[0.3em] text-[#14181b]">{{ a.proof?.code || '----' }}</p>
+            </div>
+            <p *ngSwitchDefault class="text-[13px] text-[#9aa7ae]">No proof captured.</p>
+          </ng-container>
+        </div>
+        <div class="px-4 py-3 border-t border-[#eef2f5] flex items-center justify-between">
+          <span class="text-[12px] font-medium text-[#566670] capitalize">{{ (a.proof?.type || '').toLowerCase() }} proof</span>
+          <span class="text-[12px] text-[#9aa7ae]">{{ a.proof?.capturedAt | date: 'MMM d, y · h:mm a' }}</span>
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="bg-white rounded-xl border border-[#e5eaed] p-4">
+        <dl class="grid grid-cols-2 gap-y-3 gap-x-4 text-[13px]">
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Customer</dt>
+            <dd class="text-[#14181b] font-medium">{{ a.customerName }}</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Delivery Location</dt>
+            <dd class="text-[#14181b] font-medium">{{ a.deliveryLocation }}</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Delivered By</dt>
+            <dd class="text-[#14181b] font-medium">{{ a.riderName }}</dd>
+          </div>
+          <div>
+            <dt class="text-[#9aa7ae] mb-0.5">Delivered At</dt>
+            <dd class="text-[#14181b] font-medium">{{ a.attemptedAt | date: 'MMM d, y · h:mm a' }}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</app-side-modal>

@@ -1,0 +1,342 @@
+<!-- vendor-dashboard.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Vendor Activity</span>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="ql-filter-section" *ngIf="stats">
+            <div class="ql-filter-heading">Overview</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Total Vendors</span>
+                <span class="ql-sidebar-stat-value">{{ stats.totalVendors }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #2EB270;">Active</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ stats.activeVendors }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label" style="color: #F59E0B;">Pending</span>
+                <span class="ql-sidebar-stat-value" style="color: #F59E0B;">{{ stats.pendingOnboarding }}</span>
+            </div>
+            <div class="ql-sidebar-stat"
+                style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label" style="color: #DC2626;">High Risk</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ stats.highRiskVendors }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Avg Performance</span>
+                <span class="ql-sidebar-stat-value">{{ stats.averagePerformanceScore.toFixed(1) }}%</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refreshData()" [disabled]="isLoading">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+                {{ isLoading ? 'Loading...' : 'Refresh' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="navigateToVendors()">
+                <i class="fas fa-store"></i> View All Vendors
+            </button>
+            <button class="ql-sidebar-action" (click)="navigateToApprovalQueue()">
+                <i class="fas fa-user-group"></i> See Registry
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading vendor dashboard...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refreshData()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading && stats">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">Vendor Dashboard</h1>
+                    <span class="ql-total-badge">Live</span>
+                    <span class="ql-vendor-badge" style="background: #18444020; color: #184440;">
+                        <i class="fas fa-store"></i>
+                        {{ stats.totalVendors }} vendors
+                    </span>
+                    <span class="ql-pending-badge" style="background: #F59E0B20; color: #F59E0B;">
+                        <i class="fas fa-clock"></i>
+                        {{ stats.pendingOnboarding }} pending
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <div class="ql-date-range-selector">
+                        <button class="ql-range-btn" [class.ql-range-btn--active]="dateRange === 'week'"
+                            (click)="changeDateRange('week')">Week</button>
+                        <button class="ql-range-btn" [class.ql-range-btn--active]="dateRange === 'month'"
+                            (click)="changeDateRange('month')">Month</button>
+                        <button class="ql-range-btn" [class.ql-range-btn--active]="dateRange === 'quarter'"
+                            (click)="changeDateRange('quarter')">Quarter</button>
+                        <button class="ql-range-btn" [class.ql-range-btn--active]="dateRange === 'year'"
+                            (click)="changeDateRange('year')">Year</button>
+                    </div>
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refreshData()" [disabled]="isLoading">
+                        <i class="fas fa-sync-alt" [class.ql-spinning]="isLoading"></i>
+                        {{ isLoading ? 'Loading...' : 'Refresh' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="ql-stats-row">
+                <div class="ql-stat-mini" (click)="navigateToVendors()">
+                    <span class="ql-stat-mini-value">{{ stats.totalVendors }}</span>
+                    <span class="ql-stat-mini-label">Total Vendors</span>
+                </div>
+                <div class="ql-stat-mini" (click)="navigateToVendors()">
+                    <span class="ql-stat-mini-value" style="color: #2EB270;">{{ stats.activeVendors }}</span>
+                    <span class="ql-stat-mini-label">Active</span>
+                </div>
+                <div class="ql-stat-mini" (click)="navigateToApprovalQueue()">
+                    <span class="ql-stat-mini-value" style="color: #F59E0B;">{{ stats.pendingOnboarding }}</span>
+                    <span class="ql-stat-mini-label">Pending Review</span>
+                </div>
+                <div class="ql-stat-mini" (click)="navigateToRisk()">
+                    <span class="ql-stat-mini-value" style="color: #DC2626;">{{ stats.highRiskVendors }}</span>
+                    <span class="ql-stat-mini-label">High Risk</span>
+                </div>
+                <div class="ql-stat-mini">
+                    <span class="ql-stat-mini-value" style="color: #184440;">{{ stats.averagePerformanceScore.toFixed(0)
+                        }}%</span>
+                    <span class="ql-stat-mini-label">Avg Performance</span>
+                </div>
+                <div class="ql-stat-mini" (click)="navigateToVendors()">
+                    <span class="ql-stat-mini-value" style="color: #F5A623;">{{ stats.expiringDocuments }}</span>
+                    <span class="ql-stat-mini-label">Expiring Docs</span>
+                </div>
+            </div>
+
+            <!-- Quick Insights Cards -->
+            <div class="ql-insights-row">
+                <div class="ql-insight-card" *ngFor="let metric of getInsightMetrics()"
+                    [style.border-left-color]="metric.color">
+                    <div class="ql-insight-icon" [style.background]="metric.color + '15'" [style.color]="metric.color">
+                        <i class="fas" [class.fa-chart-simple]="metric.label.includes('Performance')"
+                            [class.fa-store]="metric.label.includes('Active')"
+                            [class.fa-clock]="metric.label.includes('Pending')"
+                            [class.fa-exclamation-triangle]="metric.label.includes('Risk')"></i>
+                    </div>
+                    <div class="ql-insight-content">
+                        <span class="ql-insight-label">{{ metric.label }}</span>
+                        <span class="ql-insight-value">{{ metric.value }}</span>
+                    </div>
+                    <div class="ql-insight-trend" [style.color]="metric.trend === 'up' ? '#2EB270' : '#DC2626'">
+                        <i class="fas fa-arrow-{{ metric.trend === 'up' ? 'up' : 'down' }}"></i>
+                        {{ metric.percent }}%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vendor Tier Distribution - Simple Bar Chart -->
+            <div class="ql-info-card">
+                <div class="ql-card-header">
+                    <h3 class="ql-info-title"><i class="fas fa-chart-pie"></i> Vendor Tier Distribution</h3>
+                    <span class="ql-badge">{{ stats.totalVendors }} total</span>
+                </div>
+                <div class="ql-tier-distribution">
+                    <div class="ql-tier-item" *ngFor="let tier of vendorTierData">
+                        <span class="ql-tier-label">
+                            <span class="ql-tier-dot" [style.background]="tier.color"></span>
+                            {{ tier.label }}
+                        </span>
+                        <div class="ql-tier-bar">
+                            <div class="ql-tier-fill" [style.width.%]="(tier.value / stats.totalVendors) * 100"
+                                [style.background]="tier.color"></div>
+                        </div>
+                        <span class="ql-tier-value">{{ tier.value }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Column Layout: Recent Activity & Top Performers -->
+            <div class="ql-two-col">
+                <!-- Recent Activity -->
+                <div class="ql-info-card">
+                    <div class="ql-card-header">
+                        <h3 class="ql-info-title"><i class="fas fa-bolt"></i> Recent Activity</h3>
+                        <button class="ql-card-action" (click)="navigateToVendors()">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="ql-activity-list">
+                        <div *ngFor="let activity of recentActivity" class="ql-activity-item">
+                            <div class="ql-activity-icon" [style.background]="activity.color + '20'"
+                                [style.color]="activity.color">
+                                <i class="fas fa-{{ activity.icon }}"></i>
+                            </div>
+                            <div class="ql-activity-content">
+                                <span class="ql-activity-title">{{ activity.event }}</span>
+                                <span class="ql-activity-desc">{{ activity.description }}</span>
+                                <span class="ql-activity-time">{{ formatDate(activity.timestamp) }}</span>
+                            </div>
+                            <button class="ql-activity-action" (click)="navigateToVendor(activity.vendorId)">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div *ngIf="recentActivity.length === 0" class="ql-empty-small">
+                            <i class="fas fa-inbox"></i>
+                            <span>No recent activity</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Performers -->
+                <div class="ql-info-card">
+                    <div class="ql-card-header">
+                        <h3 class="ql-info-title"><i class="fas fa-trophy"></i> Top Performers</h3>
+                        <button class="ql-card-action" (click)="navigateToVendors()">
+                            View All <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="ql-performers-list">
+                        <div *ngFor="let vendor of topPerformers; let i = index" class="ql-performer-item">
+                            <div class="ql-performer-rank" [class.ql-performer-rank--gold]="i === 0"
+                                [class.ql-performer-rank--silver]="i === 1" [class.ql-performer-rank--bronze]="i === 2">
+                                <span *ngIf="i === 0">🥇</span>
+                                <span *ngIf="i === 1">🥈</span>
+                                <span *ngIf="i === 2">🥉</span>
+                                <span *ngIf="i > 2">#{{ i + 1 }}</span>
+                            </div>
+                            <div class="ql-performer-info">
+                                <span class="ql-performer-name">{{ vendor.companyName }}</span>
+                                <span class="ql-performer-tier" [style.color]="getVendorStatusColor(vendor.status)">
+                                    {{ getVendorTierLabel(vendor.tier) }}
+                                </span>
+                            </div>
+                            <div class="ql-performer-score">
+                                <span class="ql-score-value">{{ vendor.performanceScore?.toFixed(0) || 0 }}%</span>
+                                <div class="ql-score-bar">
+                                    <div class="ql-score-fill" [style.width.%]="vendor.performanceScore || 0"
+                                        style="background: #184440;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="topPerformers.length === 0" class="ql-empty-small">
+                            <i class="fas fa-inbox"></i>
+                            <span>No top performers yet</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expiring Documents -->
+            <div class="ql-info-card" *ngIf="expiringDocuments.length > 0">
+                <div class="ql-card-header">
+                    <h3 class="ql-info-title"><i class="fas fa-file-signature"></i> Expiring Documents</h3>
+                    <button class="ql-card-action" (click)="navigateToVendors()">
+                        View All <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div class="ql-documents-list">
+                    <div *ngFor="let doc of expiringDocuments" class="ql-document-item">
+                        <div class="ql-doc-status" [style.background]="getDocumentStatusColor(doc.status)">
+                            <span class="ql-doc-dot-inner"></span>
+                        </div>
+                        <div class="ql-doc-content">
+                            <span class="ql-doc-name">{{ doc.name }}</span>
+                            <span class="ql-doc-vendor">{{ doc.vendorName || 'Unknown Vendor' }}</span>
+                        </div>
+                        <div class="ql-doc-expiry">
+                            <span class="ql-doc-days"
+                                [class.ql-doc-days--critical]="getDaysUntilExpiry(doc.expiryDate) < 7"
+                                [class.ql-doc-days--warning]="getDaysUntilExpiry(doc.expiryDate) < 30">
+                                {{ getDaysUntilExpiry(doc.expiryDate) }} days
+                            </span>
+                            <span class="ql-doc-date">{{ formatDate(doc.expiryDate) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Insights & Fraud Watch Widgets -->
+            <div class="ql-two-col">
+                <!-- AI Insights -->
+                <div class="ql-info-card">
+                    <div class="ql-card-header">
+                        <h3 class="ql-info-title"><i class="fas fa-wand-magic-sparkles"></i> AI Insights</h3>
+                        <span class="ql-badge" *ngIf="aiSummary">{{ aiSummary.criticalInsights }} critical</span>
+                    </div>
+                    <div class="ql-activity-list">
+                        <div *ngFor="let insight of topInsights" class="ql-activity-item">
+                            <div class="ql-activity-icon"
+                                [style.background]="getInsightSeverityColor(insight.severity) + '20'"
+                                [style.color]="getInsightSeverityColor(insight.severity)">
+                                <i class="fas fa-circle-exclamation"></i>
+                            </div>
+                            <div class="ql-activity-content">
+                                <span class="ql-activity-title">{{ insight.finding }}</span>
+                                <span class="ql-activity-desc">{{ insight.vendorName }} — {{ insight.reason }}</span>
+                                <span class="ql-activity-time">{{ insight.confidence }}% confidence</span>
+                            </div>
+                            <button class="ql-activity-action" *ngIf="insight.suggestedActions?.length"
+                                [title]="insight.suggestedActions[0].label"
+                                (click)="actOnInsight(insight, insight.suggestedActions[0].action)">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div *ngIf="topInsights.length === 0" class="ql-empty-small">
+                            <i class="fas fa-check-circle"></i>
+                            <span>No open insights right now</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fraud Watch -->
+                <div class="ql-info-card">
+                    <div class="ql-card-header">
+                        <h3 class="ql-info-title"><i class="fas fa-shield-halved"></i> Fraud Watch</h3>
+                        <span class="ql-badge" *ngIf="aiSummary">{{ aiSummary.fraudFlagsPending }} pending</span>
+                    </div>
+                    <div class="ql-activity-list">
+                        <div *ngFor="let flag of pendingFraudFlags" class="ql-activity-item">
+                            <div class="ql-activity-icon" style="background: #DC262620; color: #DC2626;">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="ql-activity-content">
+                                <span class="ql-activity-title">{{ flag.title }}</span>
+                                <span class="ql-activity-desc">{{ flag.vendorName }} — {{ flag.description }}</span>
+                                <span class="ql-activity-time">{{ formatDate(flag.detectedAt) }}</span>
+                            </div>
+                            <button class="ql-activity-action" title="Investigate" (click)="investigateFraudFlag(flag)">
+                                <i class="fas fa-magnifying-glass"></i>
+                            </button>
+                        </div>
+                        <div *ngIf="pendingFraudFlags.length === 0" class="ql-empty-small">
+                            <i class="fas fa-check-circle"></i>
+                            <span>No fraud flags pending review</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </ng-container>
+
+    </main>
+</div>

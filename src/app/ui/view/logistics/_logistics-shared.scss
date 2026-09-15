@@ -1,0 +1,321 @@
+// _logistics-shared.scss
+// Shared visual language across all Logistics admin components
+// (Routing Queue, Route Approval, Delivery Records, Rider Activity).
+// Import with: @import '../logistics-shared';
+
+.lg-page {
+  padding: 24px 32px;
+  background: #f7f9fa;
+  min-height: 100%;
+}
+
+// ---------- Header ----------
+.lg-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.lg-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: #14181b;
+}
+.lg-subtitle {
+  font-size: 13px;
+  color: #71828a;
+  margin-top: 2px;
+}
+
+// ---------- Stat cards ----------
+.lg-stat-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.lg-stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-width: 130px;
+}
+.lg-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9aa7ae;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
+}
+.lg-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #14181b;
+}
+.lg-stat-value--alert {
+  color: #f97316;
+}
+
+// ---------- Tabs ----------
+.lg-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+.lg-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+  margin-right: 24px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #71828a;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: #14181b;
+  }
+  &.active {
+    color: #00a191;
+    border-bottom-color: #00a191;
+  }
+}
+.lg-tab-badge {
+  background: #eef2f5;
+  color: #566670;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+.lg-tab-badge--alert {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+// ---------- Search / inputs ----------
+.lg-search-input {
+  width: 100%;
+  padding: 9px 12px 9px 34px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #14181b;
+
+  &:focus {
+    outline: none;
+    border-color: #00a191;
+    box-shadow: 0 0 0 3px rgba(0, 161, 145, 0.12);
+  }
+  &::placeholder {
+    color: #9aa7ae;
+  }
+}
+.lg-select {
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #14181b;
+
+  &:focus {
+    outline: none;
+    border-color: #00a191;
+  }
+}
+
+// ---------- Table shell ----------
+.lg-table-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.lg-empty {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+// ---------- Pills / badges ----------
+.lg-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.lg-pill--neutral {
+  background: #eef2f5;
+  color: #566670;
+}
+.lg-pill--success {
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+.lg-pill--error {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+.lg-pill--alert {
+  background: rgba(249, 115, 22, 0.12);
+  color: #f97316;
+}
+.lg-pill--info {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.lg-aging-bar {
+  display: inline-block;
+  width: 3px;
+  height: 22px;
+  border-radius: 2px;
+  background: #f97316;
+  margin-right: -2px;
+}
+
+// ---------- Avatars ----------
+.lg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #eef5f7;
+  color: #224957;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lg-avatar--lg {
+  width: 38px;
+  height: 38px;
+  font-size: 13px;
+}
+
+// ---------- Buttons ----------
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+.btn-primary {
+  background: #00a191;
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: #018e80;
+  }
+}
+.btn-outline {
+  background: #fff;
+  color: #00a191;
+  border-color: #00a191;
+  &:hover:not(:disabled) {
+    background: rgba(0, 161, 145, 0.06);
+  }
+}
+.btn-critical {
+  background: #f97316;
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: #ea6a0e;
+  }
+}
+.btn-critical-outline {
+  background: #fff;
+  color: #f97316;
+  border-color: #f97316;
+  &:hover:not(:disabled) {
+    background: rgba(249, 115, 22, 0.06);
+  }
+}
+.btn-neutral-outline {
+  background: #fff;
+  color: #566670;
+  border-color: #e2e8f0;
+  &:hover:not(:disabled) {
+    background: #f7f9fa;
+  }
+}
+
+// ---------- Toasts ----------
+.lg-toast-stack {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2000;
+}
+.lg-toast {
+  background: #14181b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: lg-toast-in 0.2s ease-out;
+}
+@keyframes lg-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ---------- Modal content ----------
+.lg-modal {
+  width: 380px;
+  max-width: 90vw;
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+}
+.lg-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+  }
+}

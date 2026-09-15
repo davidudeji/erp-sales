@@ -1,0 +1,582 @@
+.scw-page {
+  min-height: 100%;
+  background: #f7f9fa;
+}
+
+// ---------- Persistent progress header ----------
+.scw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+.scw-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #14181b;
+}
+.scw-subtitle {
+  font-size: 12.5px;
+  color: #9aa7ae;
+  margin-top: 1px;
+}
+.scw-stats {
+  display: flex;
+  gap: 14px;
+}
+.scw-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #566670;
+}
+.scw-stat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9aa7ae;
+
+  &.delivered {
+    background: #16a34a;
+  }
+  &.failed {
+    background: #dc2626;
+  }
+  &.pending {
+    background: #f97316;
+  }
+}
+
+.scw-offline-banner {
+  background: #14181b;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: center;
+  padding: 8px 16px;
+}
+
+.scw-empty,
+.scw-empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: #9aa7ae;
+  font-size: 14px;
+}
+
+// ---------- Route complete ----------
+.scw-complete {
+  text-align: center;
+  padding: 64px 24px;
+}
+.scw-complete-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+  font-size: 26px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+.scw-complete-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #14181b;
+  margin-bottom: 6px;
+}
+.scw-complete-stats {
+  font-size: 13.5px;
+  color: #566670;
+  margin-bottom: 6px;
+}
+
+// ---------- Master-detail workspace ----------
+.scw-workspace {
+  display: flex;
+  flex-direction: column;
+}
+
+// ---------- LEFT: itinerary list ----------
+.scw-list-panel {
+  padding: 16px;
+  background: #f7f9fa;
+}
+.scw-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.scw-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #14181b;
+}
+.scw-filter-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  &:hover {
+    background: #eef2f5;
+  }
+}
+
+.scw-stop-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scw-stop-row {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: #cbd5db;
+  }
+  &.active {
+    border-color: #00a191;
+    box-shadow: 0 2px 10px rgba(0, 161, 145, 0.15);
+  }
+  &.en-route {
+    border-color: #00a191;
+  }
+  &.completed {
+    opacity: 0.65;
+  }
+}
+.scw-stop-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #14181b;
+
+  &.muted {
+    color: #9aa7ae;
+  }
+}
+.scw-stop-address {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #14181b;
+
+  &.muted {
+    color: #9aa7ae;
+    font-weight: 500;
+  }
+}
+.scw-stop-meta {
+  font-size: 11.5px;
+  color: #9aa7ae;
+  margin-top: 1px;
+}
+.scw-status-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2f5;
+  color: #566670;
+
+  &.EN_ROUTE {
+    background: rgba(0, 161, 145, 0.12);
+    color: #00a191;
+  }
+  &.DELIVERED {
+    background: rgba(22, 163, 74, 0.12);
+    color: #16a34a;
+  }
+  &.FAILED {
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+  }
+}
+.scw-sync-pill {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #b3690a;
+  background: rgba(249, 115, 22, 0.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.scw-enroute-link {
+  display: block;
+  margin-top: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #00a191;
+}
+
+.scw-completed-divider {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #9aa7ae;
+  text-align: center;
+  margin: 6px 0;
+}
+
+// ---------- RIGHT: action panel ----------
+.scw-detail-panel {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+.scw-detail-empty {
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+.scw-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #566670;
+  padding: 14px 16px 0;
+}
+
+.scw-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px 16px;
+  border-bottom: 1px solid #eef2f5;
+}
+.scw-stop-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #00a191;
+  background: rgba(0, 161, 145, 0.1);
+  padding: 2px 9px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+.scw-detail-address {
+  font-size: 18px;
+  font-weight: 800;
+  color: #14181b;
+  line-height: 1.25;
+}
+.scw-detail-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+}
+.scw-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: #566670;
+}
+.scw-mini-map {
+  width: 90px;
+  height: 70px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.scw-detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+.scw-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #14181b;
+  margin-bottom: 10px;
+}
+
+.scw-sig-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.scw-sig-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #14181b;
+}
+.scw-clear-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: #00a191;
+}
+.scw-sig-canvas {
+  width: 100%;
+  height: 150px;
+  background: #fafbfc;
+  border: 1px dashed #cbd5db;
+  border-radius: 10px;
+  touch-action: none;
+  cursor: crosshair;
+}
+.scw-sig-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #9aa7ae;
+  margin-top: 6px;
+}
+
+.scw-photo-preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+.scw-photo-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border-radius: 10px;
+  border: 1px dashed #cbd5db;
+  color: #00a191;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.scw-code-input,
+.scw-text-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  &:focus {
+    outline: none;
+    border-color: #00a191;
+  }
+}
+
+.scw-alt-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.scw-alt-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #14181b;
+
+  &:hover {
+    border-color: #00a191;
+  }
+  &.active {
+    border-color: #00a191;
+    background: rgba(0, 161, 145, 0.05);
+  }
+}
+
+.scw-reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scw-reason-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #14181b;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #f97316;
+  }
+  &.selected {
+    border-color: #f97316;
+    background: rgba(249, 115, 22, 0.05);
+  }
+}
+.scw-radio {
+  width: 18px;
+  height: 18px;
+  accent-color: #f97316;
+}
+.scw-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: #f97316;
+  }
+}
+
+.scw-detail-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #eef2f5;
+}
+.scw-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46px;
+  font-size: 13.5px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1px solid transparent;
+
+  &:disabled {
+    opacity: 0.45;
+  }
+}
+.scw-btn-deliver {
+  background: #00a191;
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: #018e80;
+  }
+}
+.scw-btn-fail {
+  background: #f97316;
+  color: #fff;
+  &:hover:not(:disabled) {
+    background: #ea6a0e;
+  }
+}
+.scw-btn-fail-outline {
+  background: #fff;
+  color: #f97316;
+  border-color: #f97316;
+  &:hover {
+    background: rgba(249, 115, 22, 0.06);
+  }
+}
+.scw-btn-neutral {
+  background: #fff;
+  color: #566670;
+  border-color: #e2e8f0;
+  &:hover {
+    background: #f7f9fa;
+  }
+}
+
+// ============================================================
+// MOBILE — sequential master-detail: list first, tapping a stop
+// switches to a full-view detail with a back link. No bottom tab
+// bar, no app-style chrome — just a normal collapsing panel.
+// ============================================================
+.scw-list-panel {
+  display: block;
+}
+.scw-detail-panel {
+  display: none;
+}
+.scw-workspace.mobile-detail-open {
+  .scw-list-panel {
+    display: none;
+  }
+  .scw-detail-panel {
+    display: flex;
+  }
+}
+
+// ============================================================
+// DESKTOP — true master-detail: both panels always visible,
+// list ~38%, action panel ~62%, admin-adjacent density on the
+// list, more spacious body copy in the action panel.
+// ============================================================
+@media (min-width: 900px) {
+  .scw-header {
+    padding: 18px 32px;
+  }
+
+  .scw-workspace {
+    flex-direction: row;
+    align-items: stretch;
+    min-height: calc(100vh - 64px);
+  }
+  .scw-workspace.mobile-detail-open {
+    .scw-list-panel {
+      display: block;
+    }
+  }
+
+  .scw-list-panel {
+    display: block !important;
+    width: 38%;
+    max-width: 420px;
+    padding: 20px;
+    overflow-y: auto;
+    border-right: 1px solid #e2e8f0;
+  }
+
+  .scw-detail-panel {
+    display: flex !important;
+    flex: 1;
+  }
+  .scw-back-btn {
+    display: none;
+  }
+
+  .scw-detail-head {
+    padding: 20px 28px;
+  }
+  .scw-mini-map {
+    width: 140px;
+    height: 100px;
+  }
+  .scw-detail-body {
+    padding: 24px 28px;
+    max-width: 640px;
+  }
+  .scw-detail-footer {
+    padding: 16px 28px;
+  }
+  .scw-btn {
+    flex: none;
+    min-width: 160px;
+  }
+}

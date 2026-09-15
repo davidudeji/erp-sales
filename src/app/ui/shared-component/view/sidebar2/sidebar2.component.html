@@ -1,0 +1,50 @@
+<!-- <nav>
+    <div class="side-bar-header">
+        <img src="assets/logo.png" alt="" />
+    </div>
+    <ul>
+      <li *ngFor="let item of menuItems">
+        <div class="menu-item" (click)="toggleSubMenu(item)">
+          <a *ngIf="!item.submenu" [routerLink]="item.route"  routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{ item.label }}</a>
+          <span *ngIf="item.submenu">{{ item.label }} &#9662;</span>
+        </div>
+        <ul [ngClass]="{'open': item.open}" *ngIf="item.submenu">
+          <li *ngFor="let subItem of item.submenu"  >
+            <a [routerLink]="subItem.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{ subItem.label }}</a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+</nav> -->
+
+<nav>
+    <div class="side-bar-header">
+      <img src="assets/logo.png" alt="Logo" />
+    </div>
+    <ul>
+      <li *ngFor="let item of menuItems">
+        <div class="menu-item" (click)="toggleSubMenu(item)">
+          <a *ngIf="!item.submenu"
+             [routerLink]="item.route"
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }">
+            <i *ngIf="item.icon" [class]="item.icon"></i> {{ item.label }}
+          </a>
+          <span *ngIf="item.submenu">
+            <i *ngIf="item.icon" [class]="item.icon"></i> {{ item.label }} &#9662;
+          </span>
+        </div>
+        <ul [ngClass]="{'open': item.open}" *ngIf="item.submenu">
+          <li *ngFor="let subItem of item.submenu">
+            <a [routerLink]="subItem.route"
+               routerLinkActive="active"
+               [routerLinkActiveOptions]="{ exact: true }">
+              <i *ngIf="subItem.icon" [class]="subItem.icon"></i> 
+              {{ subItem.label }}
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+  

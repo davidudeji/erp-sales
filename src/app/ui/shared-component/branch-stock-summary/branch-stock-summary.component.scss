@@ -1,0 +1,288 @@
+:host {
+    display: block;
+}
+
+.ql-bss {
+    background: #fff;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+// ── Loading / Error ────────────────────────────────────────
+
+.ql-bss-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px 0;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.ql-bss-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border, #e2e8f0);
+    border-top-color: var(--p, #0f2d2a);
+    border-radius: 50%;
+    animation: ql-bss-spin 0.8s linear infinite;
+}
+
+@keyframes ql-bss-spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.ql-bss-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #DC2626;
+    font-size: 13px;
+    padding: 8px 0;
+
+    i:first-child {
+        flex-shrink: 0;
+    }
+
+    span {
+        flex: 1;
+    }
+}
+
+.ql-bss-retry {
+    background: transparent;
+    border: none;
+    color: #DC2626;
+    cursor: pointer;
+    padding: 4px;
+}
+
+// ── Header ─────────────────────────────────────────────────
+
+.ql-bss-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    &-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text, #0f1a2e);
+        text-transform: uppercase;
+        letter-spacing: .3px;
+
+        i {
+            color: var(--p, #0f2d2a);
+        }
+    }
+
+    &-branch {
+        margin-left: auto;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+
+    &--compact {
+        margin-bottom: 10px;
+
+        .ql-bss-header-title {
+            font-size: 12px;
+        }
+    }
+}
+
+.ql-bss-refresh {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px;
+
+    &:hover {
+        color: var(--p, #0f2d2a);
+    }
+}
+
+// ── Stat tiles ─────────────────────────────────────────────
+
+.ql-bss-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 10px;
+}
+
+.ql-bss-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px 12px;
+
+    &-label {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+    }
+
+    &-value {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text, #0f1a2e);
+    }
+
+    &--warning {
+        background: #fffbeb;
+
+        .ql-bss-tile-value {
+            color: #F59E0B;
+        }
+    }
+
+    &--danger {
+        background: #fef2f2;
+
+        .ql-bss-tile-value {
+            color: #DC2626;
+        }
+    }
+}
+
+// ── Compact mode ───────────────────────────────────────────
+
+.ql-bss--compact {
+    padding: 12px;
+
+    .ql-bss-tiles {
+        grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+        gap: 6px;
+    }
+
+    .ql-bss-tile {
+        padding: 8px;
+
+        &-label {
+            font-size: 10px;
+        }
+
+        &-value {
+            font-size: 14px;
+        }
+    }
+}
+
+// ── Top sellers ────────────────────────────────────────────
+
+.ql-bss-top {
+    margin-top: 14px;
+    border-top: 1px solid #f0f4f3;
+    padding-top: 12px;
+
+    &-heading {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+        margin-bottom: 8px;
+    }
+}
+
+.ql-bss-top-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+
+    &:not(:last-child) {
+        border-bottom: 1px solid #f8fafc;
+    }
+}
+
+.ql-bss-top-name {
+    color: var(--text, #0f1a2e);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 10px;
+}
+
+.ql-bss-top-value {
+    color: #2EB270;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+// ── Empty state ────────────────────────────────────────────
+
+.ql-bss-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 0;
+    color: #94a3b8;
+    font-size: 12px;
+    text-align: center;
+
+    i {
+        font-size: 20px;
+    }
+}
+
+// ── Actions ────────────────────────────────────────────────
+
+.ql-bss-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.ql-bss-action-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border, #e2e8f0);
+    background: transparent;
+    color: var(--text, #0f1a2e);
+    transition: all .15s;
+
+    &:hover {
+        background: #f8fafc;
+    }
+
+    &--primary {
+        background: var(--p, #0f2d2a);
+        border-color: var(--p, #0f2d2a);
+        color: #fff;
+
+        &:hover {
+            background: #0f2d2a;
+        }
+    }
+}

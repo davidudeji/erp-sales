@@ -1,0 +1,45 @@
+<!-- restock-suggestions-page.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Restock Suggestions</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Branch filter -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Branch</div>
+            <app-branch-selector [branches]="branches" [selectedBranchId]="selectedBranchId"
+                [showAllOption]="true" allOptionLabel="All Branches"
+                (branchChange)="onBranchChange($event)"></app-branch-selector>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Top bar -->
+        <div class="ql-top-bar">
+            <div class="ql-top-bar-left">
+                <div class="ql-title-row">
+                    <h1 class="ql-title">Restock Suggestions</h1>
+                </div>
+                <p class="ql-subtitle">AI-generated recommendations for products running low across your branches.</p>
+            </div>
+        </div>
+
+        <!-- Suggestions -->
+        <app-restock-suggestion
+            [branchId]="selectedBranchId || ''"
+            [limit]="50"
+            (createRequest)="onCreateRequest($event)">
+        </app-restock-suggestion>
+
+    </main>
+</div>

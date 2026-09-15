@@ -1,0 +1,2388 @@
+<!-- SUCCESS STATE -->
+<div *ngIf="isSubmitted" class="vr-success">
+  <div class="vr-success-card">
+    <div class="vr-success-icon">
+      <svg
+        width="24"
+        height="24"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+      >
+        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <h1>Application Submitted</h1>
+    <p>
+      Your vendor registration has been received and is under review. Our team will contact you
+      within <strong>3–5 business days</strong>.
+    </p>
+    <div class="vr-app-num">
+      <label>Application Reference Number</label>
+      <strong>{{ applicationNumber }}</strong>
+    </div>
+    <p style="font-size: 11px; color: #94a3b8; margin-bottom: 24px">
+      A confirmation email has been sent to the address you provided. Keep this reference number for
+      tracking.
+    </p>
+    <a
+      routerLink="/vendor-portal"
+      class="vr-btn vr-btn-primary"
+      style="text-decoration: none; display: inline-flex"
+      >Go to Vendor Portal</a
+    >
+  </div>
+</div>
+
+<!-- MAIN FORM -->
+<div *ngIf="!isSubmitted" class="vr-shell">
+  <!-- Top bar -->
+  <header class="vr-topbar">
+    <div class="vr-topbar-brand">
+      <span class="vr-topbar-title">Vendor Registration</span>
+      <div class="vr-topbar-sep"></div>
+      <span class="vr-topbar-sub">{{ steps[currentStep - 1].label }}</span>
+    </div>
+    <div class="vr-topbar-right">
+      <div class="vr-progress-wrap">
+        <div class="vr-progress-bar">
+          <div class="vr-progress-fill" [style.width.%]="(currentStep / totalSteps) * 100"></div>
+        </div>
+        <span class="vr-progress-label"
+          >{{ (currentStep / totalSteps) * 100 | number: '1.0-0' }}%</span
+        >
+      </div>
+      <div class="vr-autosave" [class.is-saving]="saveState === 'saving'" [class.is-saved]="saveState === 'saved'">
+        <span class="vr-autosave__spinner" *ngIf="saveState === 'saving'"></span>
+        <svg *ngIf="saveState === 'saved'" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+        <span class="dot" *ngIf="saveState === 'idle'"></span>
+        <span>{{ saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Draft saved' }}</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Inline validation banner — replaces window.alert() -->
+  <div class="vr-banner vr-banner--error" *ngIf="stepError" role="alert">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>{{ stepError }}</span>
+    <button type="button" class="vr-banner__close" (click)="stepError = null" aria-label="Dismiss">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div class="vr-body">
+    <!-- Sidebar -->
+    <aside class="vr-sidebar">
+      <div class="vr-sidebar-section">
+        <div class="vr-sidebar-label">Registration Steps</div>
+        <div class="vr-step-rail">
+        <div
+          *ngFor="let step of steps"
+          class="vr-step-item"
+          [class.vr-step-item--active]="currentStep === step.n"
+          [class.vr-step-item--done]="currentStep > step.n"
+          [class.vr-step-item--future]="currentStep < step.n"
+          [class.vr-step-item--clickable]="currentStep > step.n"
+          (click)="goToStep(step.n)"
+        >
+          <div class="vr-step-num">
+            <ng-container *ngIf="currentStep > step.n">
+              <svg
+                width="10"
+                height="10"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                stroke-width="3"
+              >
+                <path d="M5 13l4 4L19 7" />
+              </svg>
+            </ng-container>
+            <ng-container *ngIf="currentStep <= step.n">{{ step.n }}</ng-container>
+          </div>
+          <div class="vr-step-info">
+            <div class="vr-step-name">{{ step.label }}</div>
+            <div class="vr-step-sub" *ngIf="currentStep === step.n">In progress</div>
+            <div class="vr-step-sub" *ngIf="currentStep > step.n">Completed</div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="vr-sidebar-footer">
+        <button class="vr-save-btn" type="button">
+          <svg
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+          >
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+          </svg>
+          Save Draft
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="vr-main">
+      <!-- ═══════════════════ STEP 1 — BUSINESS IDENTITY ═══════════════════ -->
+      <div *ngIf="currentStep === 1" [formGroup]="form1">
+        <div class="vr-step-header">
+          <div class="vr-step-tag">Step 1 of 6</div>
+          <h2>Business Identity</h2>
+          <p>Core details about your company — name, size, type and online presence</p>
+        </div>
+
+        <!-- Logo & name -->
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Company Profile</h3></div>
+          <div class="vr-section-body">
+            <div class="vr-logo-wrap" style="margin-bottom: 14px">
+              <div class="vr-logo-preview">
+                <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo" />
+                <svg
+                  *ngIf="!logoPreview"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              </div>
+              <div class="vr-logo-info">
+                <p>Company Logo</p>
+                <span>PNG, JPG or SVG · max 5 MB · Recommended 400×400px</span>
+              </div>
+              <input
+                type="file"
+                id="logoInput"
+                accept="image/*"
+                hidden
+                (change)="onLogoSelected($event)"
+              />
+              <button
+                type="button"
+                class="vr-upload-btn"
+                onclick="document.getElementById('logoInput').click()"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="2"
+                >
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                {{ logoPreview ? 'Change' : 'Upload Logo' }}
+              </button>
+            </div>
+
+            <div class="vr-g2" style="margin-bottom: 10px">
+              <div class="vr-field vr-span2">
+                <label class="vr-label req">Registered Business Name</label>
+                <input
+                  type="text"
+                  formControlName="businessName"
+                  class="vr-input"
+                  [class.err]="isInvalid(form1, 'businessName')"
+                  placeholder="Exactly as registered with the CAC"
+                />
+                <span *ngIf="isInvalid(form1, 'businessName')" class="vr-err"
+                  >Required — minimum 3 characters</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label"
+                  >Trading / Brand Name <span class="opt">(if different)</span></label
+                >
+                <input
+                  type="text"
+                  formControlName="tradingName"
+                  class="vr-input"
+                  placeholder="Name used publicly"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Year Established</label>
+                <input
+                  type="number"
+                  formControlName="yearEstablished"
+                  class="vr-input"
+                  [class.err]="isInvalid(form1, 'yearEstablished')"
+                  [min]="1800"
+                  [max]="maxYear"
+                  placeholder="e.g. 2010"
+                />
+                <span *ngIf="isInvalid(form1, 'yearEstablished')" class="vr-err"
+                  >Enter a valid year</span
+                >
+              </div>
+            </div>
+
+            <div class="vr-g3">
+              <div class="vr-field">
+                <label class="vr-label req">Business Type</label>
+                <select formControlName="businessType" class="vr-select">
+                  <option *ngFor="let t of businessTypes" [value]="t">
+                    {{ BUSINESS_TYPE_LABELS[t] }}
+                  </option>
+                </select>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Business Size</label>
+                <select formControlName="businessSize" class="vr-select">
+                  <option *ngFor="let s of businessSizes" [value]="s">
+                    {{ BUSINESS_SIZE_LABELS[s] }}
+                  </option>
+                </select>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Ownership Type</label>
+                <select formControlName="ownershipType" class="vr-select">
+                  <option *ngFor="let o of ownershipTypes" [value]="o">
+                    {{ OWNERSHIP_TYPE_LABELS[o] }}
+                  </option>
+                </select>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Number of Employees</label>
+                <select
+                  formControlName="numberOfEmployees"
+                  class="vr-select"
+                  [class.err]="isInvalid(form1, 'numberOfEmployees')"
+                >
+                  <option value="">Select range…</option>
+                  <option *ngFor="let r of EMPLOYEE_RANGES" [value]="r">{{ r }}</option>
+                </select>
+                <span *ngIf="isInvalid(form1, 'numberOfEmployees')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Annual Turnover Range</label>
+                <select
+                  formControlName="annualTurnoverRange"
+                  class="vr-select"
+                  [class.err]="isInvalid(form1, 'annualTurnoverRange')"
+                >
+                  <option value="">Select range…</option>
+                  <option *ngFor="let r of TURNOVER_RANGES" [value]="r">{{ r }}</option>
+                </select>
+                <span *ngIf="isInvalid(form1, 'annualTurnoverRange')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Primary Currency</label>
+                <select formControlName="currency" class="vr-select">
+                  <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Business Description</h3>
+            <p>Tell clients what your business does</p>
+          </div>
+          <div class="vr-section-body">
+            <div class="vr-field" style="margin-bottom: 10px">
+              <label class="vr-label req">Business Description</label>
+              <textarea
+                formControlName="businessDescription"
+                rows="4"
+                class="vr-textarea"
+                [class.err]="isInvalid(form1, 'businessDescription')"
+                placeholder="Describe your business — products/services you supply, core competencies, markets served, and what differentiates you. Minimum 50 characters."
+              ></textarea>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: flex-start;
+                  margin-top: 3px;
+                "
+              >
+                <span *ngIf="isInvalid(form1, 'businessDescription')" class="vr-err"
+                  >Required (min 50 characters)</span
+                >
+                <span class="vr-count"
+                  >{{ form1.get('businessDescription')?.value?.length || 0 }} / 1000</span
+                >
+              </div>
+            </div>
+            <div class="vr-field">
+              <label class="vr-label">Mission Statement <span class="opt">(optional)</span></label>
+              <textarea
+                formControlName="missionStatement"
+                rows="2"
+                class="vr-textarea"
+                placeholder="Your company's mission or core values…"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Online presence -->
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>
+              Online Presence
+              <span style="font-size: 11px; font-weight: 400; color: #94a3b8">(optional)</span>
+            </h3>
+          </div>
+          <div class="vr-section-body">
+            <div class="vr-g2">
+              <div class="vr-field">
+                <label class="vr-label">Website URL</label>
+                <input
+                  type="url"
+                  formControlName="websiteUrl"
+                  class="vr-input"
+                  placeholder="https://www.yourcompany.com"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">LinkedIn Company Page</label>
+                <input
+                  type="url"
+                  formControlName="linkedinUrl"
+                  class="vr-input"
+                  placeholder="https://linkedin.com/company/…"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════ STEP 2 — LEGAL & COMPLIANCE ═══════════════════ -->
+      <div *ngIf="currentStep === 2" [formGroup]="form2">
+        <div class="vr-step-header">
+          <div class="vr-step-tag">Step 2 of 6</div>
+          <h2>Legal & Compliance</h2>
+          <p>
+            Registration numbers, tax details, regulatory licences, insurance and legal declarations
+          </p>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>CAC Registration</h3></div>
+          <div class="vr-section-body">
+            <div class="vr-g2">
+              <div class="vr-field">
+                <label class="vr-label req">CAC Registration Number</label>
+                <input
+                  type="text"
+                  formControlName="cacRegistrationNumber"
+                  class="vr-input"
+                  [class.err]="isInvalid(form2, 'cacRegistrationNumber')"
+                  placeholder="e.g. RC-1234567"
+                />
+                <span *ngIf="isInvalid(form2, 'cacRegistrationNumber')" class="vr-err"
+                  >Required</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">CAC Registration Date</label>
+                <input
+                  type="date"
+                  formControlName="cacRegistrationDate"
+                  class="vr-input"
+                  [class.err]="isInvalid(form2, 'cacRegistrationDate')"
+                  [max]="today"
+                />
+                <span *ngIf="isInvalid(form2, 'cacRegistrationDate')" class="vr-err">Required</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Tax Information</h3></div>
+          <div class="vr-section-body">
+            <div class="vr-g3" style="margin-bottom: 12px">
+              <div class="vr-field">
+                <label class="vr-label req">Tax Identification Number (TIN)</label>
+                <input
+                  type="text"
+                  formControlName="tinNumber"
+                  class="vr-input"
+                  [class.err]="isInvalid(form2, 'tinNumber')"
+                  placeholder="e.g. 00000000-0001"
+                />
+                <span *ngIf="isInvalid(form2, 'tinNumber')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Tax Clearance Expiry</label>
+                <input type="date" formControlName="taxClearanceExpiryDate" class="vr-input" />
+              </div>
+            </div>
+            <div class="vr-sep"><span>VAT</span></div>
+            <div
+              class="vr-toggle-row"
+              [class.on]="form2.get('vatRegistered')?.value"
+              (click)="form2.get('vatRegistered')?.setValue(!form2.get('vatRegistered')?.value)"
+            >
+              <div class="vr-toggle" [class.on]="form2.get('vatRegistered')?.value">
+                <div class="vr-toggle-knob"></div>
+              </div>
+              <div class="vr-toggle-text">
+                <strong>VAT Registered</strong
+                ><span>Company is registered for Value Added Tax with FIRS</span>
+              </div>
+              <input type="checkbox" formControlName="vatRegistered" class="sr-only" />
+            </div>
+            <div
+              *ngIf="form2.get('vatRegistered')?.value"
+              style="margin-top: 10px; max-width: 280px"
+            >
+              <div class="vr-field">
+                <label class="vr-label req">VAT Registration Number</label>
+                <input
+                  type="text"
+                  formControlName="vatNumber"
+                  class="vr-input"
+                  [class.err]="isInvalid(form2, 'vatNumber')"
+                  placeholder="e.g. 00000000-0001"
+                />
+                <span *ngIf="isInvalid(form2, 'vatNumber')" class="vr-err"
+                  >Required when VAT registered</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Regulatory Licences</h3>
+            <p>Complete only what applies to your business</p>
+          </div>
+          <div class="vr-section-body">
+            <div class="vr-g3">
+              <div class="vr-field">
+                <label class="vr-label">NAFDAC No.</label
+                ><input
+                  type="text"
+                  formControlName="nafdacNumber"
+                  class="vr-input"
+                  placeholder="e.g. A7-0001"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">DPR Licence No.</label
+                ><input
+                  type="text"
+                  formControlName="dprLicenceNumber"
+                  class="vr-input"
+                  placeholder="e.g. OML-0001"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">SON Certification No.</label
+                ><input
+                  type="text"
+                  formControlName="sonCertificationNumber"
+                  class="vr-input"
+                  placeholder="e.g. SON-2026-001"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">PenCom No.</label
+                ><input
+                  type="text"
+                  formControlName="pencomNumber"
+                  class="vr-input"
+                  placeholder="Pension Commission"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">NSC No.</label
+                ><input
+                  type="text"
+                  formControlName="nscNumber"
+                  class="vr-input"
+                  placeholder="Nigerian Shippers' Council"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Other Licences</label
+                ><input
+                  type="text"
+                  formControlName="otherLicences"
+                  class="vr-input"
+                  placeholder="Any other licence numbers"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Insurance Coverage</h3></div>
+          <div class="vr-section-body">
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <div
+                class="vr-toggle-row"
+                [class.on]="form2.get('hasPublicLiabilityInsurance')?.value"
+                (click)="
+                  form2
+                    .get('hasPublicLiabilityInsurance')
+                    ?.setValue(!form2.get('hasPublicLiabilityInsurance')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form2.get('hasPublicLiabilityInsurance')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text">
+                  <strong>Public Liability Insurance</strong
+                  ><span>Company holds a current Public Liability Insurance policy</span>
+                </div>
+                <input
+                  type="checkbox"
+                  formControlName="hasPublicLiabilityInsurance"
+                  class="sr-only"
+                />
+              </div>
+              <div
+                *ngIf="form2.get('hasPublicLiabilityInsurance')?.value"
+                class="vr-g3"
+                style="
+                  padding: 10px;
+                  background: #f8fafc;
+                  border-radius: 6px;
+                  border: 1px solid #e2e8f0;
+                "
+              >
+                <div class="vr-field">
+                  <label class="vr-label">Insurer Name</label
+                  ><input
+                    type="text"
+                    formControlName="publicLiabilityInsurer"
+                    class="vr-input"
+                    placeholder="e.g. Leadway Assurance"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Policy Number</label
+                  ><input
+                    type="text"
+                    formControlName="publicLiabilityPolicyNo"
+                    class="vr-input"
+                    placeholder="e.g. PLI-2026-00001"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Expiry Date</label
+                  ><input
+                    type="date"
+                    formControlName="publicLiabilityExpiryDate"
+                    class="vr-input"
+                  />
+                </div>
+              </div>
+              <div
+                class="vr-toggle-row"
+                [class.on]="form2.get('hasProfessionalIndemnity')?.value"
+                (click)="
+                  form2
+                    .get('hasProfessionalIndemnity')
+                    ?.setValue(!form2.get('hasProfessionalIndemnity')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form2.get('hasProfessionalIndemnity')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text">
+                  <strong>Professional Indemnity Insurance</strong
+                  ><span
+                    >Required for consulting, IT, legal and professional services providers</span
+                  >
+                </div>
+                <input type="checkbox" formControlName="hasProfessionalIndemnity" class="sr-only" />
+              </div>
+              <div
+                *ngIf="form2.get('hasProfessionalIndemnity')?.value"
+                class="vr-g3"
+                style="
+                  padding: 10px;
+                  background: #f8fafc;
+                  border-radius: 6px;
+                  border: 1px solid #e2e8f0;
+                "
+              >
+                <div class="vr-field">
+                  <label class="vr-label">Insurer</label
+                  ><input
+                    type="text"
+                    formControlName="professionalIndemnityInsurer"
+                    class="vr-input"
+                    placeholder="Insurer name"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Policy Number</label
+                  ><input
+                    type="text"
+                    formControlName="professionalIndemnityPolicyNo"
+                    class="vr-input"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Expiry Date</label
+                  ><input
+                    type="date"
+                    formControlName="professionalIndemnityExpiry"
+                    class="vr-input"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>ISO & Quality Certifications</h3>
+            <p>Select all ISO standards your company currently holds</p>
+          </div>
+          <div class="vr-section-body">
+            <div class="vr-iso-grid">
+              <div
+                *ngFor="let std of ISO_STANDARDS_OPTIONS"
+                class="vr-iso-item"
+                [class.on]="isIsoSelected(std)"
+                (click)="toggleIso(std)"
+              >
+                <div class="vr-checkbox">
+                  <svg
+                    *ngIf="isIsoSelected(std)"
+                    width="8"
+                    height="8"
+                    fill="none"
+                    stroke="white"
+                    viewBox="0 0 24 24"
+                    stroke-width="3.5"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span>{{ std }}</span>
+              </div>
+            </div>
+            <div class="vr-field" style="margin-top: 10px">
+              <label class="vr-label"
+                >Other Certifications <span class="opt">(optional)</span></label
+              >
+              <input
+                type="text"
+                formControlName="otherCertifications"
+                class="vr-input"
+                placeholder="e.g. COREN, MDCN, NIA — list any other professional certifications"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Legal Declarations</h3>
+            <p>All answers are legally binding — answer accurately</p>
+          </div>
+          <div class="vr-section-body">
+            <div class="vr-callout amber" style="margin-bottom: 14px">
+              <svg
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <div>
+                <strong>Important</strong>Any misrepresentation may result in immediate
+                disqualification and legal action under Nigerian law.
+              </div>
+            </div>
+            <div
+              *ngFor="
+                let decl of [
+                  {
+                    ctrl: 'hasBeenBlacklisted',
+                    detailCtrl: 'blacklistedDetails',
+                    label: 'Blacklisting or Debarment',
+                    desc: 'Company has ever been blacklisted, debarred or suspended from any procurement register',
+                    placeholder: 'Organisation name, date, reason and current status…',
+                  },
+                  {
+                    ctrl: 'hasLitigationPending',
+                    detailCtrl: 'litigationDetails',
+                    label: 'Pending Litigation',
+                    desc: 'Company is currently involved in significant litigation, arbitration or legal proceedings',
+                    placeholder: 'Nature of case, parties involved, current status…',
+                  },
+                  {
+                    ctrl: 'hasCriminalConviction',
+                    detailCtrl: 'criminalDetails',
+                    label: 'Criminal Conviction',
+                    desc: 'Any director or principal officer has been convicted of fraud, bribery or corruption',
+                    placeholder: 'Name, offence, conviction date, sentence…',
+                  },
+                ]
+              "
+              class="vr-decl-card"
+              [class.danger-active]="form2.get(decl.ctrl)?.value"
+            >
+              <div
+                class="vr-decl-head"
+                (click)="form2.get(decl.ctrl)?.setValue(!form2.get(decl.ctrl)?.value)"
+              >
+                <div
+                  class="vr-toggle"
+                  [class.on]="form2.get(decl.ctrl)?.value"
+                  [class.danger]="true"
+                >
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-decl-head-text">
+                  <strong>{{ decl.label }}</strong
+                  ><span>{{ decl.desc }}</span>
+                </div>
+                <input type="checkbox" [formControlName]="decl.ctrl" class="sr-only" />
+              </div>
+              <div *ngIf="form2.get(decl.ctrl)?.value" class="vr-decl-body">
+                <div class="vr-field">
+                  <label class="vr-label req">Provide full details</label>
+                  <textarea
+                    [formControlName]="decl.detailCtrl"
+                    rows="3"
+                    class="vr-textarea"
+                    [class.err]="isInvalid(form2, decl.detailCtrl)"
+                    [placeholder]="decl.placeholder"
+                  ></textarea>
+                  <span *ngIf="isInvalid(form2, decl.detailCtrl)" class="vr-err"
+                    >Details are required</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════ STEP 3 — CONTACT & LOCATION ═══════════════════ -->
+      <div *ngIf="currentStep === 3" [formGroup]="form3">
+        <div class="vr-step-header">
+          <div class="vr-step-tag">Step 3 of 6</div>
+          <h2>Contact & Location</h2>
+          <p>
+            Contact persons, registered and operating addresses, warehouse and delivery coverage
+          </p>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Primary Contact Person</h3></div>
+          <div class="vr-section-body">
+            <div class="vr-g3">
+              <div class="vr-field">
+                <label class="vr-label req">Full Name</label
+                ><input
+                  type="text"
+                  formControlName="primaryContactName"
+                  class="vr-input"
+                  [class.err]="isInvalid(form3, 'primaryContactName')"
+                  placeholder="e.g. Oluwaseun Adeyemi"
+                /><span *ngIf="isInvalid(form3, 'primaryContactName')" class="vr-err"
+                  >Required</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Job Title</label
+                ><input
+                  type="text"
+                  formControlName="primaryContactTitle"
+                  class="vr-input"
+                  [class.err]="isInvalid(form3, 'primaryContactTitle')"
+                  placeholder="e.g. Managing Director"
+                /><span *ngIf="isInvalid(form3, 'primaryContactTitle')" class="vr-err"
+                  >Required</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Email Address</label
+                ><input
+                  type="email"
+                  formControlName="primaryContactEmail"
+                  class="vr-input"
+                  [class.err]="isInvalid(form3, 'primaryContactEmail')"
+                  placeholder="contact@yourcompany.com"
+                /><span *ngIf="isInvalid(form3, 'primaryContactEmail')" class="vr-err"
+                  >Valid email required</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Phone Number</label
+                ><input
+                  type="tel"
+                  formControlName="primaryContactPhone"
+                  class="vr-input"
+                  [class.err]="isInvalid(form3, 'primaryContactPhone')"
+                  placeholder="+234 801 234 5678"
+                /><span *ngIf="isInvalid(form3, 'primaryContactPhone')" class="vr-err"
+                  >Required</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Alt. Phone <span class="opt">(optional)</span></label
+                ><input
+                  type="tel"
+                  formControlName="primaryContactPhone2"
+                  class="vr-input"
+                  placeholder="+234 802 234 5678"
+                />
+              </div>
+            </div>
+            <div class="vr-sep" style="margin-top: 14px"><span>Secondary Contact</span></div>
+            <div
+              class="vr-toggle-row"
+              [class.on]="form3.get('hasSecondaryContact')?.value"
+              (click)="
+                form3.get('hasSecondaryContact')?.setValue(!form3.get('hasSecondaryContact')?.value)
+              "
+            >
+              <div class="vr-toggle" [class.on]="form3.get('hasSecondaryContact')?.value">
+                <div class="vr-toggle-knob"></div>
+              </div>
+              <div class="vr-toggle-text">
+                <strong>Add Secondary Contact</strong
+                ><span>A backup contact when the primary contact is unavailable</span>
+              </div>
+              <input type="checkbox" formControlName="hasSecondaryContact" class="sr-only" />
+            </div>
+            <div
+              *ngIf="form3.get('hasSecondaryContact')?.value"
+              class="vr-g3"
+              style="margin-top: 10px"
+            >
+              <div class="vr-field">
+                <label class="vr-label">Full Name</label
+                ><input
+                  type="text"
+                  formControlName="secondaryContactName"
+                  class="vr-input"
+                  placeholder="Name"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Job Title</label
+                ><input
+                  type="text"
+                  formControlName="secondaryContactTitle"
+                  class="vr-input"
+                  placeholder="Title"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Email</label
+                ><input
+                  type="email"
+                  formControlName="secondaryContactEmail"
+                  class="vr-input"
+                  placeholder="email@company.com"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Phone</label
+                ><input
+                  type="tel"
+                  formControlName="secondaryContactPhone"
+                  class="vr-input"
+                  placeholder="+234 803 234 5678"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Registered Business Address</h3></div>
+          <div class="vr-section-body">
+            <div class="vr-g2" style="margin-bottom: 10px">
+              <div class="vr-field vr-span2">
+                <label class="vr-label req">Address Line 1</label
+                ><input
+                  type="text"
+                  formControlName="registeredAddressLine1"
+                  class="vr-input"
+                  [class.err]="isInvalid(form3, 'registeredAddressLine1')"
+                  placeholder="Street address, building name or plot number"
+                /><span *ngIf="isInvalid(form3, 'registeredAddressLine1')" class="vr-err"
+                  >Required</span
+                >
+              </div>
+              <div class="vr-field vr-span2">
+                <label class="vr-label">Address Line 2 <span class="opt">(optional)</span></label
+                ><input
+                  type="text"
+                  formControlName="registeredAddressLine2"
+                  class="vr-input"
+                  placeholder="Floor, suite, estate, area"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">City / LGA</label
+                ><input
+                  type="text"
+                  formControlName="registeredCity"
+                  class="vr-input"
+                  [class.err]="isInvalid(form3, 'registeredCity')"
+                  placeholder="e.g. Victoria Island"
+                /><span *ngIf="isInvalid(form3, 'registeredCity')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">State</label
+                ><select
+                  formControlName="registeredState"
+                  class="vr-select"
+                  [class.err]="isInvalid(form3, 'registeredState')"
+                >
+                  <option value="">Select state…</option>
+                  <option *ngFor="let s of NIGERIAN_STATES" [value]="s">{{ s }}</option></select
+                ><span *ngIf="isInvalid(form3, 'registeredState')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Postal Code</label
+                ><input
+                  type="text"
+                  formControlName="registeredPostalCode"
+                  class="vr-input"
+                  placeholder="e.g. 100001"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Country</label
+                ><input
+                  type="text"
+                  formControlName="registeredCountry"
+                  class="vr-input"
+                  placeholder="Nigeria"
+                />
+              </div>
+            </div>
+            <div
+              class="vr-toggle-row"
+              [class.on]="form3.get('operatingAddressSameAsRegistered')?.value"
+              (click)="
+                form3
+                  .get('operatingAddressSameAsRegistered')
+                  ?.setValue(!form3.get('operatingAddressSameAsRegistered')?.value)
+              "
+            >
+              <div
+                class="vr-toggle"
+                [class.on]="form3.get('operatingAddressSameAsRegistered')?.value"
+              >
+                <div class="vr-toggle-knob"></div>
+              </div>
+              <div class="vr-toggle-text">
+                <strong>Operating address same as registered</strong
+                ><span>Correspondence and deliveries go to the same address</span>
+              </div>
+              <input
+                type="checkbox"
+                formControlName="operatingAddressSameAsRegistered"
+                class="sr-only"
+              />
+            </div>
+            <div
+              *ngIf="!form3.get('operatingAddressSameAsRegistered')?.value"
+              class="vr-g2"
+              style="margin-top: 10px"
+            >
+              <div class="vr-field vr-span2">
+                <label class="vr-label">Operating Address Line 1</label
+                ><input
+                  type="text"
+                  formControlName="operatingAddressLine1"
+                  class="vr-input"
+                  placeholder="Operating address"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">City</label
+                ><input
+                  type="text"
+                  formControlName="operatingCity"
+                  class="vr-input"
+                  placeholder="City"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">State</label
+                ><select formControlName="operatingState" class="vr-select">
+                  <option value="">Select…</option>
+                  <option *ngFor="let s of NIGERIAN_STATES" [value]="s">{{ s }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Warehouse & Delivery</h3></div>
+          <div class="vr-section-body">
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px">
+              <div
+                class="vr-toggle-row"
+                [class.on]="form3.get('hasWarehouse')?.value"
+                (click)="form3.get('hasWarehouse')?.setValue(!form3.get('hasWarehouse')?.value)"
+              >
+                <div class="vr-toggle" [class.on]="form3.get('hasWarehouse')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text">
+                  <strong>Warehouse / Storage Facility</strong
+                  ><span>Company has dedicated storage or warehousing</span>
+                </div>
+                <input type="checkbox" formControlName="hasWarehouse" class="sr-only" />
+              </div>
+              <div
+                *ngIf="form3.get('hasWarehouse')?.value"
+                class="vr-g3"
+                style="
+                  padding: 10px;
+                  background: #f8fafc;
+                  border-radius: 6px;
+                  border: 1px solid #e2e8f0;
+                "
+              >
+                <div class="vr-field vr-span2">
+                  <label class="vr-label">Warehouse Address</label
+                  ><input
+                    type="text"
+                    formControlName="warehouseAddressLine1"
+                    class="vr-input"
+                    placeholder="Full address"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Storage Capacity</label
+                  ><input
+                    type="text"
+                    formControlName="warehouseCapacity"
+                    class="vr-input"
+                    placeholder="e.g. 500 sq metres"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">City</label
+                  ><input type="text" formControlName="warehouseCity" class="vr-input" />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">State</label
+                  ><select formControlName="warehouseState" class="vr-select">
+                    <option value="">Select…</option>
+                    <option *ngFor="let s of NIGERIAN_STATES" [value]="s">{{ s }}</option>
+                  </select>
+                </div>
+              </div>
+              <div
+                class="vr-toggle-row"
+                [class.on]="form3.get('hasOwnDeliveryFleet')?.value"
+                (click)="
+                  form3
+                    .get('hasOwnDeliveryFleet')
+                    ?.setValue(!form3.get('hasOwnDeliveryFleet')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form3.get('hasOwnDeliveryFleet')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text">
+                  <strong>Own Delivery Fleet</strong
+                  ><span>Company operates its own vehicles for delivery</span>
+                </div>
+                <input type="checkbox" formControlName="hasOwnDeliveryFleet" class="sr-only" />
+              </div>
+            </div>
+            <div class="vr-g3" style="margin-bottom: 14px">
+              <div class="vr-field">
+                <label class="vr-label req">Standard Lead Time</label>
+                <div style="display: flex; align-items: center; gap: 6px">
+                  <input
+                    type="number"
+                    formControlName="deliveryLeadTimeDays"
+                    class="vr-input"
+                    placeholder="7"
+                    min="1"
+                    style="max-width: 80px"
+                  />
+                  <span style="font-size: 12px; color: #64748b; white-space: nowrap"
+                    >working days</span
+                  >
+                </div>
+              </div>
+              <div *ngIf="form3.get('hasOwnDeliveryFleet')?.value" class="vr-field">
+                <label class="vr-label req">Fleet Size</label>
+                <input
+                  type="number"
+                  formControlName="fleetSize"
+                  class="vr-input"
+                  placeholder="Number of vehicles"
+                  min="1"
+                />
+              </div>
+            </div>
+            <div class="vr-sep">
+              <span>Delivery Regions — select all states you can serve</span>
+            </div>
+            <div class="vr-region-grid">
+              <div
+                *ngFor="let region of deliveryRegionOptions"
+                class="vr-region-item"
+                [class.on]="isRegionSelected(region.value)"
+                (click)="toggleRegion(region.value)"
+              >
+                <div class="vr-checkbox">
+                  <svg
+                    *ngIf="isRegionSelected(region.value)"
+                    width="7"
+                    height="7"
+                    fill="none"
+                    stroke="white"
+                    viewBox="0 0 24 24"
+                    stroke-width="3.5"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                {{ region.label }}
+              </div>
+            </div>
+            <span
+              *ngIf="selectedRegions.length === 0"
+              class="vr-err"
+              style="display: block; margin-top: 6px"
+              >Select at least one delivery region</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════ STEP 4 — BANKING & FINANCE ═══════════════════ -->
+      <div *ngIf="currentStep === 4" [formGroup]="form4">
+        <div class="vr-step-header">
+          <div class="vr-step-tag">Step 4 of 6</div>
+          <h2>Banking & Finance</h2>
+          <p>Bank account details, payment preferences, financial standing and trade references</p>
+        </div>
+        <div class="vr-callout blue">
+          <svg
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+          <div>
+            <strong>Secure Storage</strong>Banking details are encrypted and used exclusively for
+            payment processing.
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Primary Bank Account</h3></div>
+          <div class="vr-section-body">
+            <div class="vr-g3">
+              <div class="vr-field">
+                <label class="vr-label req">Bank Name</label
+                ><select
+                  formControlName="primaryBankName"
+                  class="vr-select"
+                  [class.err]="isInvalid(form4, 'primaryBankName')"
+                >
+                  <option value="">Select bank…</option>
+                  <option *ngFor="let b of NIGERIAN_BANKS" [value]="b">{{ b }}</option></select
+                ><span *ngIf="isInvalid(form4, 'primaryBankName')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Branch</label
+                ><input
+                  type="text"
+                  formControlName="primaryBankBranch"
+                  class="vr-input"
+                  placeholder="e.g. Victoria Island Branch"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Account Type</label
+                ><select formControlName="primaryAccountType" class="vr-select">
+                  <option value="current">Current Account</option>
+                  <option value="savings">Savings Account</option>
+                  <option value="domiciliary">Domiciliary Account</option>
+                </select>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Account Name</label
+                ><input
+                  type="text"
+                  formControlName="primaryAccountName"
+                  class="vr-input"
+                  [class.err]="isInvalid(form4, 'primaryAccountName')"
+                  placeholder="Exactly as on your bank account"
+                /><span *ngIf="isInvalid(form4, 'primaryAccountName')" class="vr-err"
+                  >Required</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Account Number</label
+                ><input
+                  type="text"
+                  formControlName="primaryAccountNumber"
+                  class="vr-input"
+                  [class.err]="isInvalid(form4, 'primaryAccountNumber')"
+                  placeholder="10-digit number"
+                  maxlength="10"
+                /><span *ngIf="isInvalid(form4, 'primaryAccountNumber')" class="vr-err"
+                  >Must be exactly 10 digits</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Currency</label
+                ><select formControlName="primaryCurrency" class="vr-select">
+                  <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Sort Code</label
+                ><input
+                  type="text"
+                  formControlName="primarySortCode"
+                  class="vr-input"
+                  placeholder="e.g. 058"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">SWIFT / BIC</label
+                ><input
+                  type="text"
+                  formControlName="primarySwiftCode"
+                  class="vr-input"
+                  placeholder="e.g. GTBINGLA"
+                />
+              </div>
+            </div>
+            <div class="vr-sep" style="margin-top: 14px"><span>Secondary Account</span></div>
+            <div
+              class="vr-toggle-row"
+              [class.on]="form4.get('hasSecondaryBankAccount')?.value"
+              (click)="
+                form4
+                  .get('hasSecondaryBankAccount')
+                  ?.setValue(!form4.get('hasSecondaryBankAccount')?.value)
+              "
+            >
+              <div class="vr-toggle" [class.on]="form4.get('hasSecondaryBankAccount')?.value">
+                <div class="vr-toggle-knob"></div>
+              </div>
+              <div class="vr-toggle-text">
+                <strong>Add Secondary Bank Account</strong
+                ><span>e.g. a domiciliary account for foreign currency payments</span>
+              </div>
+              <input type="checkbox" formControlName="hasSecondaryBankAccount" class="sr-only" />
+            </div>
+            <div
+              *ngIf="form4.get('hasSecondaryBankAccount')?.value"
+              class="vr-g3"
+              style="margin-top: 10px"
+            >
+              <div class="vr-field">
+                <label class="vr-label">Bank</label
+                ><select formControlName="secondaryBankName" class="vr-select">
+                  <option value="">Select…</option>
+                  <option *ngFor="let b of NIGERIAN_BANKS" [value]="b">{{ b }}</option>
+                </select>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Account Name</label
+                ><input
+                  type="text"
+                  formControlName="secondaryAccountName"
+                  class="vr-input"
+                  placeholder="Account name"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Account Number</label
+                ><input
+                  type="text"
+                  formControlName="secondaryAccountNumber"
+                  class="vr-input"
+                  placeholder="Account number"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Account Type</label
+                ><select formControlName="secondaryAccountType" class="vr-select">
+                  <option value="current">Current</option>
+                  <option value="savings">Savings</option>
+                  <option value="domiciliary">Domiciliary</option>
+                </select>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Currency</label
+                ><select formControlName="secondaryCurrency" class="vr-select">
+                  <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Payment Preferences</h3></div>
+          <div class="vr-section-body">
+            <div class="vr-g2" style="margin-bottom: 12px">
+              <div class="vr-field">
+                <label class="vr-label req">Preferred Payment Terms</label
+                ><select formControlName="preferredPaymentTerms" class="vr-select">
+                  <option *ngFor="let t of PAYMENT_TERMS_OPTIONS" [value]="t">{{ t }}</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div
+                class="vr-toggle-row"
+                [class.on]="form4.get('acceptsAdvancePayment')?.value"
+                (click)="
+                  form4
+                    .get('acceptsAdvancePayment')
+                    ?.setValue(!form4.get('acceptsAdvancePayment')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form4.get('acceptsAdvancePayment')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text"><strong>Accepts Advance Payment</strong></div>
+                <input type="checkbox" formControlName="acceptsAdvancePayment" class="sr-only" />
+              </div>
+              <div
+                *ngIf="form4.get('acceptsAdvancePayment')?.value"
+                style="
+                  padding: 10px;
+                  background: #f8fafc;
+                  border-radius: 6px;
+                  border: 1px solid #e2e8f0;
+                  max-width: 240px;
+                "
+              >
+                <div class="vr-field">
+                  <label class="vr-label req">Minimum Advance %</label
+                  ><input
+                    type="number"
+                    formControlName="advancePaymentPercentage"
+                    class="vr-input"
+                    placeholder="e.g. 30"
+                    min="1"
+                    max="100"
+                  />
+                </div>
+              </div>
+              <div
+                class="vr-toggle-row"
+                [class.on]="form4.get('acceptsLetterOfCredit')?.value"
+                (click)="
+                  form4
+                    .get('acceptsLetterOfCredit')
+                    ?.setValue(!form4.get('acceptsLetterOfCredit')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form4.get('acceptsLetterOfCredit')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text"><strong>Accepts Letter of Credit</strong></div>
+                <input type="checkbox" formControlName="acceptsLetterOfCredit" class="sr-only" />
+              </div>
+              <div
+                class="vr-toggle-row"
+                [class.on]="form4.get('acceptsMobileMoney')?.value"
+                (click)="
+                  form4.get('acceptsMobileMoney')?.setValue(!form4.get('acceptsMobileMoney')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form4.get('acceptsMobileMoney')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text"><strong>Accepts Mobile Money</strong></div>
+                <input type="checkbox" formControlName="acceptsMobileMoney" class="sr-only" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Financial Standing & References</h3>
+            <p>Optional but strongly recommended</p>
+          </div>
+          <div class="vr-section-body">
+            <div
+              class="vr-toggle-row"
+              [class.on]="form4.get('annualAuditedAccounts')?.value"
+              (click)="
+                form4
+                  .get('annualAuditedAccounts')
+                  ?.setValue(!form4.get('annualAuditedAccounts')?.value)
+              "
+              style="margin-bottom: 10px"
+            >
+              <div class="vr-toggle" [class.on]="form4.get('annualAuditedAccounts')?.value">
+                <div class="vr-toggle-knob"></div>
+              </div>
+              <div class="vr-toggle-text">
+                <strong>Annual Audited Accounts Available</strong
+                ><span>Company has audited financial accounts for the last 2 years</span>
+              </div>
+              <input type="checkbox" formControlName="annualAuditedAccounts" class="sr-only" />
+            </div>
+            <div
+              *ngIf="form4.get('annualAuditedAccounts')?.value"
+              class="vr-g2"
+              style="
+                margin-bottom: 14px;
+                padding: 10px;
+                background: #f8fafc;
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+              "
+            >
+              <div class="vr-field">
+                <label class="vr-label">Audit Firm</label
+                ><input
+                  type="text"
+                  formControlName="auditFirmName"
+                  class="vr-input"
+                  placeholder="e.g. KPMG Nigeria"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Last Audited Year</label
+                ><input
+                  type="number"
+                  formControlName="lastAuditYear"
+                  class="vr-input"
+                  placeholder="e.g. 2024"
+                  [max]="currentYear"
+                />
+              </div>
+            </div>
+            <div class="vr-sep"><span>Bank Reference</span></div>
+            <div class="vr-g2" style="margin-bottom: 14px">
+              <div class="vr-field">
+                <label class="vr-label">Contact Name</label
+                ><input
+                  type="text"
+                  formControlName="bankReference1Name"
+                  class="vr-input"
+                  placeholder="Relationship manager name"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Contact Phone</label
+                ><input
+                  type="tel"
+                  formControlName="bankReference1Contact"
+                  class="vr-input"
+                  placeholder="Phone number"
+                />
+              </div>
+            </div>
+            <div class="vr-sep"><span>Trade References</span></div>
+            <div class="vr-g3">
+              <div class="vr-field">
+                <label class="vr-label">Ref 1 — Company</label
+                ><input
+                  type="text"
+                  formControlName="tradeReference1Company"
+                  class="vr-input"
+                  placeholder="Company name"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Contact Person</label
+                ><input
+                  type="text"
+                  formControlName="tradeReference1Contact"
+                  class="vr-input"
+                  placeholder="Name"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Email</label
+                ><input
+                  type="email"
+                  formControlName="tradeReference1Email"
+                  class="vr-input"
+                  placeholder="email@company.com"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Ref 2 — Company</label
+                ><input
+                  type="text"
+                  formControlName="tradeReference2Company"
+                  class="vr-input"
+                  placeholder="Company name"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Contact Person</label
+                ><input
+                  type="text"
+                  formControlName="tradeReference2Contact"
+                  class="vr-input"
+                  placeholder="Name"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Email</label
+                ><input
+                  type="email"
+                  formControlName="tradeReference2Email"
+                  class="vr-input"
+                  placeholder="email@company.com"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════ STEP 5 — CAPABILITIES ═══════════════════ -->
+      <div *ngIf="currentStep === 5" [formGroup]="form5">
+        <div class="vr-step-header">
+          <div class="vr-step-tag">Step 5 of 6</div>
+          <h2>Capabilities & Experience</h2>
+          <p>Supply categories, capacity, quality systems, clients and key personnel</p>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Supply Categories</h3>
+            <p>Select all categories you are capable of supplying — minimum 1 required</p>
+          </div>
+          <div class="vr-section-body">
+            <div class="vr-check-grid">
+              <div
+                *ngFor="let cat of supplyCategories"
+                class="vr-check-item"
+                [class.on]="isCategorySelected(cat)"
+                (click)="toggleCategory(cat)"
+              >
+                <div class="vr-checkbox">
+                  <svg
+                    *ngIf="isCategorySelected(cat)"
+                    width="8"
+                    height="8"
+                    fill="none"
+                    stroke="white"
+                    viewBox="0 0 24 24"
+                    stroke-width="3.5"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                {{ SUPPLY_CATEGORY_LABELS[cat] }}
+              </div>
+            </div>
+            <span
+              *ngIf="selectedCategories.length === 0"
+              class="vr-err"
+              style="display: block; margin-top: 8px"
+              >Select at least one category</span
+            >
+            <div *ngIf="selectedCategories.length > 0" style="margin-top: 12px">
+              <div class="vr-field" style="max-width: 320px">
+                <label class="vr-label req">Primary / Core Category</label>
+                <select
+                  formControlName="primaryCategory"
+                  class="vr-select"
+                  [class.err]="isInvalid(form5, 'primaryCategory')"
+                >
+                  <option value="">Select primary…</option>
+                  <option *ngFor="let cat of selectedCategories" [value]="cat">
+                    {{ SUPPLY_CATEGORY_LABELS[cat] }}
+                  </option>
+                </select>
+                <span *ngIf="isInvalid(form5, 'primaryCategory')" class="vr-err">Required</span>
+              </div>
+            </div>
+            <div class="vr-field" style="margin-top: 10px">
+              <label class="vr-label req">Category Description</label>
+              <textarea
+                formControlName="categoryDescription"
+                rows="3"
+                class="vr-textarea"
+                [class.err]="isInvalid(form5, 'categoryDescription')"
+                placeholder="Describe what you specifically supply — brands, standards, materials, specialist areas. Min 30 characters."
+              ></textarea>
+              <span *ngIf="isInvalid(form5, 'categoryDescription')" class="vr-err"
+                >Required (min 30 characters)</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Business Type & Capacity</h3></div>
+          <div class="vr-section-body">
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+                gap: 6px;
+                margin-bottom: 14px;
+              "
+            >
+              <div
+                *ngFor="
+                  let type of [
+                    { key: 'isManufacturer', label: 'Manufacturer', desc: 'Produce goods' },
+                    { key: 'isDistributor', label: 'Distributor', desc: 'Distribute brands' },
+                    {
+                      key: 'isServiceProvider',
+                      label: 'Service Provider',
+                      desc: 'Provide services',
+                    },
+                    { key: 'isImporter', label: 'Importer', desc: 'Import goods' },
+                  ]
+                "
+                class="vr-check-item"
+                style="flex-direction: column; align-items: flex-start; padding: 10px"
+                [class.on]="form5.get(type.key)?.value"
+                (click)="form5.get(type.key)?.setValue(!form5.get(type.key)?.value)"
+              >
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px">
+                  <div class="vr-checkbox">
+                    <svg
+                      *ngIf="form5.get(type.key)?.value"
+                      width="8"
+                      height="8"
+                      fill="none"
+                      stroke="white"
+                      viewBox="0 0 24 24"
+                      stroke-width="3.5"
+                    >
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <strong style="font-size: 12px">{{ type.label }}</strong>
+                </div>
+                <span style="font-size: 11px; color: #64748b; padding-left: 20px">{{
+                  type.desc
+                }}</span>
+                <input type="checkbox" [formControlName]="type.key" class="sr-only" />
+              </div>
+            </div>
+            <div class="vr-g3">
+              <div class="vr-field">
+                <label class="vr-label req">Completed Projects</label
+                ><input
+                  type="number"
+                  formControlName="completedProjectsCount"
+                  class="vr-input"
+                  placeholder="Total completed"
+                  min="0"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Min Order Value (NGN)</label
+                ><input
+                  type="number"
+                  formControlName="minimumOrderValue"
+                  class="vr-input"
+                  placeholder="e.g. 50000"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Max Order Value (NGN)</label
+                ><input
+                  type="number"
+                  formControlName="maximumOrderValue"
+                  class="vr-input"
+                  placeholder="e.g. 50000000"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Largest Contract (NGN)</label
+                ><input
+                  type="number"
+                  formControlName="largestProjectValue"
+                  class="vr-input"
+                  placeholder="e.g. 20000000"
+                />
+              </div>
+              <div class="vr-field vr-span2">
+                <label class="vr-label">Largest Contract Description</label
+                ><input
+                  type="text"
+                  formControlName="largestProjectDescription"
+                  class="vr-input"
+                  placeholder="Brief description of your largest contract"
+                />
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 12px">
+              <div
+                class="vr-toggle-row"
+                [class.on]="form5.get('canHandleEmergencyOrders')?.value"
+                (click)="
+                  form5
+                    .get('canHandleEmergencyOrders')
+                    ?.setValue(!form5.get('canHandleEmergencyOrders')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form5.get('canHandleEmergencyOrders')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text">
+                  <strong>Can Handle Emergency / Urgent Orders</strong>
+                </div>
+                <input type="checkbox" formControlName="canHandleEmergencyOrders" class="sr-only" />
+              </div>
+              <div
+                class="vr-toggle-row"
+                [class.on]="form5.get('bulkDiscountAvailable')?.value"
+                (click)="
+                  form5
+                    .get('bulkDiscountAvailable')
+                    ?.setValue(!form5.get('bulkDiscountAvailable')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form5.get('bulkDiscountAvailable')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text"><strong>Bulk Discount Available</strong></div>
+                <input type="checkbox" formControlName="bulkDiscountAvailable" class="sr-only" />
+              </div>
+              <div
+                *ngIf="form5.get('bulkDiscountAvailable')?.value"
+                style="
+                  padding: 10px;
+                  background: #f8fafc;
+                  border-radius: 6px;
+                  border: 1px solid #e2e8f0;
+                "
+              >
+                <div class="vr-field">
+                  <label class="vr-label">Discount Details</label
+                  ><input
+                    type="text"
+                    formControlName="bulkDiscountDetails"
+                    class="vr-input"
+                    placeholder="e.g. 5% discount on orders above ₦1M"
+                  />
+                </div>
+              </div>
+              <div
+                class="vr-toggle-row"
+                [class.on]="form5.get('hasQualityManagementSystem')?.value"
+                (click)="
+                  form5
+                    .get('hasQualityManagementSystem')
+                    ?.setValue(!form5.get('hasQualityManagementSystem')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form5.get('hasQualityManagementSystem')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text">
+                  <strong>Quality Management System (QMS)</strong
+                  ><span>Company operates a certified quality management system</span>
+                </div>
+                <input
+                  type="checkbox"
+                  formControlName="hasQualityManagementSystem"
+                  class="sr-only"
+                />
+              </div>
+              <div
+                class="vr-toggle-row"
+                [class.on]="form5.get('hasInspectionFacility')?.value"
+                (click)="
+                  form5
+                    .get('hasInspectionFacility')
+                    ?.setValue(!form5.get('hasInspectionFacility')?.value)
+                "
+              >
+                <div class="vr-toggle" [class.on]="form5.get('hasInspectionFacility')?.value">
+                  <div class="vr-toggle-knob"></div>
+                </div>
+                <div class="vr-toggle-text">
+                  <strong>In-House Inspection / Testing Facility</strong>
+                </div>
+                <input type="checkbox" formControlName="hasInspectionFacility" class="sr-only" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Major Clients & Contracts</h3>
+            <p>Recommended — these may be contacted as references</p>
+          </div>
+          <div class="vr-section-body">
+            <div *ngFor="let client of majorClients; let i = index" class="vr-list-card">
+              <div class="vr-list-card-head">
+                <span>Client {{ i + 1 }}</span
+                ><button type="button" (click)="removeClient(i)">Remove</button>
+              </div>
+              <div class="vr-g3">
+                <div class="vr-field">
+                  <label class="vr-label">Company Name</label
+                  ><input
+                    type="text"
+                    [(ngModel)]="client.companyName"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="Client company"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Contact Person</label
+                  ><input
+                    type="text"
+                    [(ngModel)]="client.contactName"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="Name"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Contact Email</label
+                  ><input
+                    type="email"
+                    [(ngModel)]="client.contactEmail"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="email@client.com"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Contract Value (NGN)</label
+                  ><input
+                    type="number"
+                    [(ngModel)]="client.contractValue"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="e.g. 5000000"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Year</label
+                  ><input
+                    type="number"
+                    [(ngModel)]="client.contractYear"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="e.g. 2024"
+                    [max]="currentYear"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">What did you supply?</label
+                  ><input
+                    type="text"
+                    [(ngModel)]="client.description"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="Brief description"
+                  />
+                </div>
+              </div>
+            </div>
+            <button type="button" class="vr-add-btn" (click)="addClient()">
+              <svg
+                width="11"
+                height="11"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                stroke-width="2.5"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Client / Contract
+            </button>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Key Personnel</h3>
+            <p>Optional — list technical or management staff central to delivery</p>
+          </div>
+          <div class="vr-section-body">
+            <div *ngFor="let person of keyPersonnel; let i = index" class="vr-list-card">
+              <div class="vr-list-card-head">
+                <span>Personnel {{ i + 1 }}</span
+                ><button type="button" (click)="removePersonnel(i)">Remove</button>
+              </div>
+              <div class="vr-g3">
+                <div class="vr-field">
+                  <label class="vr-label">Full Name</label
+                  ><input
+                    type="text"
+                    [(ngModel)]="person.name"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="Name"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Title / Role</label
+                  ><input
+                    type="text"
+                    [(ngModel)]="person.title"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="e.g. Chief Engineer"
+                  />
+                </div>
+                <div class="vr-field">
+                  <label class="vr-label">Highest Qualification</label
+                  ><input
+                    type="text"
+                    [(ngModel)]="person.qualification"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="vr-input"
+                    placeholder="e.g. B.Sc. Civil Engineering"
+                  />
+                </div>
+              </div>
+            </div>
+            <button type="button" class="vr-add-btn" (click)="addPersonnel()">
+              <svg
+                width="11"
+                height="11"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                stroke-width="2.5"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Add Key Personnel
+            </button>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Memberships & Awards</h3>
+            <p>Optional</p>
+          </div>
+          <div class="vr-section-body">
+            <div class="vr-g2">
+              <div class="vr-field">
+                <label class="vr-label">Industry Associations</label
+                ><input
+                  type="text"
+                  formControlName="industryAssociations"
+                  class="vr-input"
+                  placeholder="e.g. NACCIMA, MAN, COREN, NIA"
+                />
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Professional Memberships</label
+                ><input
+                  type="text"
+                  formControlName="professionalMemberships"
+                  class="vr-input"
+                  placeholder="e.g. NSE, ICAN, CIPM"
+                />
+              </div>
+              <div class="vr-field vr-span2">
+                <label class="vr-label">Awards & Recognitions</label
+                ><input
+                  type="text"
+                  formControlName="awardsRecognitions"
+                  class="vr-input"
+                  placeholder="Any notable awards or industry recognition"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════ STEP 6 — DOCUMENTS & DECLARATION ═══════════════════ -->
+      <div *ngIf="currentStep === 6" [formGroup]="form6">
+        <div class="vr-step-header">
+          <div class="vr-step-tag">Step 6 of 6</div>
+          <h2>Documents & Declaration</h2>
+          <p>Upload compliance documents, complete the declaration and submit your application</p>
+        </div>
+
+        <input
+          type="file"
+          id="docFileInput"
+          hidden
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          (change)="onDocFileSelected($event)"
+        />
+
+        <!-- Review summary — the last thing before submitting a 6-step form
+             should be a chance to catch a typo, not straight into more fields. -->
+        <div class="vr-section">
+          <div class="vr-section-head"><h3>Review Your Details</h3></div>
+          <div class="vr-review-list">
+            <div class="vr-review-row" *ngFor="let row of reviewRows">
+              <span class="vr-review-row__label">{{ row.label }}</span>
+              <span class="vr-review-row__value">{{ row.value }}</span>
+              <button type="button" class="vr-review-row__edit" (click)="goToStep(row.step)">Edit</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Document Uploads</h3>
+            <p>Required documents must be uploaded before you can submit</p>
+          </div>
+          <div class="vr-section-body">
+            <div
+              *ngFor="let docDef of requiredDocTypes"
+              class="vr-doc-row"
+              [class.uploaded]="!!getUploadedDoc(docDef.type)"
+            >
+              <div class="vr-doc-icon" [class.done]="!!getUploadedDoc(docDef.type)">
+                <svg
+                  *ngIf="!!getUploadedDoc(docDef.type)"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="2.5"
+                >
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <svg
+                  *ngIf="!getUploadedDoc(docDef.type)"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                >
+                  <path
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <div class="vr-doc-info">
+                <div class="vr-doc-name">
+                  {{ docDef.label }}
+                  <span
+                    class="vr-badge"
+                    [class.required]="docDef.required"
+                    [class.optional]="!docDef.required"
+                    >{{ docDef.required ? 'Required' : 'Optional' }}</span
+                  >
+                </div>
+                <div class="vr-doc-hint">{{ docDef.hint }}</div>
+                <div *ngIf="!!getUploadedDoc(docDef.type)" class="vr-doc-file">
+                  ✓ {{ getUploadedDoc(docDef.type)!.fileName }} ·
+                  {{ getUploadedDoc(docDef.type)!.fileSize }}
+                </div>
+              </div>
+              <div class="vr-doc-actions">
+                <button
+                  *ngIf="!!getUploadedDoc(docDef.type)"
+                  type="button"
+                  (click)="removeDoc(getUploadedDoc(docDef.type)!.id)"
+                  style="
+                    font-size: 11px;
+                    color: #dc2626;
+                    border: 1px solid #fecaca;
+                    background: #fef2f2;
+                    padding: 4px 10px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-family: inherit;
+                  "
+                >
+                  Remove
+                </button>
+                <button
+                  type="button"
+                  (click)="triggerDocUpload(docDef.type, docDef.label)"
+                  style="
+                    font-size: 11px;
+                    font-weight: 500;
+                    padding: 4px 12px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-family: inherit;
+                    transition: all 0.14s;
+                  "
+                  [style.background]="!getUploadedDoc(docDef.type) ? '#224957' : 'white'"
+                  [style.color]="!getUploadedDoc(docDef.type) ? 'white' : '#475569'"
+                  [style.border]="
+                    !getUploadedDoc(docDef.type) ? '1px solid #224957' : '1px solid #e2e8f0'
+                  "
+                >
+                  {{ !!getUploadedDoc(docDef.type) ? 'Replace' : 'Upload' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Authorised Signatory</h3>
+            <p>The person signing on behalf of the company</p>
+          </div>
+          <div class="vr-section-body">
+            <div
+              style="
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-left: 3px solid #224957;
+                border-radius: 6px;
+                padding: 12px 14px;
+                margin-bottom: 14px;
+                font-size: 12px;
+                color: #334155;
+                line-height: 1.6;
+              "
+            >
+              I, the undersigned, being duly authorised to sign on behalf of the company named in
+              this application, hereby certify that all information provided is true, accurate and
+              complete to the best of my knowledge. I understand that any misrepresentation may
+              result in disqualification and legal action.
+            </div>
+            <div class="vr-g3">
+              <div class="vr-field">
+                <label class="vr-label req">Full Name</label
+                ><input
+                  type="text"
+                  formControlName="declarantName"
+                  class="vr-input"
+                  [class.err]="isInvalid(form6, 'declarantName')"
+                  placeholder="Full legal name"
+                /><span *ngIf="isInvalid(form6, 'declarantName')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Title / Position</label
+                ><input
+                  type="text"
+                  formControlName="declarantTitle"
+                  class="vr-input"
+                  [class.err]="isInvalid(form6, 'declarantTitle')"
+                  placeholder="e.g. Managing Director"
+                /><span *ngIf="isInvalid(form6, 'declarantTitle')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Email Address</label
+                ><input
+                  type="email"
+                  formControlName="declarantEmail"
+                  class="vr-input"
+                  [class.err]="isInvalid(form6, 'declarantEmail')"
+                  placeholder="Signatory email"
+                /><span *ngIf="isInvalid(form6, 'declarantEmail')" class="vr-err"
+                  >Valid email required</span
+                >
+              </div>
+              <div class="vr-field">
+                <label class="vr-label req">Phone Number</label
+                ><input
+                  type="tel"
+                  formControlName="declarantPhone"
+                  class="vr-input"
+                  [class.err]="isInvalid(form6, 'declarantPhone')"
+                  placeholder="+234 801 234 5678"
+                /><span *ngIf="isInvalid(form6, 'declarantPhone')" class="vr-err">Required</span>
+              </div>
+              <div class="vr-field">
+                <label class="vr-label">Date</label
+                ><input
+                  type="date"
+                  formControlName="declarationDate"
+                  class="vr-input"
+                  [max]="today"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="vr-section">
+          <div class="vr-section-head">
+            <h3>Agreements</h3>
+            <p>All five must be accepted before submission</p>
+          </div>
+          <div class="vr-section-body">
+            <div
+              *ngFor="
+                let item of [
+                  {
+                    ctrl: 'agreedToTerms',
+                    text: 'I have read and agree to the Vendor Terms & Conditions',
+                  },
+                  {
+                    ctrl: 'agreedToPrivacyPolicy',
+                    text: 'I have read and agree to the Privacy Policy and Data Processing Agreement',
+                  },
+                  {
+                    ctrl: 'agreedToCodeOfConduct',
+                    text: 'I agree to comply with the Vendor Code of Conduct',
+                  },
+                  {
+                    ctrl: 'agreedToAntiCorruption',
+                    text: 'I confirm compliance with the Anti-Bribery and Anti-Corruption Policy',
+                  },
+                  {
+                    ctrl: 'confirmedAccuracy',
+                    text: 'I confirm all information in this application is accurate, complete and not misleading',
+                  },
+                ]
+              "
+              class="vr-agree-item"
+              [class.on]="form6.get(item.ctrl)?.value"
+              (click)="form6.get(item.ctrl)?.setValue(!form6.get(item.ctrl)?.value)"
+            >
+              <div class="vr-agree-check">
+                <svg
+                  *ngIf="form6.get(item.ctrl)?.value"
+                  width="9"
+                  height="9"
+                  fill="none"
+                  stroke="white"
+                  viewBox="0 0 24 24"
+                  stroke-width="3.5"
+                >
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span>{{ item.text }}</span>
+              <input type="checkbox" [formControlName]="item.ctrl" class="sr-only" />
+            </div>
+            <span
+              *ngIf="form6.get('agreedToTerms')?.invalid && form6.get('agreedToTerms')?.touched"
+              class="vr-err"
+              style="display: block; margin-top: 6px"
+              >All five agreements must be accepted</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- NAV BAR -->
+      <div class="vr-nav">
+        <div class="vr-nav-left">
+          <button
+            *ngIf="currentStep > 1"
+            type="button"
+            class="vr-btn vr-btn-secondary"
+            (click)="prevStep()"
+          >
+            <svg
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+            >
+              <path d="M15 19l-7-7 7-7" />
+            </svg>
+            Previous
+          </button>
+          <div class="vr-step-dots" style="margin-left: 8px">
+            <span
+              *ngFor="let s of steps"
+              [class.active]="s.n === currentStep"
+              [class.done]="s.n < currentStep"
+              [class.future]="s.n > currentStep"
+            ></span>
+          </div>
+        </div>
+        <div class="vr-nav-right">
+          <span style="font-size: 11px; color: #94a3b8"
+            >Step {{ currentStep }} of {{ totalSteps }}</span
+          >
+          <button
+            *ngIf="currentStep < totalSteps"
+            type="button"
+            class="vr-btn vr-btn-primary"
+            (click)="nextStep()"
+          >
+            Continue
+            <svg
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+            >
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <button
+            *ngIf="currentStep === totalSteps"
+            type="button"
+            class="vr-btn vr-btn-success"
+            (click)="onSubmit()"
+            [disabled]="isSubmitting"
+          >
+            <div *ngIf="isSubmitting" class="vr-spinner"></div>
+            <svg
+              *ngIf="!isSubmitting"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+            {{ isSubmitting ? 'Submitting…' : 'Submit Application' }}
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

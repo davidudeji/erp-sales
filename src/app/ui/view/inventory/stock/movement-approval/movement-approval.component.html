@@ -1,0 +1,597 @@
+<!-- movement-approval.component.html -->
+<div class="ql-layout">
+
+    <!-- ══ SIDEBAR ════════════════════════════════════════════════════════ -->
+    <aside class="ql-sidebar">
+
+        <div class="ql-sidebar-title">
+            <span>Movement Approval</span>
+            <button class="ql-reset-link" (click)="goBack()" type="button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="ql-filter-section" *ngIf="approvalStats">
+            <div class="ql-filter-heading">Overview</div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Pending</span>
+                <span class="ql-sidebar-stat-value" style="color: #F5A623;">{{ approvalStats.totalPending }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Approved</span>
+                <span class="ql-sidebar-stat-value" style="color: #2EB270;">{{ approvalStats.totalApproved }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Rejected</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ approvalStats.totalRejected }}</span>
+            </div>
+            <div class="ql-sidebar-stat" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px;">
+                <span class="ql-sidebar-stat-label">Urgent</span>
+                <span class="ql-sidebar-stat-value" style="color: #DC2626;">{{ approvalStats.urgentCount }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">High Value</span>
+                <span class="ql-sidebar-stat-value" style="color: #8B5CF6;">{{ approvalStats.highValueCount }}</span>
+            </div>
+            <div class="ql-sidebar-stat">
+                <span class="ql-sidebar-stat-label">Avg Approval Time</span>
+                <span class="ql-sidebar-stat-value">{{ approvalStats.averageApprovalTime.toFixed(1) }}h</span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="ql-filter-section">
+            <div class="ql-filter-heading">Actions</div>
+            <button class="ql-sidebar-action" (click)="refreshData()" [disabled]="isRefreshing">
+                <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+            </button>
+            <button class="ql-sidebar-action" (click)="approveAll()" 
+                    [disabled]="isSubmitting || filteredMovements.length === 0">
+                <i class="fas fa-check-double"></i>
+                Approve All ({{ filteredMovements.length }})
+            </button>
+            <button class="ql-sidebar-action" (click)="exportReport()">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- ══ MAIN AREA ═══════════════════════════════════════════════════════ -->
+    <main class="ql-main">
+
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="ql-loading">
+            <div class="ql-spinner"></div>
+            <span>Loading movements...</span>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error && !isLoading" class="ql-error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button class="ql-error-dismiss" (click)="refreshData()"><i class="fas fa-sync-alt"></i> Retry</button>
+        </div>
+
+        <!-- ============================================================
+        CONTENT
+        ============================================================ -->
+        <ng-container *ngIf="!isLoading">
+
+            <!-- Top bar -->
+            <div class="ql-top-bar">
+                <div class="ql-top-bar-left">
+                    <h1 class="ql-title">Movement Approvals</h1>
+                    <span class="ql-total-badge">Pending</span>
+                    <span class="ql-pending-badge" style="background: #F5A62320; color: #F5A623;">
+                        <i class="fas fa-clock"></i>
+                        {{ getPendingCount() }} awaiting review
+                    </span>
+                </div>
+                <div class="ql-top-bar-right">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="refreshData()" [disabled]="isRefreshing">
+                        <i class="fas fa-sync-alt" [class.ql-spinning]="isRefreshing"></i>
+                        {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="ql-filters-bar">
+                <div class="ql-filter-group">
+                    <input type="text" class="ql-search-input" 
+                           placeholder="Search by product, SKU, branch..."
+                           (input)="onSearch($event)"
+                           [value]="searchTerm">
+                    <i class="fas fa-search ql-search-icon"></i>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" (change)="setFilter($any($event.target).value)" [value]="selectedFilter">
+                        <option value="ALL">All Movements</option>
+                        <option value="PENDING">Pending Only</option>
+                        <option value="URGENT">Urgent</option>
+                        <option value="HIGH_VALUE">High Value</option>
+                    </select>
+                </div>
+                <div class="ql-filter-group">
+                    <select class="ql-filter-select" (change)="setTypeFilter($any($event.target).value)" [value]="selectedTypeFilter">
+                        <option value="ALL">All Types</option>
+                        <option value="TRANSFER">Transfer</option>
+                        <option value="PURCHASE">Purchase</option>
+                        <option value="SALE">Sale</option>
+                        <option value="RETURN">Return</option>
+                        <option value="ADJUSTMENT">Adjustment</option>
+                    </select>
+                </div>
+                <button class="ql-clear-filters" (click)="clearFilters()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ql-tabs">
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
+                    <i class="fas fa-clock"></i> Pending
+                    <span class="ql-tab-badge">{{ getPendingCount() }}</span>
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'history'" (click)="activeTab = 'history'">
+                    <i class="fas fa-history"></i> History
+                </button>
+                <button class="ql-tab" [class.ql-tab--active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
+                    <i class="fas fa-chart-bar"></i> Statistics
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="ql-tab-content">
+
+                <!-- ========================================================
+                PENDING TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'pending'" class="ql-tab-panel">
+                    <div class="ql-pending-grid">
+                        <!-- Movement List -->
+                        <div class="ql-movement-list">
+                            <div *ngFor="let movement of filteredMovements" 
+                                 class="ql-movement-item"
+                                 [class.ql-movement-item--active]="selectedMovement?.id === movement.id"
+                                 [class.ql-movement-item--urgent]="isUrgent(movement)"
+                                 (click)="selectMovement(movement.id)">
+                                <div class="ql-movement-header">
+                                    <div class="ql-movement-type">
+                                        <i class="fas" [class]="getMovementTypeIcon(movement.movementType)"></i>
+                                        <span>{{ getMovementTypeLabel(movement.movementType) }}</span>
+                                    </div>
+                                    <div class="ql-movement-status" [style.color]="getStatusColor(movement.status)">
+                                        <i class="fas" [class]="getStatusIcon(movement.status)"></i>
+                                        {{ getMovementStatusLabel(movement.status) }}
+                                    </div>
+                                </div>
+                                <div class="ql-movement-body">
+                                    <div class="ql-movement-product">
+                                        <span class="ql-movement-product-name">{{ movement.productName }}</span>
+                                        <span class="ql-movement-sku">{{ movement.sku }}</span>
+                                    </div>
+                                    <div class="ql-movement-details">
+                                        <span class="ql-movement-qty">{{ movement.quantity }} units</span>
+                                        <span class="ql-movement-cost">{{ formatCurrency(movement.cost) }}</span>
+                                    </div>
+                                    <div class="ql-movement-locations">
+                                        <span class="ql-movement-from">
+                                            <i class="fas fa-arrow-right"></i>
+                                            {{ movement.fromLocation?.name || 'N/A' }}
+                                        </span>
+                                        <span class="ql-movement-to">
+                                            <i class="fas fa-arrow-right"></i>
+                                            {{ movement.toLocation?.name || 'N/A' }}
+                                        </span>
+                                    </div>
+                                    <div class="ql-movement-meta">
+                                        <span class="ql-movement-date">{{ getTimeAgo(movement.createdAt) }}</span>
+                                        <span class="ql-movement-priority" [style.color]="getPriorityColor(movement)">
+                                            <i class="fas" [class]="getPriorityIcon(movement)"></i>
+                                            {{ getPriorityLabel(movement) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="filteredMovements.length === 0" class="ql-empty-state-small">
+                                <i class="fas fa-check-circle" style="color: #2EB270;"></i>
+                                <span>No pending movements to review</span>
+                            </div>
+                        </div>
+
+                        <!-- Movement Detail / Approval -->
+                        <div class="ql-movement-detail" *ngIf="selectedMovement">
+                            <div class="ql-detail-header">
+                                <h3>{{ selectedMovement.productName }}</h3>
+                                <span class="ql-detail-id">#{{ selectedMovement.id }}</span>
+                            </div>
+
+                            <div class="ql-detail-section">
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Type</span>
+                                    <span class="ql-detail-value">
+                                        <i class="fas" [class]="getMovementTypeIcon(selectedMovement.movementType)"></i>
+                                        {{ getMovementTypeLabel(selectedMovement.movementType) }}
+                                    </span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">SKU</span>
+                                    <span class="ql-detail-value">{{ selectedMovement.sku }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Quantity</span>
+                                    <span class="ql-detail-value">{{ selectedMovement.quantity }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Cost</span>
+                                    <span class="ql-detail-value">{{ formatCurrency(selectedMovement.cost) }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">From</span>
+                                    <span class="ql-detail-value">{{ selectedMovement.fromLocation?.name || 'N/A' }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">To</span>
+                                    <span class="ql-detail-value">{{ selectedMovement.toLocation?.name || 'N/A' }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Requested By</span>
+                                    <span class="ql-detail-value">{{ selectedMovement.createdByName || 'Unknown' }}</span>
+                                </div>
+                                <div class="ql-detail-row">
+                                    <span class="ql-detail-label">Requested On</span>
+                                    <span class="ql-detail-value">{{ formatDateTime(selectedMovement.createdAt) }}</span>
+                                </div>
+                                <div class="ql-detail-row" *ngIf="selectedMovement.notes">
+                                    <span class="ql-detail-label">Notes</span>
+                                    <span class="ql-detail-value">{{ selectedMovement.notes }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Approval Actions — only while still PENDING; once approved/rejected there's
+                                 nothing left to do, so these (and the changes-pending badge) go away for good,
+                                 not just while a change request is outstanding. -->
+                            <div class="ql-changes-pending-badge"
+                                *ngIf="selectedMovement?.status === 'PENDING' && hasUnresolvedChangeRequest(selectedMovement)"
+                                title="Waiting on the requested changes to be made">
+                                <i class="fas fa-hourglass-half"></i> Awaiting changes from the requester
+                            </div>
+                            <div class="ql-approval-actions"
+                                *ngIf="selectedMovement?.status === 'PENDING' && !hasUnresolvedChangeRequest(selectedMovement)">
+                                <button class="ql-action-btn ql-action-btn--approve"
+                                        (click)="openActionModal('APPROVE')"
+                                        [disabled]="isSubmitting">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="ql-action-btn ql-action-btn--changes"
+                                        (click)="openActionModal('REQUEST_CHANGES')"
+                                        [disabled]="isSubmitting">
+                                    <i class="fas fa-edit"></i> Request Changes
+                                </button>
+                                <button class="ql-action-btn ql-action-btn--reject"
+                                        (click)="openActionModal('REJECT')"
+                                        [disabled]="isSubmitting">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="ql-movement-detail ql-movement-detail--empty" *ngIf="!selectedMovement && filteredMovements.length > 0">
+                            <i class="fas fa-hand-pointer"></i>
+                            <p>Select a movement to review</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                HISTORY TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'history'" class="ql-tab-panel">
+                    <div class="ql-history-container">
+                        <div class="ql-history-header">
+                            <h3><i class="fas fa-history"></i> Approval History</h3>
+                            <span class="ql-history-count">{{ approvalHistory.length }} records</span>
+                        </div>
+
+                        <div class="ql-timeline">
+                            <div *ngFor="let action of approvalHistory" class="ql-timeline-item">
+                                <div class="ql-timeline-icon" [style.background]="getActionColor(action.action) + '20'" 
+                                                      [style.color]="getActionColor(action.action)">
+                                    <i class="fas" [class]="getActionIcon(action.action)"></i>
+                                </div>
+                                <div class="ql-timeline-content">
+                                    <div class="ql-timeline-header">
+                                        <span class="ql-timeline-action" [style.color]="getActionColor(action.action)">
+                                            {{ getActionLabel(action.action) }}
+                                        </span>
+                                        <span class="ql-timeline-date">{{ formatDateTime(action.timestamp) }}</span>
+                                    </div>
+                                    <div class="ql-timeline-body">
+                                        <span class="ql-timeline-movement">Movement #{{ action.movementId }}</span>
+                                        <span class="ql-timeline-by">by {{ action.approvedByName }}</span>
+                                    </div>
+                                    <div class="ql-timeline-comments" *ngIf="action.comments">
+                                        <i class="fas fa-quote-left"></i>
+                                        {{ action.comments }}
+                                    </div>
+                                    <div class="ql-timeline-changes" *ngIf="action.changesRequested">
+                                        <div *ngFor="let change of action.changesRequested" class="ql-change-item">
+                                            <span class="ql-change-field">{{ change.field }}</span>
+                                            <span class="ql-change-current">{{ change.currentValue }}</span>
+                                            <i class="fas fa-arrow-right"></i>
+                                            <span class="ql-change-suggested">{{ change.suggestedValue }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div *ngIf="approvalHistory.length === 0" class="ql-empty-state-small">
+                                <i class="fas fa-history"></i>
+                                <span>No approval history available</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================
+                STATISTICS TAB
+                ======================================================== -->
+                <div *ngIf="activeTab === 'stats'" class="ql-tab-panel">
+                    <div class="ql-stats-container">
+                        <div class="ql-stats-header">
+                            <h3><i class="fas fa-chart-bar"></i> Approval Statistics</h3>
+                        </div>
+
+                        <div class="ql-stats-grid" *ngIf="approvalStats">
+                            <!-- Summary Cards -->
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #F5A623;">{{ approvalStats.totalPending }}</span>
+                                <span class="ql-stat-card-label">Pending</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #2EB270;">{{ approvalStats.totalApproved }}</span>
+                                <span class="ql-stat-card-label">Approved</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #DC2626;">{{ approvalStats.totalRejected }}</span>
+                                <span class="ql-stat-card-label">Rejected</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #F5A623;">{{ approvalStats.totalRequestedChanges }}</span>
+                                <span class="ql-stat-card-label">Changes Requested</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #DC2626;">{{ approvalStats.urgentCount }}</span>
+                                <span class="ql-stat-card-label">Urgent Items</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #8B5CF6;">{{ approvalStats.highValueCount }}</span>
+                                <span class="ql-stat-card-label">High Value</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value" style="color: #3B82F6;">{{ approvalStats.averageApprovalTime.toFixed(1) }}h</span>
+                                <span class="ql-stat-card-label">Avg Approval Time</span>
+                            </div>
+                            <div class="ql-stat-card">
+                                <span class="ql-stat-card-value">{{ movements.length }}</span>
+                                <span class="ql-stat-card-label">Total Movements</span>
+                            </div>
+                        </div>
+
+                        <!-- Status Distribution -->
+                        <div class="ql-info-card">
+                            <h4>Status Distribution</h4>
+                            <div class="ql-distribution-bars">
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Pending</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getPendingCount() / movements.length) * 100"
+                                             style="background: #F5A623;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getPendingCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Completed</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getCompletedCount() / movements.length) * 100"
+                                             style="background: #2EB270;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getCompletedCount() }}</span>
+                                </div>
+                                <div class="ql-distribution-item">
+                                    <span class="ql-distribution-label">Cancelled</span>
+                                    <div class="ql-distribution-bar">
+                                        <div class="ql-distribution-fill" 
+                                             [style.width.%]="(getCancelledCount() / movements.length) * 100"
+                                             style="background: #DC2626;"></div>
+                                    </div>
+                                    <span class="ql-distribution-value">{{ getCancelledCount() }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Movement Type Breakdown -->
+                        <div class="ql-info-card">
+                            <h4>Movement Type Breakdown</h4>
+                            <div class="ql-type-grid">
+                                <div *ngFor="let type of movementTypeList"
+                                     class="ql-type-item">
+                                    <span class="ql-type-label">
+                                        <i class="fas" [class]="getMovementTypeIcon(type)"></i>
+                                        {{ getMovementTypeLabel(type) }}
+                                    </span>
+                                    <span class="ql-type-count">{{ getTypeCount(type) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </ng-container>
+
+        <!-- ============================================================
+        CONFIRM MODAL - APPROVE
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showConfirmModal"
+             (click)="$event.target === $event.currentTarget && closeActionModal()">
+            <div class="ql-modal ql-modal--small">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-check-circle" style="color: #2EB270;"></i> Confirm Approval</h3>
+                    <button class="ql-modal-close" (click)="closeActionModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Are you sure you want to approve this movement?</p>
+                    <div class="ql-confirm-details">
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Product</span>
+                            <span class="ql-confirm-value">{{ selectedMovement?.productName }}</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Quantity</span>
+                            <span class="ql-confirm-value">{{ selectedMovement?.quantity }} units</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">Cost</span>
+                            <span class="ql-confirm-value">{{ formatCurrency(selectedMovement?.cost || 0) }}</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">From</span>
+                            <span class="ql-confirm-value">{{ selectedMovement?.fromLocation?.name || 'N/A' }}</span>
+                        </div>
+                        <div class="ql-confirm-item">
+                            <span class="ql-confirm-label">To</span>
+                            <span class="ql-confirm-value">{{ selectedMovement?.toLocation?.name || 'N/A' }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeActionModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="confirmApproval()" [disabled]="isSubmitting">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-check]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Processing...' : 'Confirm Approval' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        COMMENTS MODAL - REJECT
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showCommentsModal"
+             (click)="$event.target === $event.currentTarget && closeActionModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-times-circle" style="color: #DC2626;"></i> Reject Movement</h3>
+                    <button class="ql-modal-close" (click)="closeActionModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Please provide a reason for rejecting this movement.</p>
+                    <form [formGroup]="commentsForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Comments <span class="ql-required">*</span></label>
+                            <textarea class="ql-input" formControlName="comments" rows="4" 
+                                      placeholder="Explain why this movement is being rejected..."></textarea>
+                            <span class="ql-field-error" *ngIf="commentsForm.get('comments')?.invalid && commentsForm.get('comments')?.touched">
+                                Comments are required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">
+                                <input type="checkbox" formControlName="notifyRequester">
+                                Notify requester
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeActionModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="submitComments()" [disabled]="isSubmitting || commentsForm.invalid">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-times]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Processing...' : 'Reject Movement' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        CHANGES MODAL - REQUEST CHANGES
+        ============================================================ -->
+        <div class="ql-modal-backdrop" *ngIf="showChangesModal"
+             (click)="$event.target === $event.currentTarget && closeActionModal()">
+            <div class="ql-modal">
+                <div class="ql-modal-header">
+                    <h3><i class="fas fa-edit" style="color: #F5A623;"></i> Request Changes</h3>
+                    <button class="ql-modal-close" (click)="closeActionModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ql-modal-body">
+                    <p>Please specify what changes are needed for this movement.</p>
+                    <form [formGroup]="changesForm">
+                        <div class="ql-field">
+                            <label class="ql-flabel">Field to Change <span class="ql-required">*</span></label>
+                            <select class="ql-input" formControlName="field">
+                                <option value="">Select field...</option>
+                                <option value="quantity">Quantity</option>
+                                <option value="cost">Cost</option>
+                                <option value="fromLocation">Source Location</option>
+                                <option value="toLocation">Destination Location</option>
+                                <option value="productId">Product</option>
+                                <option value="notes">Notes</option>
+                            </select>
+                            <span class="ql-field-error" *ngIf="changesForm.get('field')?.invalid && changesForm.get('field')?.touched">
+                                Please select a field
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Current Value <span class="ql-required">*</span></label>
+                            <input type="text" class="ql-input" formControlName="currentValue" placeholder="Current value">
+                            <span class="ql-field-error" *ngIf="changesForm.get('currentValue')?.invalid && changesForm.get('currentValue')?.touched">
+                                Current value is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Suggested Value <span class="ql-required">*</span></label>
+                            <input type="text" class="ql-input" formControlName="suggestedValue" placeholder="Suggested new value">
+                            <span class="ql-field-error" *ngIf="changesForm.get('suggestedValue')?.invalid && changesForm.get('suggestedValue')?.touched">
+                                Suggested value is required
+                            </span>
+                        </div>
+                        <div class="ql-field">
+                            <label class="ql-flabel">Reason <span class="ql-required">*</span></label>
+                            <textarea class="ql-input" formControlName="reason" rows="3" 
+                                      placeholder="Explain why these changes are needed..."></textarea>
+                            <span class="ql-field-error" *ngIf="changesForm.get('reason')?.invalid && changesForm.get('reason')?.touched">
+                                Reason is required
+                            </span>
+                        </div>
+                    </form>
+                </div>
+                <div class="ql-modal-footer">
+                    <button type="button" class="ql-btn ql-btn--ghost" (click)="closeActionModal()">Cancel</button>
+                    <button type="button" class="ql-btn ql-btn--primary" (click)="submitChanges()" [disabled]="isSubmitting || changesForm.invalid">
+                        <i class="fas" [class.fa-spinner]="isSubmitting" [class.fa-save]="!isSubmitting" 
+                           [class.ql-spinning]="isSubmitting"></i>
+                        {{ isSubmitting ? 'Processing...' : 'Request Changes' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
